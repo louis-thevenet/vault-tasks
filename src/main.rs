@@ -1,11 +1,13 @@
+use core::TaskManager;
 use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Parser;
 use config::Config;
-use scanner::Scanner;
+use log::debug;
 
 mod config;
+mod core;
 mod scanner;
 
 #[derive(Debug, clap::Parser)]
@@ -17,7 +19,6 @@ struct Args {
 fn main() -> Result<()> {
     env_logger::init();
     let config = Config::load_config(&Args::parse())?;
-    let scanner = Scanner::new(config);
-    scanner.scan_vault()?;
+    let task_mgr = TaskManager::new(config)?;
     Ok(())
 }
