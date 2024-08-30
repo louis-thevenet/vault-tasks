@@ -1,4 +1,7 @@
-use crate::{config::Config, core::Task};
+use crate::{
+    config::Config,
+    core::{Task, TaskState},
+};
 use anyhow::{bail, Result};
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use log::{debug, info};
@@ -68,10 +71,7 @@ impl Scanner {
                 .unwrap();
             tasks.push(Task {
                 name: line.to_string(),
-                due_date: NaiveDateTime::new(
-                    NaiveDate::from_ymd_opt(2024, 01, 12).unwrap(),
-                    NaiveTime::from_hms_opt(12, 12, 12).unwrap(),
-                ),
+                ..Default::default()
             });
         }
         if tasks.is_empty() {

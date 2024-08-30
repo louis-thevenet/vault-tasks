@@ -4,7 +4,6 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Parser;
 use config::Config;
-use log::debug;
 
 mod config;
 mod core;
@@ -19,6 +18,6 @@ struct Args {
 fn main() -> Result<()> {
     env_logger::init();
     let config = Config::load_config(&Args::parse())?;
-    let task_mgr = TaskManager::new(config)?;
+    let task_mgr = TaskManager::load_from_config(config)?;
     Ok(())
 }
