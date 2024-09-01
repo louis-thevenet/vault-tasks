@@ -7,6 +7,7 @@ use config::Config;
 
 mod config;
 mod core;
+mod parser;
 mod scanner;
 
 #[derive(Debug, clap::Parser)]

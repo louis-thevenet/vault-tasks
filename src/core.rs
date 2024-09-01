@@ -37,33 +37,44 @@ impl Display for DueDate {
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Task {
-    pub due_date: DueDate,
+    pub due_date: Option<DueDate>,
     pub name: String,
     pub priority: usize,
     pub state: TaskState,
+    pub description: Option<String>,
     pub tags: Option<Vec<String>>,
 }
 
 impl Default for Task {
     fn default() -> Self {
         let now = chrono::Local::now();
-        let due_date = DueDate::Day(now.date_naive());
+        let due_date = Some(DueDate::Day(now.date_naive()));
         Task {
             due_date,
             name: String::from("New Task"),
             priority: 0,
             state: TaskState::ToDo,
             tags: None,
+            description: None,
         }
     }
 }
 
 impl fmt::Display for Task {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Task \t -> {0}", self.name)?;
-        writeln!(f, "Due on \t -> {0}", self.due_date)?;
-        writeln!(f, "State: {}, Priority is {}", self.state, self.priority)?;
-        writeln!(f, "Tags: {:?}", self.tags)?;
+        writeln!(f, "Name: \t -> {0}", self.name)?;
+        if let Some(due_date) = &self.due_date {
+            writeln!(f, "Due: \t -> {0}", due_date)?;
+        }
+        writeln!(f, "State: \t -> {}", self.state)?;
+        writeln!(f, "Prio.: \t -> {}", self.priority)?;
+
+        if let Some(description) = &self.description {
+            writeln!(f, "Desc.:\t -> \"{}\"", description)?;
+        }
+        if let Some(tags) = &self.tags {
+            writeln!(f, "Tags: \t -> {:?}", tags)?;
+        }
         fmt::Result::Ok(())
     }
 }
