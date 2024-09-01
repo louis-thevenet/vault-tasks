@@ -544,6 +544,7 @@ dependencies = [
  "log",
  "serde",
  "toml",
+ "winnow",
 ]
 
 [[package]]
