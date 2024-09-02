@@ -11,6 +11,8 @@ pub struct Config {
     pub vault_path: PathBuf,
     /// Default is true
     pub use_american_format: Option<bool>,
+    /// Default is 2
+    pub indent_length: Option<usize>,
 }
 impl Config {
     pub fn load_config(args: &Args) -> Result<Self> {

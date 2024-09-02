@@ -23,12 +23,6 @@ impl<'i> ParserFileEntry<'i> {
     fn parse_task(&self, input: &mut &str) -> PResult<FileToken> {
         let mut task_parser = |input: &mut &str| parse_task(input, self.config);
         let task_res = task_parser.parse_next(input)?;
-
-        // let desc_res = preceded(space1, repeat(1.., any))
-        //     .parse_next(input)
-        //     .unwrap_or_default();
-        // task_res.description = Some(desc_res);
-
         Ok(FileToken::Task(task_res))
     }
     fn parse_header(&self, input: &mut &str) -> PResult<FileToken> {
@@ -40,6 +34,7 @@ impl<'i> ParserFileEntry<'i> {
             header_depth.len(),
         )))
     }
+    /// Inserts a `FileEntry` at the specific `depth` in `file_entry`.
     fn insert_at(
         file_entry: &mut FileEntry,
         object: FileEntry,
@@ -64,6 +59,7 @@ impl<'i> ParserFileEntry<'i> {
         }
     }
 
+    /// Recursively parses the input file passed as a string.
     fn parse_file_aux<'a, I>(
         &self,
         mut input: Peekable<I>,
@@ -85,7 +81,19 @@ impl<'i> ParserFileEntry<'i> {
         let mut line = line_opt.unwrap();
 
         match parser.parse_next(&mut line) {
-            Ok(FileToken::Task(task)) => {
+            Ok(FileToken::Task(mut task)) => {
+                // we look for a description
+                let mut description = String::new();
+                while let Some(desc_line) = input.peek() {
+                    if desc_line.starts_with(' ') {
+                        description.push('\n');
+                        description.push_str(&desc_line[self.config.indent_length.unwrap_or(2)..]);
+                        input.next();
+                    } else {
+                        break;
+                    }
+                }
+                task.description = Some(description);
                 Self::insert_at(file_entry, FileEntry::Tasks(task), 1, depth);
                 self.parse_file_aux(input, file_entry, depth)
             }
