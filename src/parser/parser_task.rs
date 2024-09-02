@@ -86,11 +86,10 @@ pub fn parse_task<'a>(
             Err(error) => bail!(error),
         }
     }
-    task.name = if name_vec.is_empty() {
-        String::from("New Task")
-    } else {
-        name_vec.join(" ")
-    };
+
+    if !name_vec.is_empty() {
+        task.name = name_vec.join(" ");
+    }
 
     let due_naive_date = due_date_opt.unwrap_or(chrono::Local::now().date_naive());
     let due_date = match due_time_opt {
