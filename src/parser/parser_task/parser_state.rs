@@ -7,6 +7,7 @@ use winnow::{
 use crate::task::TaskState;
 
 use super::token::Token;
+
 /// Parses a `TaskState` from an input string.
 pub fn parse_task_state(input: &mut &str) -> PResult<Token> {
     match preceded("- ", delimited("[", any, "]")).parse_next(input) {
@@ -24,8 +25,10 @@ pub fn parse_task_state(input: &mut &str) -> PResult<Token> {
 }
 #[cfg(test)]
 mod test {
-    use crate::parser::{parser_state::parse_task_state, token::Token};
-    use crate::task::TaskState;
+    use crate::{
+        parser::parser_task::{parser_state::parse_task_state, token::Token},
+        task::TaskState,
+    };
 
     #[test]
     fn test_parse_task_state_todo() {

@@ -22,7 +22,6 @@ pub enum DueDate {
     Day(NaiveDate),
     DayTime(NaiveDateTime),
 }
-
 impl Display for DueDate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

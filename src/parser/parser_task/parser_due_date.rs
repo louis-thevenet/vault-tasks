@@ -7,7 +7,7 @@ use winnow::{
     PResult, Parser,
 };
 
-use crate::parser::token::Token;
+use super::token::Token;
 
 /// Parses a literal day name (or its abbreviation) from an input string.
 fn parse_literal_day<'a>(input: &mut &'a str) -> PResult<&'a str> {
@@ -168,7 +168,9 @@ pub fn parse_naive_date(input: &mut &str, american_format: bool) -> PResult<Toke
 /// For each functions that returns a `NaiveDate`, the complete parser `parse_due_date` is also tested to return the same result.
 #[cfg(test)]
 mod tests {
-    use crate::parser::parser_due_date::*;
+    use chrono::Datelike;
+
+    use crate::parser::parser_task::{parser_due_date::*, token::Token};
 
     #[test]
     fn test_parse_literal_day() {
