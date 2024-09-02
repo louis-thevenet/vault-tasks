@@ -13,7 +13,7 @@ pub struct Config {
     pub use_american_format: Option<bool>,
 }
 impl Config {
-    pub fn load_config(args: &Args) -> Result<Config> {
+    pub fn load_config(args: &Args) -> Result<Self> {
         let config_path = if let Some(path) = args.config_path.clone() {
             path
         } else if let Some(user_dirs) = directories::UserDirs::new() {
@@ -25,7 +25,7 @@ impl Config {
         info!("Loading config from {:?}", config_file);
 
         let content = read_to_string(&config_file).context("Failed to read config file")?;
-        let config = toml::from_str::<Config>(&content).context("Failed to parse config file")?;
+        let config = toml::from_str::<Self>(&content).context("Failed to parse config file")?;
         debug!("{:#?}", config);
 
         if !config.vault_path.exists() {

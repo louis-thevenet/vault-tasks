@@ -43,7 +43,7 @@ fn calculate_in_n_days(n: u32) -> NaiveDate {
 /// - a literal day name alone
 /// Day names can be abreviated.
 /// If sucessful, returns a `NaiveDate` representing the next occurence of that day in the future (not including today).
-fn parse_naive_date_from_literal_day_opt_next<'a>(input: &mut &'a str) -> PResult<Token> {
+fn parse_naive_date_from_literal_day_opt_next(input: &mut &str) -> PResult<Token> {
     let output =
         alt((preceded("next ", parse_literal_day), parse_literal_day)).parse_next(input)?;
     let day: u32 = match &output[0..3] {
@@ -64,7 +64,7 @@ fn parse_naive_date_from_literal_day_opt_next<'a>(input: &mut &'a str) -> PResul
             + ((7 - now.weekday().num_days_from_sunday()) + day) % 7,
     );
 
-    return Ok(Token::DueDate(res));
+    Ok(Token::DueDate(res))
 }
 
 /// Parses `("day", "week", "month", "year", "weekend", "we")` as a string from an input string.
@@ -75,7 +75,7 @@ fn parse_literal_generic<'a>(input: &mut &'a str) -> PResult<&'a str> {
 
 /// Parses a NaiveDate from a generic duration in `("day", "week", "month", "year", "weekend", "we")`
 /// If sucessful, returns a `NaiveDate` representing the start of the next generic duration found. "Next week" -> "Next Monday"
-fn parse_naive_date_from_generic_name<'a>(input: &mut &'a str) -> PResult<Token> {
+fn parse_naive_date_from_generic_name(input: &mut &str) -> PResult<Token> {
     let output = preceded("next ", parse_literal_generic).parse_next(input)?;
 
     let now = chrono::Local::now();
@@ -116,7 +116,7 @@ fn parse_adverb<'a>(input: &mut &'a str) -> PResult<&'a str> {
 
 /// Parses a NaiveDate from an adverb in  `("tmr", "tomorrow", "today", "tdy", "tod")`
 /// If sucessful, returns a `NaiveDate` representing today's or tomorrow's date
-fn parse_naive_date_from_adverb<'a>(input: &mut &'a str) -> PResult<Token> {
+fn parse_naive_date_from_adverb(input: &mut &str) -> PResult<Token> {
     let output = parse_adverb.parse_next(input)?;
     let now = chrono::Local::now();
     match output {
@@ -130,10 +130,7 @@ fn parse_naive_date_from_adverb<'a>(input: &mut &'a str) -> PResult<Token> {
 
 /// Parses a NaiveDate from a `yyyy/mm/dd` string.
 /// Can change convention with  =`american_format` flag.
-fn parse_naive_date_from_numeric_format<'a>(
-    input: &mut &'a str,
-    american_format: bool,
-) -> PResult<Token> {
+fn parse_naive_date_from_numeric_format(input: &mut &str, american_format: bool) -> PResult<Token> {
     let mut tokens: Vec<u32> =
         separated(2..=3, take_while(1.., '0'..='9').parse_to::<u32>(), '/').parse_next(input)?;
 
@@ -158,7 +155,7 @@ fn parse_naive_date_from_numeric_format<'a>(
 /// - "<day name>"
 /// - "tomorrow", "today"
 /// Supports abbreviations
-pub fn parse_naive_date<'a>(input: &mut &'a str, american_format: bool) -> PResult<Token> {
+pub fn parse_naive_date(input: &mut &str, american_format: bool) -> PResult<Token> {
     alt((
         (|input: &mut &str| parse_naive_date_from_numeric_format(input, american_format)),
         parse_naive_date_from_literal_day_opt_next,

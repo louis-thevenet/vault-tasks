@@ -1,7 +1,7 @@
 use crate::{
     config::Config,
-    core::{DueDate, Task},
     parser::{parser_due_date::parse_naive_date, parser_time::parse_naive_time},
+    task::{DueDate, Task},
 };
 
 use anyhow::bail;
@@ -39,8 +39,8 @@ fn parse_token(input: &mut &str, config: &Config) -> PResult<Token> {
 }
 
 /// Parses a `Task` from an input string. An optional description can be added.
-pub fn parse_task<'a>(
-    input: &mut &'a str,
+pub fn parse_task(
+    input: &mut &str,
     description: Option<String>,
     config: &Config,
 ) -> anyhow::Result<Task> {
@@ -105,20 +105,16 @@ mod test {
 
     use chrono::{Datelike, Days, NaiveDate, NaiveDateTime, NaiveTime};
 
-    use crate::{
-        config::Config,
-        core::{DueDate, Task, TaskState},
-        parser::parser_task::parse_task,
-    };
+    use crate::{config::Config, parser::parser_task::*, task::TaskState};
 
     #[test]
     fn test_parse_task() {
         let mut input = "- [ ] 09/05 name2 #tag 15:51 p9 #tag2 name1 $98";
         let config = Config::default();
 
-        let desc = r#"A
+        let desc = r"A
         Multiline
-Description"#
+Description"
             .to_string();
         let res = parse_task(&mut input, Some(desc.clone()), &config);
         assert!(res.is_ok());

@@ -3,7 +3,7 @@ use winnow::{combinator::preceded, token::take_while, PResult, Parser};
 use super::token::Token;
 
 /// Parses tags of the form "#tag".
-pub fn parse_tag<'a>(input: &mut &'a str) -> PResult<Token> {
+pub fn parse_tag(input: &mut &str) -> PResult<Token> {
     let tag =
         preceded('#', take_while(1.., ('0'..='9', 'A'..='Z', 'a'..='z'))).parse_next(input)?;
     Ok(Token::Tag(tag.to_string()))

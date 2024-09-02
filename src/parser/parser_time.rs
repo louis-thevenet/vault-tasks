@@ -4,7 +4,7 @@ use winnow::{combinator::separated, token::take_while, PResult, Parser};
 use super::token::Token;
 
 /// Parses a NaiveTime from a `hh:mm:ss` or `hh:mm` string.
-pub fn parse_naive_time<'a>(input: &mut &'a str) -> PResult<Token> {
+pub fn parse_naive_time(input: &mut &str) -> PResult<Token> {
     let tokens: Vec<u32> =
         separated(2..=3, take_while(1.., '0'..='9').parse_to::<u32>(), ':').parse_next(input)?;
 

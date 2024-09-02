@@ -9,6 +9,7 @@ mod config;
 mod core;
 mod parser;
 mod scanner;
+mod task;
 
 #[derive(Debug, clap::Parser)]
 struct Args {

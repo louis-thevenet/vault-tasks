@@ -1,4 +1,4 @@
-use crate::{config::Config, core::Task, parser::parser_task::parse_task};
+use crate::{config::Config, parser::parser_task::parse_task, task::Task};
 use anyhow::{bail, Result};
 use log::error;
 use log::{debug, info};
@@ -28,7 +28,7 @@ impl Scanner {
         for entry_err in entries {
             if let Ok(entry) = entry_err {
                 let name = entry.file_name().into_string().unwrap();
-                if name.starts_with(".") {
+                if name.starts_with('.') {
                     continue;
                 }
                 if entry.path().is_dir() {

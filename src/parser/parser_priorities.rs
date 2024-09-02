@@ -3,7 +3,7 @@ use winnow::{combinator::preceded, token::take_while, PResult, Parser};
 use super::token::Token;
 
 /// Parses a priority value of the form `"p<integer>"`.
-pub fn parse_priority<'a>(input: &mut &'a str) -> PResult<Token> {
+pub fn parse_priority(input: &mut &str) -> PResult<Token> {
     let res = preceded('p', take_while(1.., '0'..='9'))
         .parse_to()
         .parse_next(input)?;
