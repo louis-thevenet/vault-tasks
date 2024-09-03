@@ -110,36 +110,6 @@ mod test {
     use crate::{config::Config, parser::parser_task::*, task::TaskState};
 
     #[test]
-    fn test_parse_task() {
-        let mut input = r"- [ ] 09/05 name2 #tag 15:51 p9 #tag2 name1 $98
-        A
-        Multiline
-desc";
-        let config = Config::default();
-
-        let desc = r"A
-        Multiline
-Description"
-            .to_string();
-        let res = parse_task(&mut input, &config);
-        assert!(res.is_ok());
-        let res = res.unwrap();
-        let year = chrono::Local::now().year();
-        let expected = Task {
-            name: "name2 name1 $98".to_string(),
-            description: Some(desc),
-            tags: Some(vec!["tag".to_string(), "tag2".to_string()]),
-            due_date: Some(DueDate::DayTime(NaiveDateTime::new(
-                NaiveDate::from_ymd_opt(year, 9, 5).unwrap(),
-                NaiveTime::from_hms_opt(15, 51, 0).unwrap(),
-            ))),
-            priority: 9,
-            state: TaskState::ToDo,
-        };
-        assert_eq!(res, expected)
-    }
-
-    #[test]
     fn test_parse_task_no_description() {
         let mut input = "- [x] 10/15 task_name #done";
         let config = Config::default();

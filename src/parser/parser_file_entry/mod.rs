@@ -1,7 +1,8 @@
 use std::iter::Peekable;
 
+use log::error;
 use winnow::{
-    ascii::space0,
+    ascii::{space0, space1},
     combinator::{alt, preceded, repeat},
     token::take_till,
     PResult, Parser,
@@ -12,18 +13,25 @@ use crate::{config::Config, core::FileEntry, task::Task};
 use super::parser_task::parse_task;
 
 enum FileToken {
-    Task(Task),
-    Header((String, usize)), // Header / Depth
+    Header((String, usize)),    // Header, Depth
+    Description(String, usize), // Content, indent length
+    Task(Task, usize),          // Content, indent length
 }
 pub struct ParserFileEntry<'a> {
     pub config: &'a Config,
 }
 
 impl<'i> ParserFileEntry<'i> {
+    fn parse_indent(input: &mut &str) -> PResult<usize> {
+        let indent_length: String = repeat(1.., " ").parse_next(input)?;
+        Ok(indent_length.len())
+    }
     fn parse_task(&self, input: &mut &str) -> PResult<FileToken> {
+        let indent_length = Self::parse_indent(input).unwrap_or(0);
+
         let mut task_parser = |input: &mut &str| parse_task(input, self.config);
         let task_res = task_parser.parse_next(input)?;
-        Ok(FileToken::Task(task_res))
+        Ok(FileToken::Task(task_res, indent_length))
     }
     fn parse_header(&self, input: &mut &str) -> PResult<FileToken> {
         let header_depth: String = repeat(1.., "#").parse_next(input)?;
@@ -34,29 +42,195 @@ impl<'i> ParserFileEntry<'i> {
             header_depth.len(),
         )))
     }
-    /// Inserts a `FileEntry` at the specific `depth` in `file_entry`.
+    fn parse_description(&self, input: &mut &str) -> PResult<FileToken> {
+        let indent_length = space1.map(|s: &str| s.len()).parse_next(input)?;
+        let desc_content = take_till(1.., |c| c == '\n').parse_next(input)?;
+        Ok(FileToken::Description(
+            desc_content.to_string(),
+            indent_length,
+        ))
+    }
+    /// Inserts a `FileEntry` at the specific header `depth` in `file_entry`.
     fn insert_at(
         file_entry: &mut FileEntry,
         object: FileEntry,
-        current_depth: usize,
-        target_depth: usize,
+        target_header_depth: usize,
+        target_task_depth: usize,
     ) {
-        match file_entry {
-            FileEntry::Tasks(_) => todo!(),
-            FileEntry::Header(_, header_children) => match current_depth.cmp(&target_depth) {
-                std::cmp::Ordering::Greater => todo!(),
-                std::cmp::Ordering::Equal => header_children.push(object),
-                std::cmp::Ordering::Less => {
-                    for child in header_children.iter_mut().rev() {
-                        if let FileEntry::Header(_, _) = child {
-                            Self::insert_at(child, object, current_depth + 1, target_depth);
-                            return;
+        fn insert_at_aux(
+            file_entry: &mut FileEntry,
+            object: FileEntry,
+            current_header_depth: usize,
+            target_header_depth: usize,
+            current_task_depth: usize,
+            target_task_depth: usize,
+        ) {
+            match file_entry {
+                FileEntry::Header(_, header_children) => {
+                    match (current_header_depth).cmp(&target_header_depth) {
+                        std::cmp::Ordering::Greater => panic!("bad call"), // shouldn't happen
+                        std::cmp::Ordering::Equal => {
+                            // Found correct header level
+                            if current_task_depth == target_task_depth {
+                                header_children.push(object);
+                            } else {
+                                for child in header_children.iter_mut().rev() {
+                                    if let FileEntry::Task(_, _) = child {
+                                        return insert_at_aux(
+                                            child,
+                                            object,
+                                            current_header_depth,
+                                            target_header_depth,
+                                            current_task_depth + 1,
+                                            target_task_depth,
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                        std::cmp::Ordering::Less => {
+                            // Still haven't found correct header level, going deeper
+                            for child in header_children.iter_mut().rev() {
+                                if let FileEntry::Header(_, _) = child {
+                                    insert_at_aux(
+                                        child,
+                                        object,
+                                        current_header_depth + 1,
+                                        target_header_depth,
+                                        current_task_depth,
+                                        target_task_depth,
+                                    );
+                                    return;
+                                }
+                            }
+                            header_children.push(object);
                         }
                     }
-                    header_children.push(object);
                 }
-            },
+                FileEntry::Task(_task, subtasks) => {
+                    if current_task_depth < target_task_depth {
+                        for subtask in subtasks.iter_mut().rev() {
+                            if let FileEntry::Task(_, _) = subtask {
+                                return insert_at_aux(
+                                    subtask,
+                                    object,
+                                    current_header_depth,
+                                    target_header_depth,
+                                    current_task_depth + 1,
+                                    target_task_depth,
+                                );
+                            }
+                        }
+                    } else {
+                        subtasks.push(object);
+                    }
+                }
+            }
         }
+        insert_at_aux(
+            file_entry,
+            object,
+            0,
+            target_header_depth,
+            0,
+            target_task_depth,
+        )
+    }
+
+    /// Appends `desc` to the description of an existing `Task` in the `FileEntry`.
+    fn append_description(
+        file_entry: &mut FileEntry,
+        desc: String,
+        target_header_depth: usize,
+        target_task_depth: usize,
+    ) {
+        fn append_description_aux(
+            file_entry: &mut FileEntry,
+            desc: String,
+            current_header_depth: usize,
+            target_header_depth: usize,
+            current_task_depth: usize,
+            target_task_depth: usize,
+        ) {
+            match file_entry {
+                FileEntry::Header(_, header_children) => {
+                    match current_header_depth.cmp(&target_header_depth) {
+                        std::cmp::Ordering::Greater => panic!("bad call for desc"), // shouldn't happen
+                        std::cmp::Ordering::Equal => {
+                            // Found correct header level
+                            for child in header_children.iter_mut().rev() {
+                                if let FileEntry::Task(mut task, subtasks) = child.clone() {
+                                    if current_task_depth == target_task_depth {
+                                        match &mut task.description {
+                                            Some(d) => {
+                                                d.push('\n');
+                                                d.push_str(&desc.clone());
+                                            }
+                                            None => task.description = Some(desc.clone()),
+                                        }
+                                        *child = FileEntry::Task(task, subtasks);
+                                    } else {
+                                        return append_description_aux(
+                                            child,
+                                            desc,
+                                            current_header_depth,
+                                            target_header_depth,
+                                            current_task_depth + 1,
+                                            target_task_depth,
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                        std::cmp::Ordering::Less => {
+                            // Going deeper in header levels
+                            for child in header_children.iter_mut().rev() {
+                                if let FileEntry::Header(_, _) = child {
+                                    append_description_aux(
+                                        child,
+                                        desc,
+                                        current_header_depth + 1,
+                                        target_header_depth,
+                                        current_task_depth,
+                                        target_task_depth,
+                                    );
+                                    return;
+                                }
+                            }
+                            error!("Failed to insert description: previous task not found")
+                        }
+                    }
+                }
+                FileEntry::Task(task, subtasks) => {
+                    if current_task_depth == target_task_depth {
+                        match &mut task.description {
+                            Some(d) => {
+                                d.push('\n');
+                                d.push_str(&desc.clone());
+                            }
+                            None => task.description = Some(desc.clone()),
+                        }
+                    } else {
+                        append_description_aux(
+                            subtasks.last_mut().unwrap(),
+                            desc,
+                            current_header_depth,
+                            target_header_depth,
+                            current_task_depth + 1,
+                            target_task_depth,
+                        )
+                    }
+                }
+            }
+        }
+        append_description_aux(
+            file_entry,
+            desc,
+            0,
+            target_header_depth,
+            0,
+            target_task_depth,
+        )
     }
 
     /// Recursively parses the input file passed as a string.
@@ -64,13 +238,14 @@ impl<'i> ParserFileEntry<'i> {
         &self,
         mut input: Peekable<I>,
         file_entry: &mut FileEntry,
-        depth: usize,
+        header_depth: usize,
     ) where
         I: Iterator<Item = &'a str>,
     {
         let mut parser = alt((
             |input: &mut &str| self.parse_header(input),
             |input: &mut &str| self.parse_task(input),
+            |input: &mut &str| self.parse_description(input),
         ));
 
         let line_opt = input.next();
@@ -81,39 +256,249 @@ impl<'i> ParserFileEntry<'i> {
         let mut line = line_opt.unwrap();
 
         match parser.parse_next(&mut line) {
-            Ok(FileToken::Task(mut task)) => {
-                // we look for a description
-                let mut description = String::new();
-                while let Some(desc_line) = input.peek() {
-                    if desc_line.starts_with(' ') {
-                        description.push('\n');
-                        description.push_str(&desc_line[self.config.indent_length.unwrap_or(2)..]);
-                        input.next();
-                    } else {
-                        break;
-                    }
-                }
-                task.description = Some(description);
-                Self::insert_at(file_entry, FileEntry::Tasks(task), 1, depth);
-                self.parse_file_aux(input, file_entry, depth)
+            Ok(FileToken::Task(task, indent_length)) => {
+                Self::insert_at(
+                    file_entry,
+                    FileEntry::Task(task, vec![]),
+                    header_depth,
+                    indent_length / self.config.indent_length.unwrap_or(2),
+                );
+                self.parse_file_aux(input, file_entry, header_depth)
             }
-            Ok(FileToken::Header((header, target_depth))) => {
+            Ok(FileToken::Header((header, new_depth))) => {
                 Self::insert_at(
                     file_entry,
                     FileEntry::Header(header, vec![]),
-                    1,
-                    target_depth,
+                    new_depth - 1,
+                    0,
                 );
-                self.parse_file_aux(input, file_entry, target_depth)
+                self.parse_file_aux(input, file_entry, new_depth)
             }
-            Err(_) => self.parse_file_aux(input, file_entry, depth),
+            Ok(FileToken::Description(description, indent_length)) => {
+                Self::append_description(
+                    file_entry,
+                    description,
+                    header_depth,
+                    indent_length / self.config.indent_length.unwrap_or(2),
+                );
+                self.parse_file_aux(input, file_entry, header_depth)
+            }
+
+            Err(_) => self.parse_file_aux(input, file_entry, header_depth),
         }
     }
+
+    /// Removes any empty headers from a `FileEntry`
+    fn clean_file_entry(file_entry: &mut FileEntry) -> Option<&FileEntry> {
+        match file_entry {
+            FileEntry::Header(_, children) => {
+                let mut actual_children = vec![];
+                children.iter_mut().for_each(|child| {
+                    let mut child_clone = child.clone();
+                    if Self::clean_file_entry(&mut child_clone).is_some() {
+                        actual_children.push(child_clone);
+                    }
+                });
+                *children = actual_children;
+                if children.is_empty() {
+                    None
+                } else {
+                    Some(file_entry)
+                }
+            }
+            FileEntry::Task(_, _) => Some(file_entry),
+        }
+    }
+
     pub fn parse_file(&self, filename: String, input: &mut &str) -> Option<FileEntry> {
         let lines = input.split('\n');
         let mut res = FileEntry::Header(filename, vec![]);
-        self.parse_file_aux(lines.peekable(), &mut res, 1);
-        println!("Header found: {:#?}", res);
-        Some(res)
+        self.parse_file_aux(lines.peekable(), &mut res, 0);
+        Self::clean_file_entry(&mut res).cloned()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::{config::Config, core::FileEntry, task::Task};
+
+    use super::ParserFileEntry;
+
+    #[test]
+    fn test_with_useless_headers() {
+        let input = r"# 1 useless
+## 2 useless
+### 3 useless
+
+# 2 useful
+### 3 useless
+## 4 useful
+- [ ] test
+  test
+  desc
+"
+        .split('\n')
+        .peekable();
+
+        let config = &Config::default();
+        let mut res = FileEntry::Header("Test".to_string(), vec![]);
+        let parser = ParserFileEntry { config };
+        let expected = FileEntry::Header(
+            "Test".to_string(),
+            vec![
+                FileEntry::Header(
+                    "1 useless".to_string(),
+                    vec![FileEntry::Header(
+                        "2 useless".to_string(),
+                        vec![FileEntry::Header("3 useless".to_string(), vec![])],
+                    )],
+                ),
+                FileEntry::Header(
+                    "2 useful".to_string(),
+                    vec![
+                        FileEntry::Header("3 useless".to_string(), vec![]),
+                        FileEntry::Header(
+                            "4 useful".to_string(),
+                            vec![FileEntry::Task(
+                                Task {
+                                    name: "test".to_string(),
+                                    description: Some("test\ndesc".to_string()),
+                                    ..Default::default()
+                                },
+                                vec![],
+                            )],
+                        ),
+                    ],
+                ),
+            ],
+        );
+        parser.parse_file_aux(input, &mut res, 0);
+        assert_eq!(res, expected);
+
+        let expected_after_cleaning = FileEntry::Header(
+            "Test".to_string(),
+            vec![FileEntry::Header(
+                "2 useful".to_string(),
+                vec![FileEntry::Header(
+                    "4 useful".to_string(),
+                    vec![FileEntry::Task(
+                        Task {
+                            name: "test".to_string(),
+                            description: Some("test\ndesc".to_string()),
+                            ..Default::default()
+                        },
+                        vec![],
+                    )],
+                )],
+            )],
+        );
+        ParserFileEntry::clean_file_entry(&mut res);
+        assert_eq!(res, expected_after_cleaning)
+    }
+    #[test]
+    fn test_simple_input() {
+        let input = r"# 1 Header
+- [ ] Task
+
+## 2 Header
+### 3 Header
+- [ ] Task
+- [ ] Task 2
+## 2 Header 2
+- [ ] Task
+  Description
+
+"
+        .split('\n')
+        .peekable();
+
+        let config = &Config::default();
+        let mut res = FileEntry::Header("Test".to_string(), vec![]);
+        let parser = ParserFileEntry { config };
+        let expected = FileEntry::Header(
+            "Test".to_string(),
+            vec![FileEntry::Header(
+                "1 Header".to_string(),
+                vec![
+                    FileEntry::Task(
+                        Task {
+                            name: "Task".to_string(),
+                            ..Default::default()
+                        },
+                        vec![],
+                    ),
+                    FileEntry::Header(
+                        "2 Header".to_string(),
+                        vec![FileEntry::Header(
+                            "3 Header".to_string(),
+                            vec![
+                                FileEntry::Task(
+                                    Task {
+                                        name: "Task".to_string(),
+                                        ..Default::default()
+                                    },
+                                    vec![],
+                                ),
+                                FileEntry::Task(
+                                    Task {
+                                        name: "Task 2".to_string(),
+                                        ..Default::default()
+                                    },
+                                    vec![],
+                                ),
+                            ],
+                        )],
+                    ),
+                    FileEntry::Header(
+                        "2 Header 2".to_string(),
+                        vec![FileEntry::Task(
+                            Task {
+                                name: "Task".to_string(),
+                                description: Some("Description".to_string()),
+                                ..Default::default()
+                            },
+                            vec![],
+                        )],
+                    ),
+                ],
+            )],
+        );
+        parser.parse_file_aux(input, &mut res, 0);
+        assert_eq!(res, expected);
+    }
+    #[test]
+    fn test_fake_description() {
+        let input = r"# 1 Header
+  test
+- [ ] Task
+
+## 2 Header
+  test
+"
+        .split('\n')
+        .peekable();
+
+        let config = &Config::default();
+        let mut res = FileEntry::Header("Test".to_string(), vec![]);
+        let parser = ParserFileEntry { config };
+        let expected = FileEntry::Header(
+            "Test".to_string(),
+            vec![FileEntry::Header(
+                "1 Header".to_string(),
+                vec![
+                    FileEntry::Task(
+                        Task {
+                            name: "Task".to_string(),
+                            ..Default::default()
+                        },
+                        vec![],
+                    ),
+                    FileEntry::Header("2 Header".to_string(), vec![]),
+                ],
+            )],
+        );
+        parser.parse_file_aux(input, &mut res, 0);
+        assert_eq!(res, expected);
     }
 }

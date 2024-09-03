@@ -2,10 +2,12 @@ use crate::{config::Config, scanner::Scanner, task::Task};
 use anyhow::Result;
 use std::fmt::Display;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FileEntry {
+    // Header, Content
     Header(String, Vec<FileEntry>),
-    Tasks(Task),
+    // Task, Subtasks
+    Task(Task, Vec<FileEntry>), // Should not contain headers
 }
 
 impl Display for FileEntry {
@@ -23,11 +25,17 @@ impl Display for FileEntry {
                         fmt_aux(entry, f, depth + 1)?;
                     }
                 }
-                FileEntry::Tasks(task) => {
-                    let task_str = task.to_string();
-                    for line in task_str.split('\n') {
+                FileEntry::Task(task, subtasks) => {
+                    for line in task.to_string().split('\n') {
                         (0..=depth).try_for_each(|_| write!(f, "\t"))?;
                         writeln!(f, "{line}")?;
+                    }
+
+                    for subtask in subtasks.iter() {
+                        for line in subtask.to_string().split('\n') {
+                            (0..=depth + 1).try_for_each(|_| write!(f, "\t"))?;
+                            writeln!(f, "{line}")?;
+                        }
                     }
                 }
             }
