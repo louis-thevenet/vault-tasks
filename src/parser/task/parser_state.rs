@@ -4,15 +4,15 @@ use winnow::{
     PResult, Parser,
 };
 
-use crate::task::TaskState;
+use crate::task::State;
 
 use super::token::Token;
 
 /// Parses a `TaskState` from an input string.
 pub fn parse_task_state(input: &mut &str) -> PResult<Token> {
     match preceded("- ", delimited("[", any, "]")).parse_next(input) {
-        Ok(' ') => Ok(Token::State(TaskState::ToDo)),
-        Ok(_) => Ok(Token::State(TaskState::Done)),
+        Ok(' ') => Ok(Token::State(State::ToDo)),
+        Ok(_) => Ok(Token::State(State::Done)),
         Err(error) => Err(error),
     }
 
@@ -26,26 +26,26 @@ pub fn parse_task_state(input: &mut &str) -> PResult<Token> {
 #[cfg(test)]
 mod test {
     use crate::{
-        parser::parser_task::{parser_state::parse_task_state, token::Token},
-        task::TaskState,
+        parser::task::{parser_state::parse_task_state, token::Token},
+        task::State,
     };
 
     #[test]
     fn test_parse_task_state_todo() {
         let mut input = "- [ ]";
-        let expected = Ok(Token::State(TaskState::ToDo));
+        let expected = Ok(Token::State(State::ToDo));
         assert_eq!(parse_task_state(&mut input), expected);
     }
     #[test]
     fn test_parse_task_state_done() {
         let mut input = "- [X]";
-        let expected = Ok(Token::State(TaskState::Done));
+        let expected = Ok(Token::State(State::Done));
         assert_eq!(parse_task_state(&mut input), expected);
     }
     #[test]
     fn test_parse_task_state_done_alt() {
         let mut input = "- [o]";
-        let expected = Ok(Token::State(TaskState::Done));
+        let expected = Ok(Token::State(State::Done));
         assert_eq!(parse_task_state(&mut input), expected);
     }
     #[test]

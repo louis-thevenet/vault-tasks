@@ -10,13 +10,15 @@ use winnow::{
 
 use crate::{config::Config, core::FileEntry, task::Task};
 
-use super::parser_task::parse_task;
+use super::task::parse_task;
 
 enum FileToken {
     Header((String, usize)),    // Header, Depth
     Description(String, usize), // Content, indent length
     Task(Task, usize),          // Content, indent length
 }
+
+#[allow(clippy::module_name_repetitions)]
 pub struct ParserFileEntry<'a> {
     pub config: &'a Config,
 }
@@ -33,7 +35,7 @@ impl<'i> ParserFileEntry<'i> {
         let task_res = task_parser.parse_next(input)?;
         Ok(FileToken::Task(task_res, indent_length))
     }
-    fn parse_header(&self, input: &mut &str) -> PResult<FileToken> {
+    fn parse_header(input: &mut &str) -> PResult<FileToken> {
         let header_depth: String = repeat(1.., "#").parse_next(input)?;
         let header_content = preceded(space0, take_till(1.., |c| c == '\n')).parse_next(input)?;
 
@@ -42,7 +44,7 @@ impl<'i> ParserFileEntry<'i> {
             header_depth.len(),
         )))
     }
-    fn parse_description(&self, input: &mut &str) -> PResult<FileToken> {
+    fn parse_description(input: &mut &str) -> PResult<FileToken> {
         let indent_length = space1.map(|s: &str| s.len()).parse_next(input)?;
         let desc_content = take_till(1.., |c| c == '\n').parse_next(input)?;
         Ok(FileToken::Description(
@@ -68,7 +70,9 @@ impl<'i> ParserFileEntry<'i> {
             match file_entry {
                 FileEntry::Header(_, header_children) => {
                     match (current_header_depth).cmp(&target_header_depth) {
-                        std::cmp::Ordering::Greater => panic!("bad call"), // shouldn't happen
+                        std::cmp::Ordering::Greater => error!(
+                            "bad call to `insert_at`, file_entry:{file_entry}\nobject:{object}"
+                        ), // shouldn't happen
                         std::cmp::Ordering::Equal => {
                             // Found correct header level
                             if current_task_depth == target_task_depth {
@@ -134,7 +138,7 @@ impl<'i> ParserFileEntry<'i> {
             target_header_depth,
             0,
             target_task_depth,
-        )
+        );
     }
 
     /// Appends `desc` to the description of an existing `Task` in the `FileEntry`.
@@ -197,7 +201,7 @@ impl<'i> ParserFileEntry<'i> {
                                     return;
                                 }
                             }
-                            error!("Failed to insert description: previous task not found")
+                            error!("Failed to insert description: previous task not found");
                         }
                     }
                 }
@@ -206,7 +210,7 @@ impl<'i> ParserFileEntry<'i> {
                         match &mut task.description {
                             Some(d) => {
                                 d.push('\n');
-                                d.push_str(&desc.clone());
+                                d.push_str(&desc);
                             }
                             None => task.description = Some(desc.clone()),
                         }
@@ -218,7 +222,7 @@ impl<'i> ParserFileEntry<'i> {
                             target_header_depth,
                             current_task_depth + 1,
                             target_task_depth,
-                        )
+                        );
                     }
                 }
             }
@@ -230,7 +234,7 @@ impl<'i> ParserFileEntry<'i> {
             target_header_depth,
             0,
             target_task_depth,
-        )
+        );
     }
 
     /// Recursively parses the input file passed as a string.
@@ -243,9 +247,9 @@ impl<'i> ParserFileEntry<'i> {
         I: Iterator<Item = &'a str>,
     {
         let mut parser = alt((
-            |input: &mut &str| self.parse_header(input),
+            Self::parse_header,
             |input: &mut &str| self.parse_task(input),
-            |input: &mut &str| self.parse_description(input),
+            Self::parse_description,
         ));
 
         let line_opt = input.next();
@@ -263,7 +267,7 @@ impl<'i> ParserFileEntry<'i> {
                     header_depth,
                     indent_length / self.config.indent_length.unwrap_or(2),
                 );
-                self.parse_file_aux(input, file_entry, header_depth)
+                self.parse_file_aux(input, file_entry, header_depth);
             }
             Ok(FileToken::Header((header, new_depth))) => {
                 Self::insert_at(
@@ -272,7 +276,7 @@ impl<'i> ParserFileEntry<'i> {
                     new_depth - 1,
                     0,
                 );
-                self.parse_file_aux(input, file_entry, new_depth)
+                self.parse_file_aux(input, file_entry, new_depth);
             }
             Ok(FileToken::Description(description, indent_length)) => {
                 Self::append_description(
@@ -281,7 +285,7 @@ impl<'i> ParserFileEntry<'i> {
                     header_depth,
                     indent_length / self.config.indent_length.unwrap_or(2),
                 );
-                self.parse_file_aux(input, file_entry, header_depth)
+                self.parse_file_aux(input, file_entry, header_depth);
             }
 
             Err(_) => self.parse_file_aux(input, file_entry, header_depth),
@@ -293,12 +297,12 @@ impl<'i> ParserFileEntry<'i> {
         match file_entry {
             FileEntry::Header(_, children) => {
                 let mut actual_children = vec![];
-                children.iter_mut().for_each(|child| {
+                for child in children.iter_mut() {
                     let mut child_clone = child.clone();
                     if Self::clean_file_entry(&mut child_clone).is_some() {
                         actual_children.push(child_clone);
                     }
-                });
+                }
                 *children = actual_children;
                 if children.is_empty() {
                     None
@@ -310,14 +314,13 @@ impl<'i> ParserFileEntry<'i> {
         }
     }
 
-    pub fn parse_file(&self, filename: String, input: &mut &str) -> Option<FileEntry> {
+    pub fn parse_file(&self, filename: String, input: &&str) -> Option<FileEntry> {
         let lines = input.split('\n');
         let mut res = FileEntry::Header(filename, vec![]);
         self.parse_file_aux(lines.peekable(), &mut res, 0);
         Self::clean_file_entry(&mut res).cloned()
     }
 }
-
 #[cfg(test)]
 mod tests {
 
@@ -394,7 +397,7 @@ mod tests {
             )],
         );
         ParserFileEntry::clean_file_entry(&mut res);
-        assert_eq!(res, expected_after_cleaning)
+        assert_eq!(res, expected_after_cleaning);
     }
     #[test]
     fn test_simple_input() {

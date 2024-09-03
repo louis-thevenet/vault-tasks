@@ -1,5 +1,6 @@
 use chrono::{Datelike, Days, Months, NaiveDate};
 
+use log::error;
 use winnow::{
     combinator::{alt, preceded, separated},
     error::ParserError,
@@ -33,12 +34,12 @@ fn parse_literal_day<'a>(input: &mut &'a str) -> PResult<&'a str> {
 /// Adds `n` days to today's date and returns it as a `NaiveDate`.
 fn calculate_in_n_days(n: u32) -> NaiveDate {
     let now = chrono::Local::now();
-    now.checked_add_days(Days::new(n as u64))
+    now.checked_add_days(Days::new(u64::from(n)))
         .unwrap()
         .date_naive()
 }
 
-/// Parses a NaiveDate from either:
+/// Parses a `NaiveDate` from either:
 /// - "next " + a literal day name
 /// - a literal day name alone
 /// Day names can be abreviated.
@@ -54,7 +55,10 @@ fn parse_naive_date_from_literal_day_opt_next(input: &mut &str) -> PResult<Token
         "fri" => 5,
         "sat" => 6,
         "sun" => 7,
-        _ => 1, // never happens
+        _ => {
+            error!("Unknown day name was parsed: {}", &output[0..3]);
+            1
+        }
     };
     let now = chrono::Local::now();
     let day_name_equals_today = now.weekday().number_from_monday() == day;
@@ -73,7 +77,7 @@ fn parse_literal_generic<'a>(input: &mut &'a str) -> PResult<&'a str> {
     alt(generics).parse_next(input)
 }
 
-/// Parses a NaiveDate from a generic duration in `("day", "week", "month", "year", "weekend", "we")`
+/// Parses a `NaiveDate` from a generic duration in `("day", "week", "month", "year", "weekend", "we")`
 /// If sucessful, returns a `NaiveDate` representing the start of the next generic duration found. "Next week" -> "Next Monday"
 fn parse_naive_date_from_generic_name(input: &mut &str) -> PResult<Token> {
     let output = preceded("next ", parse_literal_generic).parse_next(input)?;
@@ -86,14 +90,14 @@ fn parse_naive_date_from_generic_name(input: &mut &str) -> PResult<Token> {
         )),
         "week" => Ok(Token::DueDate(
             today_date
-                .checked_add_days(Days::new(8 - now.weekday().number_from_monday() as u64))
+                .checked_add_days(Days::new(8 - u64::from(now.weekday().number_from_monday())))
                 .unwrap(),
         )),
         "month" => Ok(Token::DueDate(
             today_date
                 .checked_add_months(Months::new(1))
                 .unwrap()
-                .checked_sub_days(Days::new(today_date.day() as u64))
+                .checked_sub_days(Days::new(u64::from(today_date.day())))
                 .unwrap(),
         )),
         "year" => Ok(Token::DueDate(
@@ -114,12 +118,13 @@ fn parse_adverb<'a>(input: &mut &'a str) -> PResult<&'a str> {
     alt(("tmr", "tomorrow", "today", "tdy", "tod")).parse_next(input)
 }
 
-/// Parses a NaiveDate from an adverb in  `("tmr", "tomorrow", "today", "tdy", "tod")`
+/// Parses a `NaiveDate` from an adverb in  `("tmr", "tomorrow", "today", "tdy", "tod")`
 /// If sucessful, returns a `NaiveDate` representing today's or tomorrow's date
 fn parse_naive_date_from_adverb(input: &mut &str) -> PResult<Token> {
     let output = parse_adverb.parse_next(input)?;
     let now = chrono::Local::now();
     match output {
+        #[allow(clippy::match_same_arms)]
         "tdy" | "tod" | "today" => Ok(Token::DueDate(now.date_naive())),
         "tmr" | "tomorrow" => Ok(Token::DueDate(
             now.date_naive().checked_add_days(Days::new(1)).unwrap(),
@@ -128,29 +133,32 @@ fn parse_naive_date_from_adverb(input: &mut &str) -> PResult<Token> {
     }
 }
 
-/// Parses a NaiveDate from a `yyyy/mm/dd` string.
+/// Parses a `NaiveDate` from a `yyyy/mm/dd` string.
 /// Can change convention with  =`american_format` flag.
 fn parse_naive_date_from_numeric_format(input: &mut &str, american_format: bool) -> PResult<Token> {
     let mut tokens: Vec<u32> =
         separated(2..=3, take_while(1.., '0'..='9').parse_to::<u32>(), '/').parse_next(input)?;
 
     if !american_format {
-        tokens.reverse()
+        tokens.reverse();
     }
     if tokens.len() == 2 {
-        tokens.insert(0, chrono::Local::now().year() as u32)
+        tokens.insert(0, chrono::Local::now().year_ce().1);
     }
-    match NaiveDate::from_ymd_opt(tokens[0] as i32, tokens[1], tokens[2]) {
-        Some(date) => Ok(Token::DueDate(date)),
-        None => Err(ParserError::from_error_kind(
-            input,
-            winnow::error::ErrorKind::Token,
-        )),
-    }
+    #[allow(clippy::cast_possible_wrap)]
+    NaiveDate::from_ymd_opt(tokens[0] as i32, tokens[1], tokens[2]).map_or_else(
+        || {
+            Err(ParserError::from_error_kind(
+                input,
+                winnow::error::ErrorKind::Token,
+            ))
+        },
+        |date| Ok(Token::DueDate(date)),
+    )
 }
 
-/// Parses a NaiveDate from the following cases:
-/// - "yyyy/mm/dd" (see american_format flag)
+/// Parses a `NaiveDate` from the following cases:
+/// - "yyyy/mm/dd" (see `american_format` flag)
 /// - "next <day name>", "next <day|week|month|year>"
 /// - "<day name>"
 /// - "tomorrow", "today"
@@ -170,7 +178,7 @@ pub fn parse_naive_date(input: &mut &str, american_format: bool) -> PResult<Toke
 mod tests {
     use chrono::Datelike;
 
-    use crate::parser::parser_task::{parser_due_date::*, token::Token};
+    use crate::parser::task::{parser_due_date::*, token::Token};
 
     #[test]
     fn test_parse_literal_day() {
@@ -275,7 +283,7 @@ mod tests {
         let expected = now
             .date_naive()
             .checked_add_days(Days::new(
-                8 - now.date_naive().weekday().number_from_monday() as u64,
+                8 - u64::from(now.date_naive().weekday().number_from_monday()),
             ))
             .unwrap();
         assert_eq!(

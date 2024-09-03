@@ -20,6 +20,6 @@ struct Args {
 fn main() -> Result<()> {
     env_logger::init();
     let config = Config::load_config(&Args::parse())?;
-    let task_mgr = TaskManager::load_from_config(config)?;
+    let _task_mgr = TaskManager::load_from_config(config)?;
     Ok(())
 }

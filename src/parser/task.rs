@@ -24,7 +24,7 @@ use crate::{
     task::{DueDate, Task},
 };
 
-/// Parses a `Token` from an input string.
+/// Parses a `Token` from an input string.FileEntry
 fn parse_token(input: &mut &str, config: &Config) -> PResult<Token> {
     alt((
         |input: &mut &str| parse_naive_date(input, config.use_american_format.unwrap_or(true)),
@@ -46,6 +46,7 @@ fn parse_token(input: &mut &str, config: &Config) -> PResult<Token> {
 }
 
 /// Parses a `Task` from an input string. An optional description can be added.
+#[allow(clippy::module_name_repetitions)]
 pub fn parse_task(input: &mut &str, config: &Config) -> PResult<Task> {
     // `split_whitespace()` will break the "- [ ]" pattern
     let task_state = match parse_task_state(input)? {
@@ -80,9 +81,9 @@ pub fn parse_task(input: &mut &str, config: &Config) -> PResult<Task> {
             Ok(Token::State(state)) => task.state = state,
             Ok(Token::Tag(tag)) => {
                 if let Some(ref mut tags) = task.tags {
-                    tags.push(tag)
+                    tags.push(tag);
                 } else {
-                    task.tags = Some(vec![tag])
+                    task.tags = Some(vec![tag]);
                 }
             }
             Err(error) => error!("Error: {error}"),
@@ -93,11 +94,10 @@ pub fn parse_task(input: &mut &str, config: &Config) -> PResult<Task> {
         task.name = name_vec.join(" ");
     }
 
-    let due_naive_date = due_date_opt.unwrap_or(chrono::Local::now().date_naive());
-    let due_date = match due_time_opt {
-        Some(time) => DueDate::DayTime(NaiveDateTime::new(due_naive_date, time)),
-        None => DueDate::Day(due_naive_date),
-    };
+    let due_naive_date = due_date_opt.unwrap_or_else(|| chrono::Local::now().date_naive());
+    let due_date = due_time_opt.map_or(DueDate::Day(due_naive_date), |time| {
+        DueDate::DayTime(NaiveDateTime::new(due_naive_date, time))
+    });
     task.due_date = Some(due_date);
 
     Ok(task)
@@ -107,7 +107,7 @@ mod test {
 
     use chrono::{Datelike, Days, NaiveDate, NaiveDateTime, NaiveTime};
 
-    use crate::{config::Config, parser::parser_task::*, task::TaskState};
+    use crate::{config::Config, parser::task::*, task::State};
 
     #[test]
     fn test_parse_task_no_description() {
@@ -123,7 +123,7 @@ mod test {
             tags: Some(vec!["done".to_string()]),
             due_date: Some(DueDate::Day(NaiveDate::from_ymd_opt(year, 10, 15).unwrap())),
             priority: 0,
-            state: TaskState::Done,
+            state: State::Done,
         };
         assert_eq!(res, expected);
     }
@@ -142,7 +142,7 @@ mod test {
             tags: None,
             due_date: Some(DueDate::Day(now.date_naive())),
             priority: 0,
-            state: TaskState::ToDo,
+            state: State::ToDo,
         };
         assert_eq!(res, expected);
     }
@@ -171,7 +171,7 @@ mod test {
         let expected_date = now
             .date_naive()
             .checked_add_days(Days::new(
-                8 - now.date_naive().weekday().number_from_monday() as u64,
+                8 - u64::from(now.date_naive().weekday().number_from_monday()),
             ))
             .unwrap();
         let expected_time = NaiveTime::from_hms_opt(15, 30, 0).unwrap();
@@ -190,7 +190,7 @@ mod test {
         let expected_date = now
             .date_naive()
             .checked_add_days(Days::new(
-                8 - now.date_naive().weekday().number_from_monday() as u64,
+                8 - u64::from(now.date_naive().weekday().number_from_monday()),
             ))
             .unwrap();
         let expected_time = NaiveTime::from_hms_opt(15, 30, 0).unwrap();
@@ -209,7 +209,7 @@ mod test {
         let expected_date = now
             .date_naive()
             .checked_add_days(Days::new(
-                8 - now.date_naive().weekday().number_from_monday() as u64,
+                8 - u64::from(now.date_naive().weekday().number_from_monday()),
             ))
             .unwrap();
         let expected_time = NaiveTime::from_hms_opt(15, 30, 0).unwrap();

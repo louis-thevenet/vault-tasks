@@ -3,7 +3,7 @@ use winnow::{combinator::separated, token::take_while, PResult, Parser};
 
 use super::token::Token;
 
-/// Parses a NaiveTime from a `hh:mm:ss` or `hh:mm` string.
+/// Parses a `NaiveTime` from a `hh:mm:ss` or `hh:mm` string.
 pub fn parse_naive_time(input: &mut &str) -> PResult<Token> {
     let tokens: Vec<u32> =
         separated(2..=3, take_while(1.., '0'..='9').parse_to::<u32>(), ':').parse_next(input)?;
@@ -19,7 +19,7 @@ pub fn parse_naive_time(input: &mut &str) -> PResult<Token> {
 mod tests {
     use chrono::{NaiveTime, Timelike};
 
-    use crate::parser::parser_task::{parser_time::parse_naive_time, token::Token};
+    use crate::parser::task::{parser_time::parse_naive_time, token::Token};
 
     #[test]
     fn test_parse_naive_time() {

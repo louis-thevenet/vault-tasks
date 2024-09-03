@@ -31,7 +31,7 @@ impl Display for FileEntry {
                         writeln!(f, "{line}")?;
                     }
 
-                    for subtask in subtasks.iter() {
+                    for subtask in subtasks {
                         for line in subtask.to_string().split('\n') {
                             (0..=depth + 1).try_for_each(|_| write!(f, "\t"))?;
                             writeln!(f, "{line}")?;

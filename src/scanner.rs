@@ -1,5 +1,5 @@
 use crate::core::FileEntry;
-use crate::{config::Config, parser::parser_file_entry};
+use crate::{config::Config, parser::file_entry};
 use anyhow::{bail, Result};
 use log::{debug, info};
 use std::{
@@ -12,7 +12,7 @@ pub struct Scanner {
 }
 
 impl Scanner {
-    pub fn new(config: Config) -> Self {
+    pub const fn new(config: Config) -> Self {
         Self { config }
     }
     pub fn scan_vault(self) -> Result<Vec<FileEntry>> {
@@ -33,7 +33,7 @@ impl Scanner {
                 if entry.path().is_dir() {
                     // recursive call for this subdir
                     self.scan(&entry.path(), tasks)?;
-                } else if let Some(file_tasks) = self.parse_file(entry) {
+                } else if let Some(file_tasks) = self.parse_file(&entry) {
                     debug!("Tasks found in {name}:\n{file_tasks}");
                     tasks.push(file_tasks);
                 }
@@ -45,9 +45,9 @@ impl Scanner {
         Ok(())
     }
 
-    fn parse_file(&self, entry: DirEntry) -> Option<FileEntry> {
+    fn parse_file(&self, entry: &DirEntry) -> Option<FileEntry> {
         let content = fs::read_to_string(entry.path()).unwrap_or_default();
-        let parser = parser_file_entry::ParserFileEntry {
+        let parser = file_entry::ParserFileEntry {
             config: &self.config,
         };
 
@@ -55,8 +55,8 @@ impl Scanner {
             entry
                 .file_name()
                 .into_string()
-                .unwrap_or("Couldn't read filename".to_string()),
-            &mut content.as_str(),
+                .unwrap_or_else(|_| "Couldn't read filename".to_string()),
+            &content.as_str(),
         )
     }
 }
