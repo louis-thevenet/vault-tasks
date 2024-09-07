@@ -3,7 +3,7 @@ use chrono::{Datelike, Days, Months, NaiveDate};
 use log::error;
 use winnow::{
     combinator::{alt, preceded, separated},
-    error::ParserError,
+    error::{ErrMode, ErrorKind, ParserError},
     token::take_while,
     PResult, Parser,
 };
@@ -129,7 +129,7 @@ fn parse_naive_date_from_adverb(input: &mut &str) -> PResult<Token> {
         "tmr" | "tomorrow" => Ok(Token::DueDate(
             now.date_naive().checked_add_days(Days::new(1)).unwrap(),
         )),
-        _ => Ok(Token::DueDate(now.date_naive())),
+        _ => Err(ErrMode::from_error_kind(input, ErrorKind::Assert)),
     }
 }
 

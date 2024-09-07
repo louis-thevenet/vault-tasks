@@ -244,7 +244,7 @@ impl<'i> ParserFileEntry<'i> {
         file_entry: &mut FileEntry,
         header_depth: usize,
     ) where
-        I: Iterator<Item = &'a str>,
+        I: Iterator<Item = (usize, &'a str)>,
     {
         let mut parser = alt((
             Self::parse_header,
@@ -257,10 +257,11 @@ impl<'i> ParserFileEntry<'i> {
             return;
         }
 
-        let mut line = line_opt.unwrap();
+        let (line_number, mut line) = line_opt.unwrap();
 
         match parser.parse_next(&mut line) {
-            Ok(FileToken::Task(task, indent_length)) => {
+            Ok(FileToken::Task(mut task, indent_length)) => {
+                task.line_number = line_number + 1; // line 1 was element 0 of iterator
                 Self::insert_at(
                     file_entry,
                     FileEntry::Task(task, vec![]),
@@ -317,7 +318,7 @@ impl<'i> ParserFileEntry<'i> {
     pub fn parse_file(&self, filename: String, input: &&str) -> Option<FileEntry> {
         let lines = input.split('\n');
         let mut res = FileEntry::Header(filename, vec![]);
-        self.parse_file_aux(lines.peekable(), &mut res, 0);
+        self.parse_file_aux(lines.enumerate().peekable(), &mut res, 0);
         Self::clean_file_entry(&mut res).cloned()
     }
 }
@@ -342,6 +343,7 @@ mod tests {
   desc
 "
         .split('\n')
+        .enumerate()
         .peekable();
 
         let config = &Config::default();
@@ -366,6 +368,7 @@ mod tests {
                             vec![FileEntry::Task(
                                 Task {
                                     name: "test".to_string(),
+                                    line_number: 8,
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 },
@@ -388,6 +391,7 @@ mod tests {
                     vec![FileEntry::Task(
                         Task {
                             name: "test".to_string(),
+                            line_number: 8,
                             description: Some("test\ndesc".to_string()),
                             ..Default::default()
                         },
@@ -414,6 +418,7 @@ mod tests {
 
 "
         .split('\n')
+        .enumerate()
         .peekable();
 
         let config = &Config::default();
@@ -427,6 +432,7 @@ mod tests {
                     FileEntry::Task(
                         Task {
                             name: "Task".to_string(),
+                            line_number: 2,
                             ..Default::default()
                         },
                         vec![],
@@ -439,6 +445,7 @@ mod tests {
                                 FileEntry::Task(
                                     Task {
                                         name: "Task".to_string(),
+                                        line_number: 6,
                                         ..Default::default()
                                     },
                                     vec![],
@@ -446,6 +453,7 @@ mod tests {
                                 FileEntry::Task(
                                     Task {
                                         name: "Task 2".to_string(),
+                                        line_number: 7,
                                         ..Default::default()
                                     },
                                     vec![],
@@ -458,6 +466,7 @@ mod tests {
                         vec![FileEntry::Task(
                             Task {
                                 name: "Task".to_string(),
+                                line_number: 9,
                                 description: Some("Description".to_string()),
                                 ..Default::default()
                             },
@@ -480,6 +489,7 @@ mod tests {
   test
 "
         .split('\n')
+        .enumerate()
         .peekable();
 
         let config = &Config::default();
@@ -493,6 +503,7 @@ mod tests {
                     FileEntry::Task(
                         Task {
                             name: "Task".to_string(),
+                            line_number: 3,
                             ..Default::default()
                         },
                         vec![],

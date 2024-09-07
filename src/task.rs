@@ -19,6 +19,7 @@ impl Display for State {
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 /// This type accounts for the case where the task has a due date but no exact due time
 pub enum DueDate {
+    NoDate,
     Day(NaiveDate),
     DayTime(NaiveDateTime),
 }
@@ -27,31 +28,32 @@ impl Display for DueDate {
         match self {
             Self::Day(date) => write!(f, "{date}"),
             Self::DayTime(date) => write!(f, "{date}"),
+            Self::NoDate => Ok(()),
         }
     }
 }
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Task {
-    pub due_date: Option<DueDate>,
+    pub due_date: DueDate,
     pub name: String,
     pub priority: usize,
     pub state: State,
     pub description: Option<String>,
     pub tags: Option<Vec<String>>,
+    pub line_number: usize,
 }
 
 impl Default for Task {
     fn default() -> Self {
-        let now = chrono::Local::now();
-        let due_date = Some(DueDate::Day(now.date_naive()));
         Self {
-            due_date,
+            due_date: DueDate::NoDate,
             name: String::from("New Task"),
             priority: 0,
             state: State::ToDo,
             tags: None,
             description: None,
+            line_number: 1,
         }
     }
 }
@@ -59,11 +61,19 @@ impl Default for Task {
 impl fmt::Display for Task {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Name: \t -> {0}", self.name)?;
-        if let Some(due_date) = &self.due_date {
-            writeln!(f, "Due: \t -> {due_date}")?;
+        writeln!(f, "#Line: \t -> {0}", self.line_number)?;
+
+        match self.due_date {
+            DueDate::NoDate => (),
+            DueDate::DayTime(date) => writeln!(f, "Due: \t -> {date}")?,
+            DueDate::Day(date) => writeln!(f, "Due: \t {date}")?,
         }
+
         writeln!(f, "State: \t -> {}", self.state)?;
-        writeln!(f, "Prio.: \t -> {}", self.priority)?;
+
+        if self.priority > 0 {
+            writeln!(f, "Prio.: \t -> {}", self.priority)?;
+        }
 
         if let Some(description) = &self.description {
             writeln!(f, "Desc.:\t -> \"{description}\"")?;
