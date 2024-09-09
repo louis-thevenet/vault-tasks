@@ -8,7 +8,7 @@ use winnow::{
     PResult, Parser,
 };
 
-use crate::{config::Config, core::FileEntry, task::Task};
+use crate::{config::Config, file_entry::FileEntry, task::Task};
 
 use super::task::parse_task;
 
@@ -325,7 +325,7 @@ impl<'i> ParserFileEntry<'i> {
 #[cfg(test)]
 mod tests {
 
-    use crate::{config::Config, core::FileEntry, task::Task};
+    use crate::{config::Config, file_entry::FileEntry, task::Task};
 
     use super::ParserFileEntry;
 

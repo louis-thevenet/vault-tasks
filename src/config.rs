@@ -6,7 +6,7 @@ use std::{fs::read_to_string, path::PathBuf};
 
 use crate::Args;
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct Config {
     pub vault_path: PathBuf,
     /// Default is true

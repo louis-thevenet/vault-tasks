@@ -7,12 +7,13 @@ use config::Config;
 
 mod config;
 mod core;
+pub mod file_entry;
 mod parser;
-mod scanner;
 mod task;
+mod vault_parser;
 
 #[derive(Debug, clap::Parser)]
-struct Args {
+pub struct Args {
     #[arg(short, long)]
     config_path: Option<PathBuf>,
 }
@@ -20,6 +21,7 @@ struct Args {
 fn main() -> Result<()> {
     env_logger::init();
     let config = Config::load_config(&Args::parse())?;
-    let _task_mgr = TaskManager::load_from_config(config)?;
+    let task_mgr = TaskManager::load_from_config(&config)?;
+    println!("{task_mgr}");
     Ok(())
 }

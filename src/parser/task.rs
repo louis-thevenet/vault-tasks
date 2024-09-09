@@ -152,7 +152,6 @@ mod test {
         let res = parse_task(&mut input, &config);
         assert!(res.is_ok());
         let res = res.unwrap();
-        let now = chrono::Local::now();
         let expected = Task {
             name: "New Task".to_string(),
             description: None,

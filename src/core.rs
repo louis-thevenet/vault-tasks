@@ -1,73 +1,56 @@
-use crate::{config::Config, scanner::Scanner, task::Task};
-use anyhow::Result;
 use std::fmt::Display;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FileEntry {
-    // Header, Content
-    Header(String, Vec<FileEntry>),
-    // Task, Subtasks
-    Task(Task, Vec<FileEntry>), // Should not contain headers
-}
+use crate::{config::Config, file_entry::FileEntry, vault_parser::VaultParser};
+use anyhow::Result;
+use log::error;
 
-impl Display for FileEntry {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        fn write_indent(indent_length: usize, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-            (1..=indent_length).try_for_each(|_| write!(f, "\t"))?;
-            Ok(())
-        }
-        fn write_underline_with_indent(
-            text: &str,
-            indent_length: usize,
-            f: &mut std::fmt::Formatter,
-        ) -> std::fmt::Result {
-            write_indent(indent_length, f)?;
-            writeln!(f, "{text}")?;
-            write_indent(indent_length, f)?;
-            for _i in 0..(text.len()) {
-                write!(f, "‾")?;
-            }
-            writeln!(f)?;
-            Ok(())
-        }
-        fn fmt_aux(
-            file_entry: &FileEntry,
-            f: &mut std::fmt::Formatter,
-            depth: usize,
-        ) -> std::fmt::Result {
-            match file_entry {
-                FileEntry::Header(header, entries) => {
-                    write_underline_with_indent(&format!("{depth}. {header}"), depth, f)?;
-                    for entry in entries {
-                        fmt_aux(entry, f, depth + 1)?;
-                    }
-                }
-                FileEntry::Task(task, subtasks) => {
-                    for line in task.to_string().split('\n') {
-                        write_indent(depth, f)?;
-                        writeln!(f, "{line}")?;
-                    }
-
-                    for subtask in subtasks {
-                        for line in subtask.to_string().split('\n') {
-                            write_indent(depth + 1, f)?;
-                            writeln!(f, "{line}")?;
-                        }
-                    }
-                }
-            }
-            Ok(())
-        }
-        fmt_aux(self, f, 0)
-    }
-}
 pub struct TaskManager {
     tasks: Vec<FileEntry>,
 }
 impl TaskManager {
-    pub fn load_from_config(config: Config) -> Result<Self> {
-        let scanner = Scanner::new(config);
-        let tasks = scanner.scan_vault()?;
+    pub fn load_from_config(config: &Config) -> Result<Self> {
+        let vault_parser = VaultParser::new(config.clone());
+        let tasks = vault_parser.scan_vault()?;
+        Self::rewrite_vault_tasks(config, &tasks)?;
+        // let tasks = vault_parser.scan_vault()?; // is not strictly necessary since tasks shouldn't change
         Ok(Self { tasks })
+    }
+
+    fn rewrite_vault_tasks(config: &Config, tasks: &Vec<FileEntry>) -> Result<()> {
+        fn explore_tasks_rec(
+            config: &Config,
+            filename: &str,
+            file_entry: &FileEntry,
+        ) -> Result<()> {
+            match file_entry {
+                FileEntry::Header(_, children) => children
+                    .iter()
+                    .try_for_each(|c| explore_tasks_rec(config, filename, c))?,
+                FileEntry::Task(task, subtasks) => {
+                    task.fix_task_attributes(config, filename)?;
+                    subtasks
+                        .iter()
+                        .try_for_each(|s| explore_tasks_rec(config, filename, s))?;
+                }
+            }
+            Ok(())
+        }
+        for task in tasks {
+            match task {
+                FileEntry::Header(filename, content) => content
+                    .iter()
+                    .try_for_each(|c| explore_tasks_rec(config, filename, c))?,
+                FileEntry::Task(_, _) => error!("FileEntry started with a Task:\n{task}"),
+            }
+        }
+        Ok(())
+    }
+}
+impl Display for TaskManager {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for task in &self.tasks {
+            write!(f, "{task}")?;
+        }
+        Ok(())
     }
 }
