@@ -1,5 +1,6 @@
 use std::{iter::Peekable, path::Path};
 
+use anyhow::{bail, Result};
 use log::error;
 use winnow::{
     ascii::{space0, space1},
@@ -147,7 +148,7 @@ impl<'i> ParserFileEntry<'i> {
         desc: String,
         target_header_depth: usize,
         target_task_depth: usize,
-    ) {
+    ) -> Result<()> {
         fn append_description_aux(
             file_entry: &mut FileEntry,
             desc: String,
@@ -155,7 +156,7 @@ impl<'i> ParserFileEntry<'i> {
             target_header_depth: usize,
             current_task_depth: usize,
             target_task_depth: usize,
-        ) {
+        ) -> Result<()> {
             match file_entry {
                 FileEntry::Header(_, header_children) => {
                     match current_header_depth.cmp(&target_header_depth) {
@@ -185,12 +186,13 @@ impl<'i> ParserFileEntry<'i> {
                                     }
                                 }
                             }
+                            Ok(())
                         }
                         std::cmp::Ordering::Less => {
                             // Going deeper in header levels
                             for child in header_children.iter_mut().rev() {
                                 if let FileEntry::Header(_, _) = child {
-                                    append_description_aux(
+                                    return append_description_aux(
                                         child,
                                         desc,
                                         current_header_depth + 1,
@@ -198,10 +200,9 @@ impl<'i> ParserFileEntry<'i> {
                                         current_task_depth,
                                         target_task_depth,
                                     );
-                                    return;
                                 }
                             }
-                            error!("Failed to insert description: previous task not found");
+                            bail!("Failed to insert description: previous task not found");
                         }
                     }
                 }
@@ -211,18 +212,25 @@ impl<'i> ParserFileEntry<'i> {
                             Some(d) => {
                                 d.push('\n');
                                 d.push_str(&desc);
+                                Ok(())
                             }
-                            None => task.description = Some(desc.clone()),
+                            None => {
+                                task.description = Some(desc.clone());
+                                Ok(())
+                            }
                         }
-                    } else {
+                    } else if let Some(last_task) = subtasks.last_mut() {
                         append_description_aux(
-                            subtasks.last_mut().unwrap(),
+                            last_task,
                             desc,
                             current_header_depth,
                             target_header_depth,
                             current_task_depth + 1,
                             target_task_depth,
-                        );
+                        )
+                    } else {
+                        error!("Could not find description's parent task, indenting may be wrong. Closest task line number: {}",task.line_number);
+                        bail!("Failed to insert description")
                     }
                 }
             }
@@ -234,7 +242,7 @@ impl<'i> ParserFileEntry<'i> {
             target_header_depth,
             0,
             target_task_depth,
-        );
+        )
     }
 
     /// Recursively parses the input file passed as a string.
@@ -280,12 +288,16 @@ impl<'i> ParserFileEntry<'i> {
                 self.parse_file_aux(input, file_entry, new_depth);
             }
             Ok(FileToken::Description(description, indent_length)) => {
-                Self::append_description(
+                if Self::append_description(
                     file_entry,
-                    description,
+                    description.clone(),
                     header_depth,
                     indent_length / self.config.indent_length,
-                );
+                )
+                .is_err()
+                {
+                    error!("Failed to insert description {description}]");
+                }
                 self.parse_file_aux(input, file_entry, header_depth);
             }
 
