@@ -22,8 +22,8 @@ impl VaultParser {
     }
 
     fn scan(&self, path: &Path, tasks: &mut Vec<FileEntry>) -> Result<()> {
-        if self.config.ignored_paths.contains(&path.to_owned()) {
-            debug!("Ignoring {path:?} (ignored_paths list)");
+        if self.config.ignored.contains(&path.to_owned()) {
+            debug!("Ignoring {path:?} (ignored list)");
             return Ok(());
         }
 
@@ -35,6 +35,11 @@ impl VaultParser {
                     debug!("Ignoring {name:?} (dot file)");
                     continue;
                 }
+                if self.config.ignored.contains(&entry.path()) {
+                    debug!("Ignoring {name:?} (ignored list)");
+                    continue;
+                }
+
                 if entry.path().is_dir() {
                     // recursive call for this subdir
                     self.scan(&entry.path(), tasks)?;

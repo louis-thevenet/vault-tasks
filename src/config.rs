@@ -9,7 +9,7 @@ use crate::Args;
 #[derive(Debug, Deserialize, Clone)]
 struct ParsedConfig {
     ignore_dot_files: Option<bool>,
-    ignored_paths: Option<Vec<PathBuf>>,
+    ignored: Option<Vec<PathBuf>>,
     indent_length: Option<usize>,
     use_american_format: Option<bool>,
     vault_path: PathBuf,
@@ -18,7 +18,7 @@ struct ParsedConfig {
 #[derive(Debug, Clone)]
 pub struct Config {
     pub ignore_dot_files: bool,
-    pub ignored_paths: Vec<PathBuf>,
+    pub ignored: Vec<PathBuf>,
     pub indent_length: usize,
     pub use_american_format: bool,
     pub vault_path: PathBuf,
@@ -52,7 +52,7 @@ impl Config {
 
         Ok(Self {
             ignore_dot_files: parsed_config.ignore_dot_files.unwrap_or(true),
-            ignored_paths: parsed_config.ignored_paths.unwrap_or_default(),
+            ignored: parsed_config.ignored.unwrap_or_default(),
             indent_length: parsed_config.indent_length.unwrap_or(2),
             use_american_format: parsed_config.use_american_format.unwrap_or(true),
             vault_path: parsed_config.vault_path,
@@ -63,7 +63,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             ignore_dot_files: true,
-            ignored_paths: vec![],
+            ignored: vec![],
             indent_length: 2,
             use_american_format: true,
             vault_path: PathBuf::new(),
