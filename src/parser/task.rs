@@ -27,7 +27,7 @@ use crate::{
 /// Parses a `Token` from an input string.FileEntry
 fn parse_token(input: &mut &str, config: &Config) -> PResult<Token> {
     alt((
-        |input: &mut &str| parse_naive_date(input, config.use_american_format.unwrap_or(true)),
+        |input: &mut &str| parse_naive_date(input, config.use_american_format),
         parse_naive_time,
         parse_tag,
         parse_task_state,

@@ -266,7 +266,7 @@ impl<'i> ParserFileEntry<'i> {
                     file_entry,
                     FileEntry::Task(task, vec![]),
                     header_depth,
-                    indent_length / self.config.indent_length.unwrap_or(2),
+                    indent_length / self.config.indent_length,
                 );
                 self.parse_file_aux(input, file_entry, header_depth);
             }
@@ -284,7 +284,7 @@ impl<'i> ParserFileEntry<'i> {
                     file_entry,
                     description,
                     header_depth,
-                    indent_length / self.config.indent_length.unwrap_or(2),
+                    indent_length / self.config.indent_length,
                 );
                 self.parse_file_aux(input, file_entry, header_depth);
             }

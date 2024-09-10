@@ -6,13 +6,22 @@ use std::{fs::read_to_string, path::PathBuf};
 
 use crate::Args;
 
-#[derive(Debug, Deserialize, Default, Clone)]
+#[derive(Debug, Deserialize, Clone)]
+struct ParsedConfig {
+    ignore_dot_files: Option<bool>,
+    ignored_paths: Option<Vec<PathBuf>>,
+    indent_length: Option<usize>,
+    use_american_format: Option<bool>,
+    vault_path: PathBuf,
+}
+
+#[derive(Debug, Clone)]
 pub struct Config {
+    pub ignore_dot_files: bool,
+    pub ignored_paths: Vec<PathBuf>,
+    pub indent_length: usize,
+    pub use_american_format: bool,
     pub vault_path: PathBuf,
-    /// Default is true
-    pub use_american_format: Option<bool>,
-    /// Default is 2
-    pub indent_length: Option<usize>,
 }
 impl Config {
     pub fn load_config(args: &Args) -> Result<Self> {
@@ -27,15 +36,37 @@ impl Config {
         info!("Loading config from {:?}", config_file);
 
         let content = read_to_string(&config_file).context("Failed to read config file")?;
-        let config = toml::from_str::<Self>(&content).context("Failed to parse config file")?;
-        debug!("{:#?}", config);
+        let parsed_config =
+            toml::from_str::<ParsedConfig>(&content).context("Failed to parse config file")?;
+        debug!("Read config: {:#?}", parsed_config);
 
-        if !config.vault_path.exists() {
-            bail!("Vault path {:?} not found.", config.vault_path);
+        if !parsed_config.vault_path.exists() {
+            bail!("Vault path {:?} not found.", parsed_config.vault_path);
         }
-        if !config.vault_path.is_dir() {
-            bail!("Vault path {:?} is not a directory.", config.vault_path);
+        if !parsed_config.vault_path.is_dir() {
+            bail!(
+                "Vault path {:?} is not a directory.",
+                parsed_config.vault_path
+            );
         }
-        Ok(config)
+
+        Ok(Self {
+            ignore_dot_files: parsed_config.ignore_dot_files.unwrap_or(true),
+            ignored_paths: parsed_config.ignored_paths.unwrap_or_default(),
+            indent_length: parsed_config.indent_length.unwrap_or(2),
+            use_american_format: parsed_config.use_american_format.unwrap_or(true),
+            vault_path: parsed_config.vault_path,
+        })
+    }
+}
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            ignore_dot_files: true,
+            ignored_paths: vec![],
+            indent_length: 2,
+            use_american_format: true,
+            vault_path: PathBuf::new(),
+        }
     }
 }

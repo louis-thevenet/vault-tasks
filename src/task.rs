@@ -43,12 +43,12 @@ impl Display for DueDate {
 
 impl DueDate {
     pub fn to_string_format(&self, config: &Config) -> String {
-        let format_date = if config.use_american_format.unwrap_or(true) {
+        let format_date = if config.use_american_format {
             "%Y/%m/%d"
         } else {
             "%d/%m/%Y"
         };
-        let format_datetime = if config.use_american_format.unwrap_or(true) {
+        let format_datetime = if config.use_american_format {
             "%Y/%m/%d %T"
         } else {
             "%d/%m/%Y %T"
