@@ -1,4 +1,4 @@
-use std::iter::Peekable;
+use std::{iter::Peekable, path::Path};
 
 use log::error;
 use winnow::{
@@ -315,9 +315,14 @@ impl<'i> ParserFileEntry<'i> {
         }
     }
 
-    pub fn parse_file(&self, filename: String, input: &&str) -> Option<FileEntry> {
+    pub fn parse_file(&self, filename: &Path, input: &&str) -> Option<FileEntry> {
         let lines = input.split('\n');
-        let mut res = FileEntry::Header(filename, vec![]);
+
+        let filename = filename
+            .strip_prefix(self.config.vault_path.clone())
+            .unwrap();
+
+        let mut res = FileEntry::Header(filename.to_str().unwrap().to_owned(), vec![]);
         self.parse_file_aux(lines.enumerate().peekable(), &mut res, 0);
         Self::clean_file_entry(&mut res).cloned()
     }

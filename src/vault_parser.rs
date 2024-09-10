@@ -49,13 +49,6 @@ impl VaultParser {
             config: &self.config,
         };
 
-        parser.parse_file(
-            entry
-                .path()
-                .to_str()
-                .unwrap_or("Couldn't read filename")
-                .to_owned(),
-            &content.as_str(),
-        )
+        parser.parse_file(&entry.path(), &content.as_str())
     }
 }

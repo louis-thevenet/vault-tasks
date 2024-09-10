@@ -6,8 +6,6 @@ use std::{
     fmt::Display,
     fs::{read_to_string, File},
     io::Write,
-    path::PathBuf,
-    str::FromStr,
 };
 
 use crate::config::Config;
@@ -149,8 +147,9 @@ impl Task {
     }
 
     pub fn fix_task_attributes(&self, config: &Config, filename: &str) -> anyhow::Result<()> {
-        let path = PathBuf::from_str(filename)?;
-        let content = read_to_string(path)?;
+        let mut path = config.vault_path.clone();
+        path.push(filename);
+        let content = read_to_string(path.clone())?;
         let mut lines = content.split('\n').collect::<Vec<&str>>();
 
         if lines.len() < self.line_number - 1 {
@@ -176,7 +175,7 @@ impl Task {
             );
             lines[self.line_number - 1] = &fixed_line;
 
-            let mut file = File::create(filename)?;
+            let mut file = File::create(path)?;
             file.write_all(lines.join("\n").as_bytes())?;
 
             info!("Wrote to {filename} at line {}", self.line_number);
