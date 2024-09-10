@@ -44,9 +44,7 @@ fn calculate_in_n_days(n: u32) -> NaiveDate {
 /// Day names can be abreviated.
 /// If sucessful, returns a `NaiveDate` representing the next occurence of that day in the future (not including today).
 fn parse_naive_date_from_literal_day(input: &mut &str) -> PResult<Token> {
-    let mut output = parse_literal_day.parse_next(input)?;
-    let binding = output.to_lowercase();
-    output = &binding;
+    let output = parse_literal_day.parse_next(input)?;
     let day: u32 = match &output[0..3] {
         "mon" => 1,
         "tue" => 2,
