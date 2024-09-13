@@ -1,6 +1,6 @@
 use chrono::{Datelike, Days, Months, NaiveDate};
 
-use log::error;
+use tracing::error;
 use winnow::{
     ascii::digit1,
     combinator::{alt, separated},
@@ -183,7 +183,7 @@ pub fn parse_naive_date(input: &mut &str, american_format: bool) -> PResult<Toke
 mod tests {
     use chrono::Datelike;
 
-    use crate::parser::task::{parser_due_date::*, token::Token};
+    use crate::task_core::parser::task::parser_due_date::*;
 
     #[test]
     fn test_parse_literal_day() {

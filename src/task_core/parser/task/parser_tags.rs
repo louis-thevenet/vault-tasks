@@ -11,7 +11,7 @@ pub fn parse_tag(input: &mut &str) -> PResult<Token> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::task::{parser_tags::parse_tag, token::Token};
+    use crate::task_core::parser::task::{parser_tags::parse_tag, token::Token};
 
     #[test]
     fn test_parse_tag_sucess() {

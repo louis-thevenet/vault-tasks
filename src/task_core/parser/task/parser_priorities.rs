@@ -13,7 +13,7 @@ pub fn parse_priority(input: &mut &str) -> PResult<Token> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::task::{parser_priorities::parse_priority, token::Token};
+    use crate::task_core::parser::task::{parser_priorities::parse_priority, token::Token};
 
     #[test]
     fn test_parse_priority_sucess() {

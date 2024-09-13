@@ -1,14 +1,13 @@
-use anyhow::bail;
+use crate::task_core::config::Config;
 use chrono::{NaiveDate, NaiveDateTime};
+use color_eyre::{eyre::bail, Result};
 use core::fmt;
-use log::{debug, info};
 use std::{
     fmt::Display,
     fs::{read_to_string, File},
     io::Write,
 };
-
-use crate::config::Config;
+use tracing::{debug, info};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum State {
@@ -146,7 +145,7 @@ impl Task {
         )
     }
 
-    pub fn fix_task_attributes(&self, config: &Config, filename: &str) -> anyhow::Result<()> {
+    pub fn fix_task_attributes(&self, config: &Config, filename: &str) -> Result<()> {
         let mut path = config.vault_path.clone();
         path.push(filename);
         let content = read_to_string(path.clone())?;
@@ -186,6 +185,8 @@ impl Task {
 
 #[cfg(test)]
 mod tests {
+    use crate::task_core::config::Config;
+
     use super::*;
 
     #[test]

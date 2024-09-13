@@ -1,8 +1,15 @@
+use color_eyre::Result;
+use config::Config;
+use file_entry::FileEntry;
 use std::fmt::Display;
+use tracing::error;
+use vault_parser::VaultParser;
 
-use crate::{config::Config, file_entry::FileEntry, vault_parser::VaultParser};
-use anyhow::Result;
-use log::error;
+mod config;
+pub mod file_entry;
+mod parser;
+mod task;
+mod vault_parser;
 
 pub struct TaskManager {
     tasks: Vec<FileEntry>,

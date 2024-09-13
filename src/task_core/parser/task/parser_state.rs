@@ -4,7 +4,7 @@ use winnow::{
     PResult, Parser,
 };
 
-use crate::task::State;
+use crate::task_core::task::State;
 
 use super::token::Token;
 
@@ -25,10 +25,7 @@ pub fn parse_task_state(input: &mut &str) -> PResult<Token> {
 }
 #[cfg(test)]
 mod test {
-    use crate::{
-        parser::task::{parser_state::parse_task_state, token::Token},
-        task::State,
-    };
+    use crate::task_core::parser::task::{parser_state::*, token::Token};
 
     #[test]
     fn test_parse_task_state_todo() {

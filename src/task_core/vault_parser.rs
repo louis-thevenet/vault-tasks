@@ -1,10 +1,13 @@
-use crate::{config::Config, file_entry::FileEntry, parser::parser_file_entry::ParserFileEntry};
-use anyhow::{bail, Result};
-use log::{debug, info};
+use color_eyre::{eyre::bail, Result};
 use std::{
     fs::{self, DirEntry},
     path::Path,
 };
+use tracing::{debug, info};
+
+use crate::task_core::parser::parser_file_entry::ParserFileEntry;
+
+use super::{config::Config, file_entry::FileEntry};
 
 pub struct VaultParser {
     config: Config,

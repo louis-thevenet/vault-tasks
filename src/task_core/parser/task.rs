@@ -6,20 +6,20 @@ mod parser_time;
 mod token;
 
 use chrono::NaiveDateTime;
-use log::error;
 use parser_due_date::parse_naive_date;
 use parser_priorities::parse_priority;
 use parser_state::parse_task_state;
 use parser_tags::parse_tag;
 use parser_time::parse_naive_time;
 use token::Token;
+use tracing::error;
 use winnow::{
     combinator::{alt, fail, repeat},
     token::any,
     PResult, Parser,
 };
 
-use crate::{
+use crate::task_core::{
     config::Config,
     task::{DueDate, Task},
 };
@@ -56,11 +56,9 @@ pub fn parse_task(input: &mut &str, config: &Config) -> PResult<Task> {
 
     let mut token_parser = |input: &mut &str| parse_token(input, config);
 
-    let tokens = input.split_ascii_whitespace().map(|token| {
-        token_parser
-            .parse(token)
-            .map_err(|e| anyhow::format_err!("{e}"))
-    });
+    let tokens = input
+        .split_ascii_whitespace()
+        .map(|token| token_parser.parse(token));
 
     let mut task = Task {
         state: task_state,
@@ -86,7 +84,7 @@ pub fn parse_task(input: &mut &str, config: &Config) -> PResult<Task> {
                     task.tags = Some(vec![tag]);
                 }
             }
-            Err(error) => error!("Error: {error}"),
+            Err(error) => error!("Error: {error:?}"),
         }
     }
 
@@ -122,8 +120,10 @@ pub fn parse_task(input: &mut &str, config: &Config) -> PResult<Task> {
 mod test {
 
     use chrono::{Datelike, Days, NaiveDate, NaiveDateTime, NaiveTime};
+    use parser::task::parse_task;
+    use task::{DueDate, State, Task};
 
-    use crate::{config::Config, parser::task::*, task::State};
+    use crate::task_core::*;
 
     #[test]
     fn test_parse_task_no_description() {

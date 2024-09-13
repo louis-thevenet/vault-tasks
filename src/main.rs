@@ -1,27 +1,26 @@
-use core::TaskManager;
-use std::path::PathBuf;
-
-use anyhow::Result;
 use clap::Parser;
-use config::Config;
+use cli::Cli;
+use color_eyre::Result;
 
+use crate::app::App;
+
+mod action;
+mod app;
+mod cli;
+mod components;
 mod config;
-mod core;
-pub mod file_entry;
-mod parser;
-mod task;
-mod vault_parser;
+mod errors;
+mod logging;
+mod task_core;
+mod tui;
 
-#[derive(Debug, clap::Parser)]
-pub struct Args {
-    #[arg(short, long)]
-    config_path: Option<PathBuf>,
-}
+#[tokio::main]
+async fn main() -> Result<()> {
+    crate::errors::init()?;
+    crate::logging::init()?;
 
-fn main() -> Result<()> {
-    env_logger::init();
-    let config = Config::load_config(&Args::parse())?;
-    let task_mgr = TaskManager::load_from_config(&config)?;
-    println!("{task_mgr}");
+    let args = Cli::parse();
+    let mut app = App::new(args.tick_rate, args.frame_rate)?;
+    app.run().await?;
     Ok(())
 }

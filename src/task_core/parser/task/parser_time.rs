@@ -19,7 +19,7 @@ pub fn parse_naive_time(input: &mut &str) -> PResult<Token> {
 mod tests {
     use chrono::{NaiveTime, Timelike};
 
-    use crate::parser::task::{parser_time::parse_naive_time, token::Token};
+    use crate::task_core::parser::task::parser_time::*;
 
     #[test]
     fn test_parse_naive_time() {

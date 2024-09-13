@@ -1,6 +1,6 @@
 use chrono::{NaiveDate, NaiveTime};
 
-use crate::task::State;
+use crate::task_core::task::State;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {

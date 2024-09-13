@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::task::Task;
+use super::task::Task;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FileEntry {

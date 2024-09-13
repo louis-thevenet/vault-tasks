@@ -1,7 +1,7 @@
 use std::{iter::Peekable, path::Path};
 
-use anyhow::{bail, Result};
-use log::error;
+use color_eyre::{eyre::bail, Result};
+use tracing::error;
 use winnow::{
     ascii::{space0, space1},
     combinator::{alt, preceded, repeat},
@@ -9,7 +9,7 @@ use winnow::{
     PResult, Parser,
 };
 
-use crate::{config::Config, file_entry::FileEntry, task::Task};
+use crate::task_core::{config::Config, file_entry::FileEntry, task::Task};
 
 use super::task::parse_task;
 
@@ -342,7 +342,7 @@ impl<'i> ParserFileEntry<'i> {
 #[cfg(test)]
 mod tests {
 
-    use crate::{config::Config, file_entry::FileEntry, task::Task};
+    use crate::task_core::{config::Config, file_entry::FileEntry, task::Task};
 
     use super::ParserFileEntry;
 
