@@ -3,14 +3,16 @@ use std::fmt::Display;
 use super::task::Task;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FileEntry {
-    // Header, Content
-    Header(String, Vec<FileEntry>),
-    // Task, Subtasks
-    Task(Task, Vec<FileEntry>), // Should not contain headers
+pub enum VaultData {
+    /// Name, Content
+    Directory(String, Vec<VaultData>),
+    /// Name, Content
+    Header(String, Vec<VaultData>),
+    /// Task, Subtasks
+    Task(Task),
 }
 
-impl Display for FileEntry {
+impl Display for VaultData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         fn write_indent(indent_length: usize, f: &mut std::fmt::Formatter) -> std::fmt::Result {
             (1..=indent_length).try_for_each(|_| write!(f, "\t"))?;
@@ -31,24 +33,30 @@ impl Display for FileEntry {
             Ok(())
         }
         fn fmt_aux(
-            file_entry: &FileEntry,
+            file_entry: &VaultData,
             f: &mut std::fmt::Formatter,
             depth: usize,
         ) -> std::fmt::Result {
             match file_entry {
-                FileEntry::Header(header, entries) => {
+                VaultData::Header(header, entries) => {
                     write_underline_with_indent(&format!("{depth}. {header}"), depth, f)?;
                     for entry in entries {
                         fmt_aux(entry, f, depth + 1)?;
                     }
                 }
-                FileEntry::Task(task, subtasks) => {
+                VaultData::Directory(name, entries) => {
+                    write_underline_with_indent(&format!("{depth}. {name}"), depth, f)?;
+                    for entry in entries {
+                        fmt_aux(entry, f, depth + 1)?;
+                    }
+                }
+                VaultData::Task(task) => {
                     for line in task.to_string().split('\n') {
                         write_indent(depth, f)?;
                         writeln!(f, "{line}")?;
                     }
 
-                    for subtask in subtasks {
+                    for subtask in &task.subtasks {
                         for line in subtask.to_string().split('\n') {
                             write_indent(depth + 1, f)?;
                             writeln!(f, "{line}")?;

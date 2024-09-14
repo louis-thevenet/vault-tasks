@@ -1,4 +1,13 @@
 {
+"tasks_config":{
+  "use_american_format":true,
+  "indent_length":2,
+  "ignore_dot_files":true,
+  "vault_path" : "/home/louis/src/obsidian-main-vault",
+  "ignored":[
+    "/home/louis/src/obsidian-main-vault/4_Archives"
+  ],
+},
   "keybindings": {
     "Home": {
       "<q>": "Quit", // Quit the application

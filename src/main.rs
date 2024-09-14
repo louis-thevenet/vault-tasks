@@ -13,6 +13,7 @@ mod errors;
 mod logging;
 mod task_core;
 mod tui;
+mod widgets;
 
 #[tokio::main]
 async fn main() -> Result<()> {

@@ -18,9 +18,23 @@ const CONFIG: &str = include_str!("../.config/config.json5");
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct AppConfig {
     #[serde(default)]
-    pub data_dir: PathBuf,
-    #[serde(default)]
     pub config_dir: PathBuf,
+    #[serde(default)]
+    pub data_dir: PathBuf,
+}
+
+#[derive(Clone, Debug, Default, Deserialize)]
+pub struct TasksConfig {
+    #[serde(default)]
+    pub ignore_dot_files: bool,
+    #[serde(default)]
+    pub ignored: Vec<PathBuf>,
+    #[serde(default)]
+    pub indent_length: usize,
+    #[serde(default)]
+    pub use_american_format: bool,
+    #[serde(default)]
+    pub vault_path: PathBuf,
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
@@ -31,10 +45,12 @@ pub struct Config {
     pub keybindings: KeyBindings,
     #[serde(default)]
     pub styles: Styles,
+    #[serde(default)]
+    pub tasks_config: TasksConfig,
 }
 
 lazy_static! {
-    pub static ref PROJECT_NAME: String = env!("CARGO_CRATE_NAME").to_uppercase().to_string();
+    pub static ref PROJECT_NAME: String = env!("CARGO_CRATE_NAME").to_uppercase();
     pub static ref DATA_FOLDER: Option<PathBuf> =
         env::var(format!("{}_DATA", PROJECT_NAME.clone()))
             .ok()
@@ -47,7 +63,7 @@ lazy_static! {
 
 impl Config {
     pub fn new() -> Result<Self, config::ConfigError> {
-        let default_config: Config = json5::from_str(CONFIG).unwrap();
+        let default_config: Self = json5::from_str(CONFIG).unwrap();
         let data_dir = get_data_dir();
         let config_dir = get_config_dir();
         let mut builder = config::Config::builder()
@@ -68,7 +84,7 @@ impl Config {
                 .required(false);
             builder = builder.add_source(source);
             if config_dir.join(file).exists() {
-                found_config = true
+                found_config = true;
             }
         }
         if !found_config {
@@ -79,7 +95,7 @@ impl Config {
 
         for (mode, default_bindings) in default_config.keybindings.iter() {
             let user_bindings = cfg.keybindings.entry(*mode).or_default();
-            for (key, cmd) in default_bindings.iter() {
+            for (key, cmd) in default_bindings {
                 user_bindings
                     .entry(key.clone())
                     .or_insert_with(|| cmd.clone());
@@ -87,11 +103,10 @@ impl Config {
         }
         for (mode, default_styles) in default_config.styles.iter() {
             let user_styles = cfg.styles.entry(*mode).or_default();
-            for (style_key, style) in default_styles.iter() {
+            for (style_key, style) in default_styles {
                 user_styles.entry(style_key.clone()).or_insert(*style);
             }
         }
-
         Ok(cfg)
     }
 }
@@ -143,7 +158,7 @@ impl<'de> Deserialize<'de> for KeyBindings {
             })
             .collect();
 
-        Ok(KeyBindings(keybindings))
+        Ok(Self(keybindings))
     }
 }
 
@@ -293,7 +308,7 @@ pub fn key_event_to_string(key_event: &KeyEvent) -> String {
 
 pub fn parse_key_sequence(raw: &str) -> Result<Vec<KeyEvent>, String> {
     if raw.chars().filter(|c| *c == '>').count() != raw.chars().filter(|c| *c == '<').count() {
-        return Err(format!("Unable to parse `{}`", raw));
+        return Err(format!("Unable to parse `{raw}`"));
     }
     let raw = if !raw.contains("><") {
         let raw = raw.strip_prefix('<').unwrap_or(raw);
@@ -339,7 +354,7 @@ impl<'de> Deserialize<'de> for Styles {
             })
             .collect();
 
-        Ok(Styles(styles))
+        Ok(Self(styles))
     }
 }
 

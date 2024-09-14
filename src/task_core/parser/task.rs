@@ -19,15 +19,15 @@ use winnow::{
     PResult, Parser,
 };
 
-use crate::task_core::{
+use crate::{
     config::Config,
-    task::{DueDate, Task},
+    task_core::task::{DueDate, Task},
 };
 
 /// Parses a `Token` from an input string.FileEntry
 fn parse_token(input: &mut &str, config: &Config) -> PResult<Token> {
     alt((
-        |input: &mut &str| parse_naive_date(input, config.use_american_format),
+        |input: &mut &str| parse_naive_date(input, config.tasks_config.use_american_format),
         parse_naive_time,
         parse_tag,
         parse_task_state,
@@ -128,7 +128,8 @@ mod test {
     #[test]
     fn test_parse_task_no_description() {
         let mut input = "- [x] 10/15 task_name #done";
-        let config = Config::default();
+        let mut config = Config::default();
+        config.tasks_config.use_american_format = true;
         let res = parse_task(&mut input, &config);
         assert!(res.is_ok());
         let res = res.unwrap();
@@ -141,6 +142,7 @@ mod test {
             priority: 0,
             state: State::Done,
             line_number: 1,
+            subtasks: vec![],
         };
         assert_eq!(res, expected);
     }
@@ -153,6 +155,7 @@ mod test {
         assert!(res.is_ok());
         let res = res.unwrap();
         let expected = Task {
+            subtasks: vec![],
             name: "New Task".to_string(),
             description: None,
             tags: None,

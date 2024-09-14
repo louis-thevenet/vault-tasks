@@ -1,29 +1,42 @@
 use color_eyre::Result;
-use ratatui::{prelude::*, widgets::*};
-use tokio::sync::mpsc::UnboundedSender;
-use tracing::info;
+use ratatui::{
+    layout::Rect,
+    widgets::{Block, Borders, Paragraph},
+    Frame,
+};
 
 use super::Component;
-use crate::{action::Action, config::Config};
 
 #[derive(Default)]
 pub struct TaskList {
-    command_tx: Option<UnboundedSender<Action>>,
-    config: Config,
+    // command_tx: Option<UnboundedSender<Action>>,
+    // config: Config,
+    // task_mgr: TaskManager,
 }
-impl TaskList {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
+impl TaskList {}
 impl Component for TaskList {
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let surrounding_block = Block::default()
-            .borders(Borders::ALL)
-            .title("Here is a list of tasks");
-        let items = ["Task 1", "Task 2", "Task 3"];
-        let list = List::new(items).block(surrounding_block);
-        frame.render_widget(list, area);
+        // let items = self
+        //     .task_mgr
+        //     .tasks
+        //     .iter()
+        //     .map(|file_entry| FileEntryWidget::new(file_entry.clone(), self.config.clone()))
+        //     .collect::<Vec<FileEntryWidget>>();
+        // let count = items.len();
+        // let builder = ListBuilder::new(move |context| {
+        //     let item = items[context.index].clone();
+        //     let main_axis_size = item.get_height();
+        //     (item, main_axis_size)
+        // });
+
+        // let list = ListView::new(builder, count);
+        // frame.render_stateful_widget(list, area, &mut ListState::default());
+
+        let surrounding_block = Block::default().borders(Borders::ALL).title("Center Menu");
+        frame.render_widget(
+            Paragraph::new("Here goes the content of the selected item").block(surrounding_block),
+            area,
+        );
         Ok(())
     }
 }

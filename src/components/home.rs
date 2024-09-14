@@ -1,5 +1,5 @@
 use color_eyre::Result;
-use ratatui::{prelude::*, widgets::*};
+use ratatui::prelude::*;
 use tokio::sync::mpsc::UnboundedSender;
 
 use super::{menu::Menu, task_list::TaskList, Component};
@@ -9,6 +9,7 @@ use crate::{action::Action, config::Config};
 pub struct Home {
     command_tx: Option<UnboundedSender<Action>>,
     config: Config,
+    // task_mgr: TaskManager,
     menu_cmp: Menu,
     task_list_cmp: TaskList,
 }
@@ -17,7 +18,7 @@ impl Home {
     pub fn new() -> Self {
         Self {
             menu_cmp: Menu::new(),
-            task_list_cmp: TaskList::new(),
+            // task_list_cmp: TaskList::new(),
             ..Default::default()
         }
     }
@@ -47,7 +48,7 @@ impl Component for Home {
         Ok(None)
     }
 
-    fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
+    fn draw(&mut self, frame: &mut Frame, _area: Rect) -> Result<()> {
         let layout = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(vec![Constraint::Percentage(20), Constraint::Percentage(80)])

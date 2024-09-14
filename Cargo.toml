@@ -42,6 +42,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter", "serde"] }
 chrono = "0.4.38"
 toml = "0.8.19"
 winnow = "0.6.18"
+tui-widget-list = "0.12.1"
 
 [build-dependencies]
 anyhow = "1.0.86"

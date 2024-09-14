@@ -120,7 +120,7 @@ impl Tui {
             .expect("failed to send init event");
         loop {
             let event = tokio::select! {
-                _ = cancellation_token.cancelled() => {
+                () = cancellation_token.cancelled() => {
                     break;
                 }
                 _ = tick_interval.tick() => Event::Tick,

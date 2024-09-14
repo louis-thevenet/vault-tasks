@@ -1,4 +1,3 @@
-use crate::task_core::config::Config;
 use chrono::{NaiveDate, NaiveDateTime};
 use color_eyre::{eyre::bail, Result};
 use core::fmt;
@@ -6,8 +5,11 @@ use std::{
     fmt::Display,
     fs::{read_to_string, File},
     io::Write,
+    path::PathBuf,
 };
 use tracing::{debug, info};
+
+use crate::config::Config;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum State {
@@ -41,13 +43,13 @@ impl Display for DueDate {
 }
 
 impl DueDate {
-    pub fn to_string_format(&self, config: &Config) -> String {
-        let format_date = if config.use_american_format {
+    pub fn to_string_format(&self, not_american_format: bool) -> String {
+        let format_date = if !not_american_format {
             "%Y/%m/%d"
         } else {
             "%d/%m/%Y"
         };
-        let format_datetime = if config.use_american_format {
+        let format_datetime = if !not_american_format {
             "%Y/%m/%d %T"
         } else {
             "%d/%m/%Y %T"
@@ -63,13 +65,14 @@ impl DueDate {
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Task {
+    pub subtasks: Vec<Task>,
+    pub description: Option<String>,
     pub due_date: DueDate,
+    pub line_number: usize,
     pub name: String,
     pub priority: usize,
     pub state: State,
-    pub description: Option<String>,
     pub tags: Option<Vec<String>>,
-    pub line_number: usize,
 }
 
 impl Default for Task {
@@ -82,6 +85,7 @@ impl Default for Task {
             tags: None,
             description: None,
             line_number: 1,
+            subtasks: vec![],
         }
     }
 }
@@ -126,7 +130,9 @@ impl Task {
             String::new()
         };
 
-        let mut due_date = self.due_date.to_string_format(config);
+        let mut due_date = self
+            .due_date
+            .to_string_format(!config.tasks_config.use_american_format);
         if !due_date.is_empty() {
             due_date.push(' ');
         }
@@ -145,17 +151,15 @@ impl Task {
         )
     }
 
-    pub fn fix_task_attributes(&self, config: &Config, filename: &str) -> Result<()> {
-        let mut path = config.vault_path.clone();
-        path.push(filename);
+    pub fn fix_task_attributes(&self, config: &Config, path: &PathBuf) -> Result<()> {
         let content = read_to_string(path.clone())?;
         let mut lines = content.split('\n').collect::<Vec<&str>>();
 
         if lines.len() < self.line_number - 1 {
             bail!(
-                "Task's line number {} was greater than length of file {}",
+                "Task's line number {} was greater than length of file {:?}",
                 self.line_number,
-                filename
+                path
             );
         }
 
@@ -177,7 +181,7 @@ impl Task {
             let mut file = File::create(path)?;
             file.write_all(lines.join("\n").as_bytes())?;
 
-            info!("Wrote to {filename} at line {}", self.line_number);
+            info!("Wrote to {path:?} at line {}", self.line_number);
         }
         Ok(())
     }
@@ -185,13 +189,17 @@ impl Task {
 
 #[cfg(test)]
 mod tests {
-    use crate::task_core::config::Config;
+    use chrono::NaiveDate;
 
-    use super::*;
+    use crate::{
+        config::Config,
+        task_core::task::{DueDate, State, Task},
+    };
 
     #[test]
     fn test_fix_attributes() {
-        let config = Config::default();
+        let mut config = Config::default();
+        config.tasks_config.use_american_format = true;
         let task = Task {
             due_date: DueDate::Day(NaiveDate::from_ymd_opt(2021, 12, 3).unwrap()),
             name: String::from("Test Task"),
@@ -200,6 +208,7 @@ mod tests {
             tags: Some(vec![String::from("tag1"), String::from("tag2")]),
             description: Some(String::from("This is a test task.")),
             line_number: 2,
+            subtasks: vec![],
         };
         let res = task.get_fixed_attributes(&config, 0);
         assert_eq!(res, "- [ ] Test Task 2021/12/03 p1 #tag1 #tag2");
@@ -216,6 +225,7 @@ mod tests {
             tags: Some(vec![String::from("tag3")]),
             description: None,
             line_number: 3,
+            subtasks: vec![],
         };
 
         let res = task.get_fixed_attributes(&config, 0);

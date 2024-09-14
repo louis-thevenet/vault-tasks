@@ -1,63 +1,117 @@
-use color_eyre::Result;
-use config::Config;
-use file_entry::FileEntry;
-use std::fmt::Display;
-use tracing::error;
+use color_eyre::{eyre::bail, Result};
+use std::{fmt::Display, path::PathBuf};
+use vault_data::VaultData;
+
+use tracing::{debug, error};
 use vault_parser::VaultParser;
 
-mod config;
-pub mod file_entry;
+use crate::config::Config;
+
+// mod config;
 mod parser;
-mod task;
+pub mod task;
+pub mod vault_data;
 mod vault_parser;
 
 pub struct TaskManager {
-    tasks: Vec<FileEntry>,
+    pub tasks: VaultData,
+}
+impl Default for TaskManager {
+    fn default() -> Self {
+        let config = Config::new().unwrap_or_default();
+        Self::load_from_config(&config)
+    }
 }
 impl TaskManager {
-    pub fn load_from_config(config: &Config) -> Result<Self> {
+    pub fn load_from_config(config: &Config) -> Self {
         let vault_parser = VaultParser::new(config.clone());
-        let tasks = vault_parser.scan_vault()?;
-        Self::rewrite_vault_tasks(config, &tasks)?;
-        // let tasks = vault_parser.scan_vault()?; // is not strictly necessary since tasks shouldn't change
-        Ok(Self { tasks })
+        let tasks = vault_parser.scan_vault().unwrap_or_else(|e| {
+            error!("Failed to scan vault: {e}");
+            VaultData::Header("Empty vault, an error may have occured".to_owned(), vec![])
+        });
+
+        Self::rewrite_vault_tasks(config, &tasks)
+            .unwrap_or_else(|e| error!("Failed to fix tasks' due dates: {e}"));
+
+        debug!("\n{}", tasks);
+        Self { tasks }
     }
 
-    fn rewrite_vault_tasks(config: &Config, tasks: &Vec<FileEntry>) -> Result<()> {
+    fn rewrite_vault_tasks(config: &Config, tasks: &VaultData) -> Result<()> {
         fn explore_tasks_rec(
             config: &Config,
-            filename: &str,
-            file_entry: &FileEntry,
+            filename: &mut PathBuf,
+            file_entry: &VaultData,
         ) -> Result<()> {
             match file_entry {
-                FileEntry::Header(_, children) => children
-                    .iter()
-                    .try_for_each(|c| explore_tasks_rec(config, filename, c))?,
-                FileEntry::Task(task, subtasks) => {
-                    task.fix_task_attributes(config, filename)?;
-                    subtasks
+                VaultData::Header(_, children) => {
+                    children
                         .iter()
-                        .try_for_each(|s| explore_tasks_rec(config, filename, s))?;
+                        .try_for_each(|c| explore_tasks_rec(config, filename, c))?;
+                }
+                VaultData::Task(task) => {
+                    task.fix_task_attributes(config, filename)?;
+                    task.subtasks
+                        .iter()
+                        .try_for_each(|t| t.fix_task_attributes(config, filename))?;
+                }
+                VaultData::Directory(dir_name, children) => {
+                    let mut filename = filename.clone();
+                    filename.push(dir_name);
+                    children
+                        .iter()
+                        .try_for_each(|c| explore_tasks_rec(config, &mut filename.clone(), c))?;
                 }
             }
             Ok(())
         }
-        for task in tasks {
-            match task {
-                FileEntry::Header(filename, content) => content
-                    .iter()
-                    .try_for_each(|c| explore_tasks_rec(config, filename, c))?,
-                FileEntry::Task(_, _) => error!("FileEntry started with a Task:\n{task}"),
+        explore_tasks_rec(config, &mut PathBuf::new(), tasks)
+    }
+
+    pub fn get_entries(&self, selected_header_path: Vec<String>) -> Result<Vec<String>> {
+        fn aux(
+            file_entry: Vec<VaultData>,
+            selected_header_path: Vec<String>,
+            path_index: usize,
+        ) -> Result<Vec<String>> {
+            if path_index == selected_header_path.len() {
+                let mut res = vec![];
+                for entry in file_entry {
+                    match entry {
+                        VaultData::Directory(name, _) => res.push(format!(
+                            "{}{name}",
+                            if name.contains(".md") { "📄" } else { "📁" }
+                        )),
+                        VaultData::Header(name, _) => res.push(format!("🖊️{name}")),
+                        VaultData::Task(_) => todo!(),
+                    }
+                }
+                Ok(res)
+            } else {
+                for entry in file_entry {
+                    match entry {
+                        VaultData::Directory(name, children)
+                        | VaultData::Header(name, children) => {
+                            if name == selected_header_path[path_index] {
+                                return aux(children, selected_header_path, path_index + 1);
+                            }
+                        }
+                        VaultData::Task(_) => todo!(),
+                    }
+                }
+                bail!("Couldn't find corresponding entry");
             }
         }
-        Ok(())
+
+        let VaultData::Directory(_, entries) = self.tasks.clone() else {
+            bail!("First layer of VaultData was not a Directory")
+        };
+        aux(entries, selected_header_path, 0)
     }
 }
 impl Display for TaskManager {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for task in &self.tasks {
-            write!(f, "{task}")?;
-        }
+        write!(f, "{}", self.tasks)?;
         Ok(())
     }
 }

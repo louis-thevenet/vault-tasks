@@ -167,6 +167,7 @@ fn parse_naive_date_from_numeric_format(input: &mut &str, american_format: bool)
 /// - "next <day name>", "next <day|week|month|year>"
 /// - "<day name>"
 /// - "tomorrow", "today"
+///
 /// Supports abbreviations
 pub fn parse_naive_date(input: &mut &str, american_format: bool) -> PResult<Token> {
     alt((

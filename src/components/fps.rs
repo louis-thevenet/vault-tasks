@@ -47,7 +47,7 @@ impl FpsCounter {
         let now = Instant::now();
         let elapsed = (now - self.last_tick_update).as_secs_f64();
         if elapsed >= 1.0 {
-            self.ticks_per_second = self.tick_count as f64 / elapsed;
+            self.ticks_per_second = f64::from(self.tick_count) / elapsed;
             self.last_tick_update = now;
             self.tick_count = 0;
         }
@@ -59,7 +59,7 @@ impl FpsCounter {
         let now = Instant::now();
         let elapsed = (now - self.last_frame_update).as_secs_f64();
         if elapsed >= 1.0 {
-            self.frames_per_second = self.frame_count as f64 / elapsed;
+            self.frames_per_second = f64::from(self.frame_count) / elapsed;
             self.last_frame_update = now;
             self.frame_count = 0;
         }

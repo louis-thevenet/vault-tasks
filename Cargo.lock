@@ -2529,6 +2529,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "tui-widget-list"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f953e329dc348bdda7bb2e1533ab5c9d9a0a896814f09a7bb491fd31c7bcc822"
+dependencies = [
+ "ratatui",
+]
+
+[[package]]
 name = "typenum"
 version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2662,6 +2671,7 @@ dependencies = [
  "tracing",
  "tracing-error",
  "tracing-subscriber",
+ "tui-widget-list",
  "vergen-gix",
  "winnow",
 ]

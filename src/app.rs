@@ -37,7 +37,7 @@ impl App {
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: vec![Box::new(Home::new()), Box::new(FpsCounter::default())],
+            components: vec![Box::new(Home::new()), Box::<FpsCounter>::default()],
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -55,13 +55,13 @@ impl App {
             .frame_rate(self.frame_rate);
         tui.enter()?;
 
-        for component in self.components.iter_mut() {
+        for component in &mut self.components {
             component.register_action_handler(self.action_tx.clone())?;
         }
-        for component in self.components.iter_mut() {
+        for component in &mut self.components {
             component.register_config_handler(self.config.clone())?;
         }
-        for component in self.components.iter_mut() {
+        for component in &mut self.components {
             component.init(tui.size()?)?;
         }
 
@@ -97,7 +97,7 @@ impl App {
             Event::Key(key) => self.handle_key_event(key)?,
             _ => {}
         }
-        for component in self.components.iter_mut() {
+        for component in &mut self.components {
             if let Some(action) = component.handle_events(Some(event.clone()))? {
                 action_tx.send(action)?;
             }
@@ -147,9 +147,9 @@ impl App {
                 Action::Render => self.render(tui)?,
                 _ => {}
             }
-            for component in self.components.iter_mut() {
+            for component in &mut self.components {
                 if let Some(action) = component.update(action.clone())? {
-                    self.action_tx.send(action)?
+                    self.action_tx.send(action)?;
                 };
             }
         }
@@ -164,11 +164,11 @@ impl App {
 
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
         tui.draw(|frame| {
-            for component in self.components.iter_mut() {
+            for component in &mut self.components {
                 if let Err(err) = component.draw(frame, frame.area()) {
                     let _ = self
                         .action_tx
-                        .send(Action::Error(format!("Failed to draw: {:?}", err)));
+                        .send(Action::Error(format!("Failed to draw: {err:?}")));
                 }
             }
         })?;
