@@ -13,12 +13,44 @@ pub struct Home {
     // config: Config,
     task_mgr: TaskManager,
     selected_header_path: Vec<String>,
-    selected_entry: usize,
+    selected_entry_index: usize,
+    current_prefixes_entries: (Vec<String>, Vec<String>),
 }
 
 impl Home {
     pub fn new() -> Self {
-        Default::default()
+        Self::default()
+    }
+    fn select_previous_entry(&mut self) {
+        self.selected_entry_index =
+            (self.selected_entry_index + self.current_prefixes_entries.0.len() - 1)
+                % self.current_prefixes_entries.0.len();
+    }
+    fn select_next_entry(&mut self) {
+        self.selected_entry_index =
+            (self.selected_entry_index + 1) % self.current_prefixes_entries.0.len();
+    }
+
+    fn get_into_selected_entry(&mut self) {
+        self.selected_header_path
+            .push(self.current_prefixes_entries.1[self.selected_entry_index].clone());
+        self.selected_entry_index = 0;
+        self.update_entries();
+    }
+    fn get_out_of_selected_entry(&mut self) {
+        if self.selected_header_path.is_empty() {
+            return;
+        }
+        self.selected_header_path.pop();
+        self.selected_entry_index = 0;
+        self.update_entries();
+    }
+    fn update_entries(&mut self) {
+        self.current_prefixes_entries =
+            match self.task_mgr.get_entries(self.selected_header_path.clone()) {
+                Ok(items) => items,
+                Err(e) => (vec![String::new()], vec![e.to_string()]),
+            };
     }
 }
 
@@ -34,50 +66,47 @@ impl Component for Home {
         Ok(())
     }
 
-    // fn update(&mut self, action: Action) -> Result<Option<Action>> {
-    //     match action {
-    //         Action::Tick => {
-    //             // add any logic here that should run on every tick
-    //         }
-    //         Action::Render => {
-    //             // add any logic here that should run on every render
-    //         }
-    //         _ => {}
-    //     }
-    //     Ok(None)
-    // }
+    fn update(&mut self, action: Action) -> Result<Option<Action>> {
+        match action {
+            Action::Up => self.select_previous_entry(),
+            Action::Down => self.select_next_entry(),
+            Action::Right | Action::Enter => self.get_into_selected_entry(),
+            Action::Left | Action::Cancel => self.get_out_of_selected_entry(),
+            Action::Help => todo!(),
+            _ => (),
+        }
+        Ok(None)
+    }
 
     fn draw(&mut self, frame: &mut Frame, _area: Rect) -> Result<()> {
-        self.selected_entry = (self.selected_entry + 1) % 5;
-
+        if self.current_prefixes_entries.0.is_empty() {
+            self.update_entries();
+        }
         let layout = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(vec![Constraint::Percentage(20), Constraint::Percentage(80)])
             .split(frame.area());
 
         // Lateral Menu
-        let surrounding_lateral_block =
-            Block::default().borders(Borders::ALL).title("Lateral Menu");
-        let (mut item_prefixes, items) =
-            match self.task_mgr.get_entries(self.selected_header_path.clone()) {
-                Ok(items) => items,
-                Err(e) => (vec![String::new()], vec![e.to_string()]),
-            };
-
-        item_prefixes[self.selected_entry] = format!("> {}", item_prefixes[self.selected_entry]); // after we picked it for the preview
-        let displayed_entries: Vec<String> = items
+        let mut entries_to_display: Vec<String> = self
+            .current_prefixes_entries
+            .1
             .iter()
             .enumerate()
-            .map(|(i, item)| format!("{} {}", item_prefixes[i], item))
+            .map(|(i, item)| format!("{} {}", self.current_prefixes_entries.0[i], item))
             .collect();
 
-        let lateral_entries_list = List::new(displayed_entries).block(surrounding_lateral_block);
+        entries_to_display[self.selected_entry_index] =
+            format!("> {}", entries_to_display[self.selected_entry_index]);
+        let surrounding_lateral_block =
+            Block::default().borders(Borders::ALL).title("Lateral Menu");
+        let lateral_entries_list = List::new(entries_to_display).block(surrounding_lateral_block);
         frame.render_widget(lateral_entries_list, layout[0]);
 
         // Center View
         let surrounding_center_block = Block::default().borders(Borders::ALL).title("Center View");
         let mut path_to_preview = self.selected_header_path.clone();
-        path_to_preview.push(items[self.selected_entry].clone());
+        path_to_preview.push(self.current_prefixes_entries.1[self.selected_entry_index].clone());
         let (preview_items_prefixes, preview_items_list) =
             match self.task_mgr.get_entries(path_to_preview) {
                 Ok(items) => items,

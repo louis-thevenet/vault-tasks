@@ -12,4 +12,10 @@ pub enum Action {
     ClearScreen,
     Error(String),
     Help,
+    Up,
+    Down,
+    Left,
+    Right,
+    Enter,
+    Cancel,
 }
