@@ -68,25 +68,36 @@ impl TaskManager {
         explore_tasks_rec(config, &mut PathBuf::new(), tasks)
     }
 
-    pub fn get_entries(&self, selected_header_path: Vec<String>) -> Result<Vec<String>> {
+    pub fn get_entries(
+        &self,
+        selected_header_path: Vec<String>,
+    ) -> Result<(Vec<String>, Vec<String>)> {
         fn aux(
             file_entry: Vec<VaultData>,
             selected_header_path: Vec<String>,
             path_index: usize,
-        ) -> Result<Vec<String>> {
+        ) -> Result<(Vec<String>, Vec<String>)> {
             if path_index == selected_header_path.len() {
                 let mut res = vec![];
+                let mut prefixes = vec![];
                 for entry in file_entry {
                     match entry {
-                        VaultData::Directory(name, _) => res.push(format!(
-                            "{}{name}",
-                            if name.contains(".md") { "📄" } else { "📁" }
-                        )),
-                        VaultData::Header(name, _) => res.push(format!("🖊️{name}")),
+                        VaultData::Directory(name, _) => {
+                            res.push(name.clone());
+                            prefixes.push(if name.contains(".md") {
+                                "📄".to_owned()
+                            } else {
+                                "📁".to_owned()
+                            });
+                        }
+                        VaultData::Header(name, _) => {
+                            res.push(name);
+                            prefixes.push("🖊️".to_owned());
+                        }
                         VaultData::Task(_) => todo!(),
                     }
                 }
-                Ok(res)
+                Ok((prefixes, res))
             } else {
                 for entry in file_entry {
                     match entry {
