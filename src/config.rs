@@ -310,27 +310,21 @@ pub fn parse_key_sequence(raw: &str) -> Result<Vec<KeyEvent>, String> {
     if raw.chars().filter(|c| *c == '>').count() != raw.chars().filter(|c| *c == '<').count() {
         return Err(format!("Unable to parse `{raw}`"));
     }
-    let raw = if !raw.contains("><") {
+    let raw = if raw.contains("><") {
+        raw
+    } else {
         let raw = raw.strip_prefix('<').unwrap_or(raw);
         let raw = raw.strip_prefix('>').unwrap_or(raw);
         raw
-    } else {
-        raw
     };
-    let sequences = raw
-        .split("><")
-        .map(|seq| {
-            if let Some(s) = seq.strip_prefix('<') {
-                s
-            } else if let Some(s) = seq.strip_suffix('>') {
-                s
-            } else {
-                seq
-            }
-        })
-        .collect::<Vec<_>>();
 
-    sequences.into_iter().map(parse_key_event).collect()
+    raw.split("><")
+        .map(|seq| {
+            seq.strip_prefix('<')
+                .map_or_else(|| seq.strip_suffix('>').map_or(seq, |s| s), |s| s)
+        })
+        .map(parse_key_event)
+        .collect()
 }
 
 #[derive(Clone, Debug, Default, Deref, DerefMut)]
