@@ -2,6 +2,7 @@ use color_eyre::Result;
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, List, Paragraph};
 use tokio::sync::mpsc::UnboundedSender;
+use tui_widget_list::{ListBuilder, ListState, ListView};
 
 use super::Component;
 use crate::task_core::TaskManager;
@@ -12,9 +13,9 @@ pub struct Home {
     command_tx: Option<UnboundedSender<Action>>,
     task_mgr: TaskManager,
     current_path: Vec<String>,
-    selected_entry_index_left_view: usize,
-    selected_entry_index_center_view: usize,
+    state_left_view: ListState,
     entries_left_view: (Vec<String>, Vec<String>),
+    state_center_view: ListState,
     entries_center_view: (Vec<String>, Vec<String>),
 }
 
@@ -22,21 +23,14 @@ impl Home {
     pub fn new() -> Self {
         Self::default()
     }
-    fn select_previous_entry(&mut self) {
-        self.selected_entry_index_center_view =
-            (self.selected_entry_index_center_view + self.entries_center_view.0.len() - 1)
-                % self.entries_center_view.0.len();
-    }
-    fn select_next_entry(&mut self) {
-        self.selected_entry_index_center_view =
-            (self.selected_entry_index_center_view + 1) % self.entries_center_view.0.len();
-    }
 
     fn enter_selected_entry(&mut self) {
-        self.current_path
-            .push(self.entries_center_view.1[self.selected_entry_index_center_view].clone());
-        self.selected_entry_index_left_view = self.selected_entry_index_center_view;
-        self.selected_entry_index_center_view = 0;
+        self.current_path.push(
+            self.entries_center_view.1[self.state_center_view.selected.unwrap_or_default()].clone(),
+        );
+        self.state_left_view
+            .select(Some(self.state_center_view.selected.unwrap_or_default()));
+        self.state_center_view.select(Some(0));
         self.update_entries();
     }
     fn leave_selected_entry(&mut self) {
@@ -45,23 +39,23 @@ impl Home {
         }
 
         self.current_path.pop().unwrap_or_default();
-
         self.update_entries();
 
         // Update index of selected entry to previous selected entry
+        self.state_center_view.select(self.state_left_view.selected);
 
-        self.selected_entry_index_center_view = self.selected_entry_index_left_view;
-
+        // Find previously selected entry
         if let Some(new_previous_entry) = self.current_path.last() {
-            self.selected_entry_index_left_view = self
-                .entries_left_view
-                .clone()
-                .1
-                .into_iter()
-                .enumerate()
-                .find(|(_, name)| name == new_previous_entry)
-                .unwrap_or_default()
-                .0;
+            self.state_left_view.select(Some(
+                self.entries_left_view
+                    .clone()
+                    .1
+                    .into_iter()
+                    .enumerate()
+                    .find(|(_, name)| name == new_previous_entry)
+                    .unwrap_or_default()
+                    .0,
+            ));
         }
     }
 
@@ -99,8 +93,8 @@ impl Component for Home {
 
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
-            Action::Up => self.select_previous_entry(),
-            Action::Down => self.select_next_entry(),
+            Action::Up => self.state_center_view.previous(),
+            Action::Down => self.state_center_view.next(),
             Action::Right | Action::Enter => self.enter_selected_entry(),
             Action::Left | Action::Cancel => self.leave_selected_entry(),
             Action::Help => todo!(),
@@ -112,8 +106,10 @@ impl Component for Home {
     fn draw(&mut self, frame: &mut Frame, _area: Rect) -> Result<()> {
         if self.entries_center_view.0.is_empty() {
             self.update_entries();
+            self.state_center_view.selected = Some(0);
         }
 
+        // Outer Layout : path on top, main layout on bottom
         let outer_layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![Constraint::Length(2), Constraint::Percentage(100)])
@@ -125,6 +121,7 @@ impl Component for Home {
             outer_layout[0],
         );
 
+        // Main Layout
         let layout = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(vec![
@@ -135,7 +132,8 @@ impl Component for Home {
             .split(outer_layout[1]);
 
         // Left Block
-        let mut entries_to_display: Vec<String> = self
+        let surrounding_left_block = Block::default().borders(Borders::RIGHT);
+        let entries_to_display: Vec<String> = self
             .entries_left_view
             .1
             .iter()
@@ -143,18 +141,27 @@ impl Component for Home {
             .map(|(i, item)| format!("{} {}", self.entries_left_view.0[i], item))
             .collect();
 
-        if !entries_to_display.is_empty() {
-            entries_to_display[self.selected_entry_index_left_view] = format!(
-                "> {}",
-                entries_to_display[self.selected_entry_index_left_view]
-            );
-        }
-        let surrounding_left_block = Block::default().borders(Borders::RIGHT);
-        let left_entries_list = List::new(entries_to_display).block(surrounding_left_block);
-        frame.render_widget(left_entries_list, layout[0]);
+        let builder = ListBuilder::new(move |context| {
+            let mut item = Paragraph::new(entries_to_display[context.index].clone());
+            if context.is_selected {
+                item = item.style(
+                    Style::default()
+                        .bg(Color::Rgb(255, 153, 0))
+                        .fg(Color::Rgb(28, 28, 32)),
+                );
+            };
+            let main_axis_size = 1;
+            (item, main_axis_size)
+        });
+
+        let item_count = self.entries_left_view.0.len();
+        let left_entries_list = ListView::new(builder, item_count).block(surrounding_left_block);
+        let state = &mut self.state_left_view;
+        left_entries_list.render(layout[0], frame.buffer_mut(), state);
 
         // Center Block
-        let mut entries_to_display: Vec<String> = self
+        let surrounding_center_block = Block::default().borders(Borders::RIGHT);
+        let entries_to_display: Vec<String> = self
             .entries_center_view
             .1
             .iter()
@@ -162,19 +169,31 @@ impl Component for Home {
             .map(|(i, item)| format!("{} {}", self.entries_center_view.0[i], item))
             .collect();
 
-        entries_to_display[self.selected_entry_index_center_view] = format!(
-            "> {}",
-            entries_to_display[self.selected_entry_index_center_view]
-        );
-        let surrounding_lateral_block = Block::default().borders(Borders::RIGHT);
-        let lateral_entries_list = List::new(entries_to_display).block(surrounding_lateral_block);
-        frame.render_widget(lateral_entries_list, layout[1]);
+        let builder = ListBuilder::new(move |context| {
+            let mut item = Paragraph::new(entries_to_display[context.index].clone());
+            if context.is_selected {
+                item = item.style(
+                    Style::default()
+                        .bg(Color::Rgb(255, 153, 0))
+                        .fg(Color::Rgb(28, 28, 32)),
+                );
+            };
+            let main_axis_size = 1;
+            (item, main_axis_size)
+        });
+
+        let item_count = self.entries_center_view.0.len();
+        let lateral_entries_list =
+            ListView::new(builder, item_count).block(surrounding_center_block);
+        let state = &mut self.state_center_view;
+        lateral_entries_list.render(layout[1], frame.buffer_mut(), state);
 
         // Right Block
         let surrounding_center_block = Block::default().borders(Borders::NONE);
         let mut path_to_preview = self.current_path.clone();
-        path_to_preview
-            .push(self.entries_center_view.1[self.selected_entry_index_center_view].clone());
+        path_to_preview.push(
+            self.entries_center_view.1[self.state_center_view.selected.unwrap_or_default()].clone(),
+        );
         let (preview_items_prefixes, preview_items_list) =
             match self.task_mgr.get_entries(&path_to_preview) {
                 Ok(items) => items,
