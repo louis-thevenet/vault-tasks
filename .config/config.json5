@@ -16,8 +16,10 @@
       "<Ctrl-z>": "Suspend", // Suspend the application
       "<j>": "Down",
       "<Down>": "Down",
+      "<Tab>": "Down",
       "<k>": "Up",
       "<Up>": "Up",
+      "<BackTab>": "Up",
       "<h>": "Left",
       "<Left>": "Left",
       "<l>": "Right",

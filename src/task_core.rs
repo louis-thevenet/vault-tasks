@@ -70,11 +70,11 @@ impl TaskManager {
 
     pub fn get_entries(
         &self,
-        selected_header_path: Vec<String>,
+        selected_header_path: &[String],
     ) -> Result<(Vec<String>, Vec<String>)> {
         fn aux(
             file_entry: Vec<VaultData>,
-            selected_header_path: Vec<String>,
+            selected_header_path: &[String],
             path_index: usize,
         ) -> Result<(Vec<String>, Vec<String>)> {
             if path_index == selected_header_path.len() {
@@ -92,9 +92,17 @@ impl TaskManager {
                         }
                         VaultData::Header(name, _) => {
                             res.push(name);
-                            prefixes.push("🖊️".to_owned());
+                            prefixes.push("#".to_owned());
                         }
-                        VaultData::Task(_) => todo!(),
+                        VaultData::Task(task) => {
+                            let lines = &mut task
+                                .to_string()
+                                .split('\n')
+                                .map(std::borrow::ToOwned::to_owned)
+                                .collect::<Vec<String>>();
+                            (0..lines.len()).for_each(|_i| prefixes.push(String::new()));
+                            res.append(lines);
+                        }
                     }
                 }
                 Ok((prefixes, res))
