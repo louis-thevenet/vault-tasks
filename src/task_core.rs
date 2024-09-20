@@ -19,28 +19,22 @@ pub struct TaskManager {
 }
 impl Default for TaskManager {
     fn default() -> Self {
-        let config = Config::new().unwrap_or_default();
-        Self::load_from_config(&config)
+        Self {
+            tasks: VaultData::Directory("Empty".to_owned(), vec![]),
+        }
     }
 }
 impl TaskManager {
     /// Loads a vault from a `Config` and returns a `TaskManager`.
-    pub fn load_from_config(config: &Config) -> Self {
+    pub fn load_from_config(config: &Config) -> Result<Self> {
         let vault_parser = VaultParser::new(config.clone());
-        let tasks = vault_parser.scan_vault().unwrap_or_else(|e| {
-            error!("Failed to scan vault: {e}");
-            VaultData::Header(
-                0,
-                "Empty vault, an error may have occured".to_owned(),
-                vec![],
-            )
-        });
+        let tasks = vault_parser.scan_vault()?;
 
         Self::rewrite_vault_tasks(config, &tasks)
             .unwrap_or_else(|e| error!("Failed to fix tasks' due dates: {e}"));
 
         debug!("\n{}", tasks);
-        Self { tasks }
+        Ok(Self { tasks })
     }
 
     /// Recursively calls `Task.fix_task_attributes` on every task from the vault.

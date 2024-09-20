@@ -2,7 +2,7 @@ use color_eyre::Result;
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Paragraph};
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::debug;
+use tracing::{debug, error};
 use tui_widget_list::{ListBuilder, ListState, ListView};
 
 use super::Component;
@@ -29,28 +29,37 @@ impl Home {
         Self::default()
     }
 
-    fn enter_selected_entry(&mut self) {
+    fn enter_selected_entry(&mut self) -> Result<()> {
+        debug!("Trying to enter selected entry");
+
+        // Nothing to enter
         if self.entries_right_view.is_empty() {
-            return;
+            return Ok(());
         }
+
+        // Update path with selected entry
         self.current_path.push(
             self.entries_center_view.1[self.state_center_view.selected.unwrap_or_default()].clone(),
         );
+
+        // Update selections
         self.state_left_view
             .select(Some(self.state_center_view.selected.unwrap_or_default()));
         self.state_center_view.select(Some(0));
-        self.update_entries();
+
+        // Update entries
+        self.update_entries()
     }
-    fn leave_selected_entry(&mut self) {
+    fn leave_selected_entry(&mut self) -> Result<()> {
         if self.current_path.is_empty() {
-            return;
+            return Ok(());
         }
 
         self.current_path.pop().unwrap_or_default();
         // Update index of selected entry to previous selected entry
         self.state_center_view.select(self.state_left_view.selected);
 
-        self.update_entries();
+        self.update_entries()?;
 
         // Find previously selected entry
         if let Some(new_previous_entry) = self.current_path.last() {
@@ -65,31 +74,36 @@ impl Home {
                     .0,
             ));
         }
+        Ok(())
     }
 
-    fn update_entries(&mut self) {
+    fn update_entries(&mut self) -> Result<()> {
         debug!("Updating entries");
         if self.current_path.is_empty() {
             // Vault root
             self.entries_left_view = (vec![], vec![]);
         } else {
-            self.entries_left_view = match self
+            self.entries_left_view = self
                 .task_mgr
-                .get_navigator_entries(&self.current_path[0..self.current_path.len() - 1])
-            {
-                Ok(items) => items,
-                Err(e) => (vec![String::new()], vec![e.to_string()]),
-            };
+                .get_navigator_entries(&self.current_path[0..self.current_path.len() - 1])?;
         }
-        self.entries_center_view = match self.task_mgr.get_navigator_entries(&self.current_path) {
-            Ok(items) => items,
-            Err(e) => (vec![String::new()], vec![e.to_string()]),
-        };
+        self.entries_center_view =
+            if let Ok(res) = self.task_mgr.get_navigator_entries(&self.current_path) {
+                debug!("{res:?}");
+                res
+            } else {
+                self.leave_selected_entry()?;
+                return Ok(());
+            };
         self.update_preview();
+        Ok(())
     }
     fn update_preview(&mut self) {
         debug!("Updating preview");
         let mut path_to_preview = self.current_path.clone();
+        if self.entries_center_view.1.is_empty() {
+            return;
+        }
         path_to_preview.push(
             self.entries_center_view.1[self.state_center_view.selected.unwrap_or_default()].clone(),
         );
@@ -107,7 +121,7 @@ impl Component for Home {
     }
 
     fn register_config_handler(&mut self, config: Config) -> Result<()> {
-        self.task_mgr = TaskManager::load_from_config(&config);
+        self.task_mgr = TaskManager::load_from_config(&config)?;
         self.config = config;
         Ok(())
     }
@@ -122,8 +136,8 @@ impl Component for Home {
                 self.state_center_view.next();
                 self.update_preview();
             }
-            Action::Right | Action::Enter => self.enter_selected_entry(),
-            Action::Left | Action::Cancel => self.leave_selected_entry(),
+            Action::Right | Action::Enter => self.enter_selected_entry()?,
+            Action::Left | Action::Cancel => self.leave_selected_entry()?,
             Action::Help => todo!(),
             _ => (),
         }
@@ -132,7 +146,8 @@ impl Component for Home {
 
     fn draw(&mut self, frame: &mut Frame, _area: Rect) -> Result<()> {
         if self.entries_center_view.0.is_empty() {
-            self.update_entries();
+            error!("Center view is empty"); // is it always an error ?
+            self.update_entries()?;
             self.state_center_view.selected = Some(0);
         }
 
