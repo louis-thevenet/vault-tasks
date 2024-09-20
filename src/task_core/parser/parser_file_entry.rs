@@ -74,7 +74,7 @@ impl<'i> ParserFileEntry<'i> {
             target_task_depth: usize,
         ) -> Result<()> {
             match file_entry {
-                VaultData::Header(_, header_children) => {
+                VaultData::Header(_, _, header_children) => {
                     match current_header_depth.cmp(&target_header_depth) {
                         std::cmp::Ordering::Greater => panic!("Target header level was greater than current level which is impossible"), // shouldn't happen
                         std::cmp::Ordering::Equal => {
@@ -101,7 +101,7 @@ impl<'i> ParserFileEntry<'i> {
                         std::cmp::Ordering::Less => {
                             // Going deeper in header levels
                             for child in header_children.iter_mut().rev() {
-                                if let VaultData::Header(_, _) = child {
+                                if let VaultData::Header(_,_, _) = child {
                                     return append_task_aux(
                                         child,
                                         task_to_insert,
@@ -155,7 +155,7 @@ impl<'i> ParserFileEntry<'i> {
             target_task_depth: usize,
         ) {
             match file_entry {
-                VaultData::Header(_, header_children) => {
+                VaultData::Header(_, _, header_children) => {
                     match (current_header_depth).cmp(&target_header_depth) {
                         std::cmp::Ordering::Greater => error!(
                             "bad call to `insert_at`, file_entry:{file_entry}\nobject:{object}"
@@ -182,7 +182,7 @@ impl<'i> ParserFileEntry<'i> {
                         std::cmp::Ordering::Less => {
                             // Still haven't found correct header level, going deeper
                             for child in header_children.iter_mut().rev() {
-                                if let VaultData::Header(_, _) = child {
+                                if let VaultData::Header(_, _, _) = child {
                                     insert_at_aux(
                                         child,
                                         object,
@@ -232,7 +232,7 @@ impl<'i> ParserFileEntry<'i> {
             target_task_depth: usize,
         ) -> Result<()> {
             match file_entry {
-                VaultData::Header(_, header_children) => {
+                VaultData::Header(_, _, header_children) => {
                     match current_header_depth.cmp(&target_header_depth) {
                         std::cmp::Ordering::Greater => panic!("bad call for desc"), // shouldn't happen
                         std::cmp::Ordering::Equal => {
@@ -265,7 +265,7 @@ impl<'i> ParserFileEntry<'i> {
                         std::cmp::Ordering::Less => {
                             // Going deeper in header levels
                             for child in header_children.iter_mut().rev() {
-                                if let VaultData::Header(_, _) = child {
+                                if let VaultData::Header(_, _, _) = child {
                                     return append_description_aux(
                                         child,
                                         desc,
@@ -362,7 +362,7 @@ impl<'i> ParserFileEntry<'i> {
             Ok(FileToken::Header((header, new_depth))) => {
                 Self::insert_header_at(
                     file_entry,
-                    VaultData::Header(header, vec![]),
+                    VaultData::Header(new_depth, header, vec![]),
                     new_depth - 1,
                     0,
                 );
@@ -389,7 +389,7 @@ impl<'i> ParserFileEntry<'i> {
     /// Removes any empty headers from a `FileEntry`
     fn clean_file_entry(file_entry: &mut VaultData) -> Option<&VaultData> {
         match file_entry {
-            VaultData::Header(_, children) | VaultData::Directory(_, children) => {
+            VaultData::Header(_, _, children) | VaultData::Directory(_, children) => {
                 let mut actual_children = vec![];
                 for child in children.iter_mut() {
                     let mut child_clone = child.clone();
@@ -411,12 +411,12 @@ impl<'i> ParserFileEntry<'i> {
     pub fn parse_file(&self, filename: &str, input: &&str) -> Option<VaultData> {
         let lines = input.split('\n');
 
-        let mut res = VaultData::Header(filename.to_owned(), vec![]);
+        let mut res = VaultData::Header(0, filename.to_owned(), vec![]);
 
         self.parse_file_aux(lines.enumerate().peekable(), &mut res, 0);
 
         // Filename is changed from Header to Directory variant at the end
-        if let Some(VaultData::Header(name, children)) = Self::clean_file_entry(&mut res) {
+        if let Some(VaultData::Header(_, name, children)) = Self::clean_file_entry(&mut res) {
             Some(VaultData::Directory(name.clone(), children.clone()))
         } else {
             None
@@ -452,23 +452,28 @@ mod tests {
 
         let mut config = Config::default();
         config.tasks_config.indent_length = 2;
-        let mut res = VaultData::Header("Test".to_string(), vec![]);
+        let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
         let parser = ParserFileEntry { config: &config };
         let expected = VaultData::Header(
+            0,
             "Test".to_string(),
             vec![
                 VaultData::Header(
+                    1,
                     "1 useless".to_string(),
                     vec![VaultData::Header(
+                        2,
                         "2 useless".to_string(),
-                        vec![VaultData::Header("3 useless".to_string(), vec![])],
+                        vec![VaultData::Header(3, "3 useless".to_string(), vec![])],
                     )],
                 ),
                 VaultData::Header(
+                    1,
                     "2 useful".to_string(),
                     vec![
-                        VaultData::Header("3 useless".to_string(), vec![]),
+                        VaultData::Header(3, "3 useless".to_string(), vec![]),
                         VaultData::Header(
+                            2,
                             "4 useful".to_string(),
                             vec![VaultData::Task(Task {
                                 name: "test".to_string(),
@@ -485,10 +490,13 @@ mod tests {
         assert_eq!(res, expected);
 
         let expected_after_cleaning = VaultData::Header(
+            0,
             "Test".to_string(),
             vec![VaultData::Header(
+                1,
                 "2 useful".to_string(),
                 vec![VaultData::Header(
+                    2,
                     "4 useful".to_string(),
                     vec![VaultData::Task(Task {
                         name: "test".to_string(),
@@ -522,11 +530,13 @@ mod tests {
 
         let mut config = Config::default();
         config.tasks_config.indent_length = 2;
-        let mut res = VaultData::Header("Test".to_string(), vec![]);
+        let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
         let parser = ParserFileEntry { config: &config };
         let expected = VaultData::Header(
+            0,
             "Test".to_string(),
             vec![VaultData::Header(
+                1,
                 "1 Header".to_string(),
                 vec![
                     VaultData::Task(Task {
@@ -535,8 +545,10 @@ mod tests {
                         ..Default::default()
                     }),
                     VaultData::Header(
+                        2,
                         "2 Header".to_string(),
                         vec![VaultData::Header(
+                            3,
                             "3 Header".to_string(),
                             vec![
                                 VaultData::Task(Task {
@@ -553,6 +565,7 @@ mod tests {
                         )],
                     ),
                     VaultData::Header(
+                        2,
                         "2 Header 2".to_string(),
                         vec![VaultData::Task(Task {
                             name: "Task".to_string(),
@@ -582,11 +595,13 @@ mod tests {
 
         let mut config = Config::default();
         config.tasks_config.indent_length = 2;
-        let mut res = VaultData::Header("Test".to_string(), vec![]);
+        let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
         let parser = ParserFileEntry { config: &config };
         let expected = VaultData::Header(
+            0,
             "Test".to_string(),
             vec![VaultData::Header(
+                1,
                 "1 Header".to_string(),
                 vec![
                     VaultData::Task(Task {
@@ -594,7 +609,7 @@ mod tests {
                         line_number: 3,
                         ..Default::default()
                     }),
-                    VaultData::Header("2 Header".to_string(), vec![]),
+                    VaultData::Header(2, "2 Header".to_string(), vec![]),
                 ],
             )],
         );

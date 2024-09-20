@@ -1,22 +1,27 @@
 use color_eyre::Result;
 use ratatui::prelude::*;
-use ratatui::widgets::{Block, Borders, List, Paragraph};
+use ratatui::widgets::{Block, Borders, Paragraph};
 use tokio::sync::mpsc::UnboundedSender;
+use tracing::debug;
 use tui_widget_list::{ListBuilder, ListState, ListView};
 
 use super::Component;
+
 use crate::task_core::TaskManager;
+use crate::widgets::file_data::FileData;
 use crate::{action::Action, config::Config};
 
 #[derive(Default)]
 pub struct Home {
     command_tx: Option<UnboundedSender<Action>>,
+    config: Config,
     task_mgr: TaskManager,
     current_path: Vec<String>,
     state_left_view: ListState,
     entries_left_view: (Vec<String>, Vec<String>),
     state_center_view: ListState,
     entries_center_view: (Vec<String>, Vec<String>),
+    entries_right_view: FileData,
 }
 
 impl Home {
@@ -25,6 +30,9 @@ impl Home {
     }
 
     fn enter_selected_entry(&mut self) {
+        if self.entries_right_view.is_empty() {
+            return;
+        }
         self.current_path.push(
             self.entries_center_view.1[self.state_center_view.selected.unwrap_or_default()].clone(),
         );
@@ -39,10 +47,10 @@ impl Home {
         }
 
         self.current_path.pop().unwrap_or_default();
-        self.update_entries();
-
         // Update index of selected entry to previous selected entry
         self.state_center_view.select(self.state_left_view.selected);
+
+        self.update_entries();
 
         // Find previously selected entry
         if let Some(new_previous_entry) = self.current_path.last() {
@@ -60,22 +68,35 @@ impl Home {
     }
 
     fn update_entries(&mut self) {
+        debug!("Updating entries");
         if self.current_path.is_empty() {
             // Vault root
             self.entries_left_view = (vec![], vec![]);
         } else {
             self.entries_left_view = match self
                 .task_mgr
-                .get_entries(&self.current_path[0..self.current_path.len() - 1])
+                .get_navigator_entries(&self.current_path[0..self.current_path.len() - 1])
             {
                 Ok(items) => items,
                 Err(e) => (vec![String::new()], vec![e.to_string()]),
             };
         }
-        self.entries_center_view = match self.task_mgr.get_entries(&self.current_path) {
+        self.entries_center_view = match self.task_mgr.get_navigator_entries(&self.current_path) {
             Ok(items) => items,
             Err(e) => (vec![String::new()], vec![e.to_string()]),
         };
+        self.update_preview();
+    }
+    fn update_preview(&mut self) {
+        debug!("Updating preview");
+        let mut path_to_preview = self.current_path.clone();
+        path_to_preview.push(
+            self.entries_center_view.1[self.state_center_view.selected.unwrap_or_default()].clone(),
+        );
+
+        if let Ok(data) = self.task_mgr.get_vault_data_from_path(&path_to_preview) {
+            self.entries_right_view = FileData::new(&self.config, &data);
+        }
     }
 }
 
@@ -86,15 +107,21 @@ impl Component for Home {
     }
 
     fn register_config_handler(&mut self, config: Config) -> Result<()> {
-        // self.config = config;
         self.task_mgr = TaskManager::load_from_config(&config);
+        self.config = config;
         Ok(())
     }
 
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
-            Action::Up => self.state_center_view.previous(),
-            Action::Down => self.state_center_view.next(),
+            Action::Up => {
+                self.state_center_view.previous();
+                self.update_preview();
+            }
+            Action::Down => {
+                self.state_center_view.next();
+                self.update_preview();
+            }
             Action::Right | Action::Enter => self.enter_selected_entry(),
             Action::Left | Action::Cancel => self.leave_selected_entry(),
             Action::Help => todo!(),
@@ -189,26 +216,9 @@ impl Component for Home {
         lateral_entries_list.render(layout[1], frame.buffer_mut(), state);
 
         // Right Block
-        let surrounding_center_block = Block::default().borders(Borders::NONE);
-        let mut path_to_preview = self.current_path.clone();
-        path_to_preview.push(
-            self.entries_center_view.1[self.state_center_view.selected.unwrap_or_default()].clone(),
-        );
-        let (preview_items_prefixes, preview_items_list) =
-            match self.task_mgr.get_entries(&path_to_preview) {
-                Ok(items) => items,
-                Err(e) => (vec![String::new()], vec![e.to_string()]),
-            };
-
-        let displayed_preview_entries: Vec<String> = preview_items_list
-            .iter()
-            .enumerate()
-            .map(|(i, item)| format!("{} {}", preview_items_prefixes[i], item))
-            .collect();
-
-        let preview_entries = List::new(displayed_preview_entries).block(surrounding_center_block);
-        frame.render_widget(preview_entries, layout[2]);
-
+        self.entries_right_view
+            .clone()
+            .render(layout[2], frame.buffer_mut());
         Ok(())
     }
 }

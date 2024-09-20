@@ -7,7 +7,7 @@ pub enum VaultData {
     /// Name, Content
     Directory(String, Vec<VaultData>),
     /// Name, Content
-    Header(String, Vec<VaultData>),
+    Header(usize, String, Vec<VaultData>),
     /// Task, Subtasks
     Task(Task),
 }
@@ -38,7 +38,7 @@ impl Display for VaultData {
             depth: usize,
         ) -> std::fmt::Result {
             match file_entry {
-                VaultData::Header(header, entries) => {
+                VaultData::Header(_, header, entries) => {
                     write_underline_with_indent(&format!("{depth}. {header}"), depth, f)?;
                     for entry in entries {
                         fmt_aux(entry, f, depth + 1)?;
