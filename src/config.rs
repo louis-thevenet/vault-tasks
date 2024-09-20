@@ -1,17 +1,22 @@
-#![allow(dead_code)] // Remove this once you start using the code
+#![allow(dead_code)]
+use std::{
+    collections::HashMap,
+    env,
+    fs::{create_dir_all, File},
+    io::Write,
+    path::PathBuf,
+    process::exit,
+};
 
-use std::{collections::HashMap, env, path::PathBuf};
-
+use crate::{action::Action, app::Mode};
 use color_eyre::Result;
+use config::ConfigError;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use derive_deref::{Deref, DerefMut};
 use directories::ProjectDirs;
 use lazy_static::lazy_static;
 use ratatui::style::{Color, Modifier, Style};
 use serde::{de::Deserializer, Deserialize};
-use tracing::error;
-
-use crate::{action::Action, app::Mode};
 
 const CONFIG: &str = include_str!("../.config/config.json5");
 
@@ -88,10 +93,35 @@ impl Config {
             }
         }
         if !found_config {
-            error!("No configuration file found. Application may not behave as expected");
+            let dest = config_dir.join(config_files[0].0);
+            if create_dir_all(config_dir).is_err() {
+                return Err(ConfigError::Message(
+                    "Failed to create config directory at {dest:?}".to_owned(),
+                ));
+            }
+            if let Ok(mut file) = File::create(dest.clone()) {
+                if file.write_all(CONFIG.as_bytes()).is_err() {
+                    return Err(ConfigError::Message(
+                        "Failed to write default config at {dest:?}".to_owned(),
+                    ));
+                }
+            } else {
+                return Err(ConfigError::Message(
+                    "Failed to create default config at {dest:?}".to_owned(),
+                ));
+            }
+            eprintln!("No configuration file found. Configuration has been created at {dest:?}. \nPlease fill the `vault-path` key to use the app.");
+            exit(-1);
         }
 
         let mut cfg: Self = builder.build()?.try_deserialize()?;
+
+        if !cfg.tasks_config.vault_path.exists() {
+            return Err(ConfigError::Message(format!(
+                "Vautl path does not exist: {:?}",
+                cfg.tasks_config.vault_path
+            )));
+        }
 
         for (mode, default_bindings) in default_config.keybindings.iter() {
             let user_bindings = cfg.keybindings.entry(*mode).or_default();
@@ -107,29 +137,34 @@ impl Config {
                 user_styles.entry(style_key.clone()).or_insert(*style);
             }
         }
+
         Ok(cfg)
     }
 }
 
 pub fn get_data_dir() -> PathBuf {
-    let directory = if let Some(s) = DATA_FOLDER.clone() {
-        s
-    } else if let Some(proj_dirs) = project_directory() {
-        proj_dirs.data_local_dir().to_path_buf()
-    } else {
-        PathBuf::from(".").join(".data")
-    };
+    let directory = DATA_FOLDER.clone().map_or(
+        {
+            project_directory().map_or_else(
+                || PathBuf::from(".").join(".data"),
+                |proj_dirs| proj_dirs.data_local_dir().to_path_buf(),
+            )
+        },
+        |s| s,
+    );
     directory
 }
 
 pub fn get_config_dir() -> PathBuf {
-    let directory = if let Some(s) = CONFIG_FOLDER.clone() {
-        s
-    } else if let Some(proj_dirs) = project_directory() {
-        proj_dirs.config_local_dir().to_path_buf()
-    } else {
-        PathBuf::from(".").join(".config")
-    };
+    let directory = CONFIG_FOLDER.clone().map_or_else(
+        || {
+            project_directory().map_or_else(
+                || PathBuf::from(".").join(".config"),
+                |proj_dirs| proj_dirs.config_local_dir().to_path_buf(),
+            )
+        },
+        |s| s,
+    );
     directory
 }
 
@@ -228,8 +263,7 @@ fn parse_key_code_with_modifiers(
         "f11" => KeyCode::F(11),
         "f12" => KeyCode::F(12),
         "space" => KeyCode::Char(' '),
-        "hyphen" => KeyCode::Char('-'),
-        "minus" => KeyCode::Char('-'),
+        "hyphen" | "minus" => KeyCode::Char('-'),
         "tab" => KeyCode::Tab,
         c if c.len() == 1 => {
             let mut c = c.chars().next().unwrap();
@@ -242,7 +276,6 @@ fn parse_key_code_with_modifiers(
     };
     Ok(KeyEvent::new(c, modifiers))
 }
-
 pub fn key_event_to_string(key_event: &KeyEvent) -> String {
     let char;
     let key_code = match key_event.code {
