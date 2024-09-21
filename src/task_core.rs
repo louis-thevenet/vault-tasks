@@ -179,13 +179,19 @@ impl TaskManager {
                     VaultData::Task(task) => {
                         if task.name == selected_header_path[path_index] {
                             let mut res = vec![];
-                            for child in task.subtasks {
-                                if let Ok(mut found) = aux(
-                                    VaultData::Task(child),
-                                    selected_header_path,
-                                    path_index + 1,
-                                ) {
-                                    res.append(&mut found);
+
+                            // Returns early the task to allow previewing its attributes + children
+                            if path_index + 1 == selected_header_path.len() {
+                                res.push(VaultData::Task(task));
+                            } else {
+                                for child in task.subtasks {
+                                    if let Ok(mut found) = aux(
+                                        VaultData::Task(child),
+                                        selected_header_path,
+                                        path_index + 1,
+                                    ) {
+                                        res.append(&mut found);
+                                    }
                                 }
                             }
                             Ok(res)
@@ -206,6 +212,44 @@ impl TaskManager {
             }
         }
         bail!("Error: Couldn't find corresponding file")
+    }
+
+    pub fn can_enter(&self, selected_header_path: &[String]) -> bool {
+        fn aux(file_entry: VaultData, selected_header_path: &[String], path_index: usize) -> bool {
+            if path_index == selected_header_path.len() {
+                true
+            } else {
+                match file_entry {
+                    VaultData::Directory(name, children) | VaultData::Header(_, name, children) => {
+                        if name == selected_header_path[path_index] {
+                            return children
+                                .iter()
+                                .any(|c| aux(c.clone(), selected_header_path, path_index + 1));
+                        }
+                        false
+                    }
+                    VaultData::Task(task) => {
+                        if task.name == selected_header_path[path_index] {
+                            return task.subtasks.iter().any(|t| {
+                                aux(
+                                    VaultData::Task(t.clone()),
+                                    selected_header_path,
+                                    path_index + 1,
+                                )
+                            });
+                        }
+                        false
+                    }
+                }
+            }
+        }
+
+        let VaultData::Directory(_, entries) = self.tasks.clone() else {
+            return false;
+        };
+        entries
+            .iter()
+            .any(|e| aux(e.clone(), selected_header_path, 0))
     }
 }
 impl Display for TaskManager {

@@ -30,22 +30,24 @@ impl Home {
     }
 
     fn enter_selected_entry(&mut self) -> Result<()> {
-        debug!("Trying to enter selected entry");
-
-        // Nothing to enter
-        if self.entries_right_view.is_empty() {
-            return Ok(());
-        }
-
         // Update path with selected entry
         self.current_path.push(
             self.entries_center_view.1[self.state_center_view.selected.unwrap_or_default()].clone(),
         );
 
+        // Can we enter ?
+        if !self.task_mgr.can_enter(&self.current_path) {
+            self.current_path.pop();
+            debug!("Coudln't enter: {:?}", self.current_path);
+            return Ok(());
+        }
+
         // Update selections
         self.state_left_view
             .select(Some(self.state_center_view.selected.unwrap_or_default()));
         self.state_center_view.select(Some(0));
+
+        debug!("Entering: {:?}", self.current_path);
 
         // Update entries
         self.update_entries()
@@ -89,7 +91,6 @@ impl Home {
         }
         self.entries_center_view =
             if let Ok(res) = self.task_mgr.get_navigator_entries(&self.current_path) {
-                debug!("{res:?}");
                 res
             } else {
                 self.leave_selected_entry()?;
