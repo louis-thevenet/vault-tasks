@@ -17,6 +17,7 @@ use directories::ProjectDirs;
 use lazy_static::lazy_static;
 use ratatui::style::{Color, Modifier, Style};
 use serde::{de::Deserializer, Deserialize};
+use tracing::debug;
 
 const CONFIG: &str = include_str!("../.config/config.json5");
 
@@ -28,10 +29,10 @@ pub struct AppConfig {
     pub data_dir: PathBuf,
 }
 
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Default)]
 pub struct TasksConfig {
     #[serde(default)]
-    pub ignore_dot_files: bool,
+    pub parse_dot_files: bool,
     #[serde(default)]
     pub ignored: Vec<PathBuf>,
     #[serde(default)]
@@ -44,7 +45,7 @@ pub struct TasksConfig {
 
 #[derive(Clone, Debug, Default, Deserialize)]
 pub struct Config {
-    #[serde(default, flatten)]
+    #[serde(default)]
     pub config: AppConfig,
     #[serde(default)]
     pub keybindings: KeyBindings,
@@ -123,6 +124,10 @@ impl Config {
             )));
         }
 
+        if cfg.tasks_config.indent_length == 0 {
+            cfg.tasks_config.indent_length = default_config.tasks_config.indent_length;
+        }
+
         for (mode, default_bindings) in default_config.keybindings.iter() {
             let user_bindings = cfg.keybindings.entry(*mode).or_default();
             for (key, cmd) in default_bindings {
@@ -138,6 +143,7 @@ impl Config {
             }
         }
 
+        debug!("{cfg:#?}");
         Ok(cfg)
     }
 }

@@ -2,7 +2,7 @@
     "tasks_config": {
         "use_american_format": true,
         "indent_length": 2,
-        "ignore_dot_files": true,
+        "parse_dot_files": false,
         "vault_path": "./test-vault",
         "ignored": [],
     },

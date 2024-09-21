@@ -42,7 +42,7 @@ impl VaultParser {
         for entry_err in entries {
             let Ok(entry) = entry_err else { continue };
             let name = entry.file_name().into_string().unwrap();
-            if self.config.tasks_config.ignore_dot_files && name.starts_with('.') {
+            if !self.config.tasks_config.parse_dot_files && name.starts_with('.') {
                 debug!("Ignoring {name:?} (dot file)");
                 continue;
             }
