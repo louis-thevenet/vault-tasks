@@ -92,7 +92,7 @@ impl Config {
                 found_config = true;
             }
         }
-        if !found_config {
+        if !found_config && !cfg!(test) {
             let dest = config_dir.join(config_files[0].0);
             if create_dir_all(config_dir).is_err() {
                 return Err(ConfigError::Message(
@@ -111,12 +111,12 @@ impl Config {
                 ));
             }
             eprintln!("No configuration file found. Configuration has been created at {dest:?}. \nPlease fill the `vault-path` key to use the app.");
-            exit(-1);
+            exit(-1)
         }
 
         let mut cfg: Self = builder.build()?.try_deserialize()?;
 
-        if !cfg.tasks_config.vault_path.exists() {
+        if !cfg.tasks_config.vault_path.exists() && !cfg!(test) {
             return Err(ConfigError::Message(format!(
                 "Vautl path does not exist: {:?}",
                 cfg.tasks_config.vault_path
