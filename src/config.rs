@@ -9,7 +9,7 @@ use std::{
 };
 
 use crate::{action::Action, app::Mode};
-use color_eyre::Result;
+use color_eyre::{eyre::bail, Result};
 use config::ConfigError;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use derive_deref::{Deref, DerefMut};
@@ -94,24 +94,8 @@ impl Config {
             }
         }
         if !found_config && !cfg!(test) {
-            let dest = config_dir.join(config_files[0].0);
-            if create_dir_all(config_dir).is_err() {
-                return Err(ConfigError::Message(
-                    "Failed to create config directory at {dest:?}".to_owned(),
-                ));
-            }
-            if let Ok(mut file) = File::create(dest.clone()) {
-                if file.write_all(CONFIG.as_bytes()).is_err() {
-                    return Err(ConfigError::Message(
-                        "Failed to write default config at {dest:?}".to_owned(),
-                    ));
-                }
-            } else {
-                return Err(ConfigError::Message(
-                    "Failed to create default config at {dest:?}".to_owned(),
-                ));
-            }
-            eprintln!("No configuration file found. Configuration has been created at {dest:?}. \nPlease fill the `vault-path` key to use the app.");
+            eprintln!(
+                "No configuration file found.\nCreate one at {config_dir:?} or generate one using `vault-tasks generate-config`");
             exit(-1)
         }
 
@@ -145,6 +129,23 @@ impl Config {
 
         debug!("{cfg:#?}");
         Ok(cfg)
+    }
+
+    pub fn generate_config() -> Result<()> {
+        let config_dir = get_config_dir();
+        let dest = config_dir.join("config.json5");
+        if create_dir_all(config_dir).is_err() {
+            bail!("Failed to create config directory at {dest:?}".to_owned());
+        }
+        if let Ok(mut file) = File::create(dest.clone()) {
+            if file.write_all(CONFIG.as_bytes()).is_err() {
+                bail!("Failed to write default config at {dest:?}".to_owned());
+            }
+        } else {
+            bail!("Failed to create default config at {dest:?}".to_owned());
+        }
+        println!("Configuration has been created at {dest:?}. \nPlease fill the `vault-path` key to use the app.");
+        Ok(())
     }
 }
 

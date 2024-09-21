@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::Parser;
+use clap::{Parser, Subcommand};
 
 use crate::config::{get_config_dir, get_data_dir};
 
@@ -17,6 +17,13 @@ pub struct Cli {
 
     #[arg(short, long, value_name = "PATH")]
     pub config_path: Option<PathBuf>,
+
+    #[command(subcommand)]
+    pub command: Option<Commands>,
+}
+#[derive(Subcommand, Debug, Clone)]
+pub enum Commands {
+    GenerateConfig,
 }
 
 const VERSION_MESSAGE: &str = concat!(
