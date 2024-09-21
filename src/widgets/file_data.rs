@@ -24,10 +24,6 @@ impl FileData {
             file_content: file_content.to_vec(),
         }
     }
-
-    pub fn is_empty(&self) -> bool {
-        self.file_content.is_empty()
-    }
 }
 impl Widget for FileData {
     fn render(mut self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)

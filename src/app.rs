@@ -110,21 +110,17 @@ impl App {
         let Some(keymap) = self.config.keybindings.get(&self.mode) else {
             return Ok(());
         };
-        match keymap.get(&vec![key]) {
-            Some(action) => {
+        if let Some(action) = keymap.get(&vec![key]) {
+            action_tx.send(action.clone())?;
+        } else {
+            // If the key was not handled as a single key action,
+            // then consider it for multi-key combinations.
+            self.last_tick_key_events.push(key);
+
+            // Check for multi-key combinations
+            if let Some(action) = keymap.get(&self.last_tick_key_events) {
                 info!("Got action: {action:?}");
                 action_tx.send(action.clone())?;
-            }
-            _ => {
-                // If the key was not handled as a single key action,
-                // then consider it for multi-key combinations.
-                self.last_tick_key_events.push(key);
-
-                // Check for multi-key combinations
-                if let Some(action) = keymap.get(&self.last_tick_key_events) {
-                    info!("Got action: {action:?}");
-                    action_tx.send(action.clone())?;
-                }
             }
         }
         Ok(())
@@ -133,7 +129,7 @@ impl App {
     fn handle_actions(&mut self, tui: &mut Tui) -> Result<()> {
         while let Ok(action) = self.action_rx.try_recv() {
             if action != Action::Tick && action != Action::Render {
-                debug!("{action:?}");
+                debug!("Action: {action:?}");
             }
             match action {
                 Action::Tick => {
