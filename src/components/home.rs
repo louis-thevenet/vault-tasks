@@ -124,6 +124,8 @@ impl Component for Home {
     fn register_config_handler(&mut self, config: Config) -> Result<()> {
         self.task_mgr = TaskManager::load_from_config(&config)?;
         self.config = config;
+        self.update_entries()?;
+        self.state_center_view.selected = Some(0);
         Ok(())
     }
 
