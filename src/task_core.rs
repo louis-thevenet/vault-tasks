@@ -1,5 +1,4 @@
 use color_eyre::{eyre::bail, Result};
-use task::State;
 
 use std::{fmt::Display, path::PathBuf};
 use vault_data::VaultData;
@@ -13,6 +12,9 @@ mod parser;
 pub mod task;
 pub mod vault_data;
 mod vault_parser;
+
+pub const FILE_EMOJI: &str = "📄";
+pub const DIRECTORY_EMOJI: &str = "📁";
 
 pub struct TaskManager {
     pub tasks: VaultData,
@@ -90,9 +92,9 @@ impl TaskManager {
                         VaultData::Directory(name, _) => {
                             res.push(name.clone());
                             prefixes.push(if name.contains(".md") {
-                                "📄".to_owned()
+                                FILE_EMOJI.to_owned()
                             } else {
-                                "📁".to_owned()
+                                DIRECTORY_EMOJI.to_owned()
                             });
                         }
                         VaultData::Header(level, name, _) => {
@@ -101,14 +103,7 @@ impl TaskManager {
                         }
                         VaultData::Task(task) => {
                             res.push(task.name);
-                            prefixes.push(
-                                if task.state == State::ToDo {
-                                    "❌"
-                                } else {
-                                    "✅"
-                                }
-                                .to_owned(),
-                            );
+                            prefixes.push(task.state.to_string());
                         }
                     }
                 }

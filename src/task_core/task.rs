@@ -11,6 +11,10 @@ use tracing::{debug, info};
 
 use crate::config::Config;
 
+const STATE_TO_DO_EMOJI: &str = "❌";
+const STATE_DONE_EMOJI: &str = "✅";
+pub const DUE_DATE_EMOJI: &str = "📅";
+pub const PRIORITY_EMOJI: &str = "❗";
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum State {
     Done,
@@ -19,8 +23,8 @@ pub enum State {
 impl Display for State {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Done => write!(f, "Done")?,
-            Self::ToDo => write!(f, "To Do")?,
+            Self::Done => write!(f, "{STATE_DONE_EMOJI}")?,
+            Self::ToDo => write!(f, "{STATE_TO_DO_EMOJI}")?,
         }
         Ok(())
     }
@@ -43,6 +47,16 @@ impl Display for DueDate {
 }
 
 impl DueDate {
+    pub fn to_display_format(&self, not_american_format: bool) -> String {
+        if matches!(self, Self::NoDate) {
+            String::new()
+        } else {
+            format!(
+                "{DUE_DATE_EMOJI} {}",
+                self.to_string_format(not_american_format)
+            )
+        }
+    }
     pub fn to_string_format(&self, not_american_format: bool) -> String {
         let format_date = if !not_american_format {
             "%Y/%m/%d"

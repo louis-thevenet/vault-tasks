@@ -4,8 +4,9 @@ use ratatui::{
 };
 
 use crate::task_core::{
-    task::{DueDate, State},
+    task::{DueDate, PRIORITY_EMOJI},
     vault_data::VaultData,
+    DIRECTORY_EMOJI, FILE_EMOJI,
 };
 
 pub struct FileDataItem {
@@ -63,9 +64,9 @@ impl Widget for FileDataItem {
             VaultData::Directory(name, _) => Paragraph::new(format!(
                 "{}{}",
                 (if name.contains(".md") {
-                    "📄".to_owned()
+                    FILE_EMOJI.to_owned()
                 } else {
-                    "📁".to_owned()
+                    DIRECTORY_EMOJI.to_owned()
                 }),
                 name
             ))
@@ -105,22 +106,19 @@ impl Widget for FileDataItem {
             }
             VaultData::Task(task) => {
                 let mut lines = vec![];
-                let state = if task.state == State::ToDo {
-                    "❌"
-                } else {
-                    "✅"
-                };
+                let state = task.state.to_string();
+
                 let title = Span::styled(format!("{state} {}", task.name), Style::default());
                 let surrounding_block = Block::default().borders(Borders::ALL);
 
                 let mut data_line = String::new();
-                let due_date_str = task.due_date.to_string_format(self.not_american_format);
+                let due_date_str = task.due_date.to_display_format(self.not_american_format);
 
                 if !due_date_str.is_empty() {
-                    data_line.push_str(&format!("📅 {due_date_str} "));
+                    data_line.push_str(&format!("{due_date_str} "));
                 }
                 if task.priority > 0 {
-                    data_line.push_str(&format!("❗{} ", task.priority));
+                    data_line.push_str(&format!("{}{} ", PRIORITY_EMOJI, task.priority));
                 }
                 if !data_line.is_empty() {
                     lines.push(Line::from(Span::styled(data_line, Style::default())));
