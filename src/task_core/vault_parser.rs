@@ -58,13 +58,22 @@ impl VaultParser {
                         entry.file_name().to_str().unwrap().to_owned(),
                         vec![],
                     );
+
                     self.scan(&entry.path(), &mut new_child)?;
                     children.push(new_child);
+                } else if !std::path::Path::new(
+                    &entry.file_name().into_string().unwrap_or_default(),
+                )
+                .extension()
+                .map_or(false, |ext| ext.eq_ignore_ascii_case("md"))
+                {
+                    debug!("Ignoring {name:?} (not a .md file)");
+                    continue;
                 } else if let Some(file_tasks) = self.parse_file(&entry) {
                     children.push(file_tasks);
                 }
             } else {
-                bail!("Error while scanning directories, FileEntry was not a Header");
+                bail!("Error while scanning directories, FileEntry was not a Directory");
             }
         }
         Ok(())
