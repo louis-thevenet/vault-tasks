@@ -38,10 +38,11 @@ permissions:
 # If there's a prerelease-style suffix to the version, then the release(s)
 # will be marked as a prerelease.
 on:
-    workflow_run:
-        workflows: ["release-please"]
-        types:
-            - completed
+
+  workflow_run:
+    workflows: ["release-please"]
+    types:
+      - completed
 
   push:
     tags:
