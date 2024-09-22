@@ -79,7 +79,7 @@ impl Default for Task {
     fn default() -> Self {
         Self {
             due_date: DueDate::NoDate,
-            name: String::from("New Task"),
+            name: String::new(),
             priority: 0,
             state: State::ToDo,
             tags: None,
