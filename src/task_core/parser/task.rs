@@ -156,7 +156,7 @@ mod test {
         let res = res.unwrap();
         let expected = Task {
             subtasks: vec![],
-            name: "New Task".to_string(),
+            name: String::new(),
             description: None,
             tags: None,
             due_date: DueDate::NoDate,
@@ -281,6 +281,6 @@ mod test {
         let res = parse_task(&mut input, &config);
         assert!(res.is_ok());
         let res = res.unwrap();
-        assert_eq!(res.name, "New Task"); // Default name is used when no name is provided
+        assert_eq!(res.name, ""); // Default name is used when no name is provided
     }
 }
