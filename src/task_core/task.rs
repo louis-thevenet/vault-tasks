@@ -159,10 +159,11 @@ impl Task {
                 .join(" ")
         });
 
-        format!(
+        let res = format!(
             "{}- [{}] {} {}{}{}",
             indent, state_str, self.name, due_date, priority, tags_str
-        )
+        );
+        res.trim().to_string()
     }
 
     pub fn fix_task_attributes(&self, config: &Config, path: &PathBuf) -> Result<()> {
