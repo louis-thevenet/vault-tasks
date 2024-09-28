@@ -21,5 +21,5 @@ pub enum Action {
     TabRight,
     TabLeft,
     FocusExplorer,
-    FocusTags,
+    FocusFilter,
 }

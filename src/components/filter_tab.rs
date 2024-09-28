@@ -8,18 +8,18 @@ use super::Component;
 use crate::{action::Action, config::Config};
 
 #[derive(Default)]
-pub struct Tags {
+pub struct FilterTab {
     command_tx: Option<UnboundedSender<Action>>,
     config: Config,
     focused: bool,
 }
 
-impl Tags {
+impl FilterTab {
     pub fn new() -> Self {
         Self::default()
     }
 }
-impl Component for Tags {
+impl Component for FilterTab {
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
         self.command_tx = Some(tx);
         Ok(())
@@ -33,7 +33,7 @@ impl Component for Tags {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
             Action::FocusExplorer => self.focused = false,
-            Action::FocusTags => self.focused = true,
+            Action::FocusFilter => self.focused = true,
             _ => (),
         }
         Ok(None)

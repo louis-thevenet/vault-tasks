@@ -22,7 +22,7 @@ impl Home {
         if let Some(tx) = &self.command_tx {
             if let Err(e) = tx.send(match self.selected_tab {
                 SelectedTab::Explorer => Action::FocusExplorer,
-                SelectedTab::Tags => Action::FocusTags,
+                SelectedTab::Filter => Action::FocusFilter,
             }) {
                 error!("Error while changing sending new focused tab information: {e}");
             }
@@ -94,8 +94,8 @@ enum SelectedTab {
     #[default]
     #[strum(to_string = "Explorer")]
     Explorer,
-    #[strum(to_string = "Tags")]
-    Tags,
+    #[strum(to_string = "Filter")]
+    Filter,
 }
 
 impl SelectedTab {

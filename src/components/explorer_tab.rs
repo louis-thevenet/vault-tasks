@@ -14,7 +14,7 @@ use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
 
 #[derive(Default)]
-pub struct Explorer {
+pub struct ExplorerTab {
     command_tx: Option<UnboundedSender<Action>>,
     config: Config,
     focused: bool,
@@ -27,7 +27,7 @@ pub struct Explorer {
     entries_right_view: Vec<VaultData>,
 }
 
-impl Explorer {
+impl ExplorerTab {
     pub fn new() -> Self {
         Self::default()
     }
@@ -157,7 +157,7 @@ impl Explorer {
     }
 }
 
-impl Component for Explorer {
+impl Component for ExplorerTab {
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
         self.command_tx = Some(tx);
         Ok(())
@@ -174,7 +174,7 @@ impl Component for Explorer {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
             Action::FocusExplorer => self.focused = true,
-            Action::FocusTags => self.focused = false,
+            Action::FocusFilter => self.focused = false,
             Action::Up => {
                 self.state_center_view.previous();
                 self.update_preview();
