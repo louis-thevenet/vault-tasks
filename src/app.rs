@@ -7,7 +7,7 @@ use tracing::{debug, info};
 
 use crate::{
     action::Action,
-    components::{explorer::Explorer, fps::FpsCounter, Component},
+    components::{explorer::Explorer, fps::FpsCounter, home::Home, tags::Tags, Component},
     config::Config,
     tui::{Event, Tui},
 };
@@ -29,6 +29,8 @@ pub struct App {
 pub enum Mode {
     #[default]
     Home,
+    Explorer,
+    Tags,
 }
 
 impl App {
@@ -37,7 +39,12 @@ impl App {
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: vec![Box::new(Explorer::new()), Box::<FpsCounter>::default()],
+            components: vec![
+                Box::new(Home::new()),
+                Box::<FpsCounter>::default(),
+                Box::new(Explorer::new()),
+                Box::new(Tags::new()),
+            ],
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -132,6 +139,8 @@ impl App {
                 debug!("Action: {action:?}");
             }
             match action {
+                Action::FocusExplorer => self.mode = Mode::Explorer,
+                Action::FocusTags => self.mode = Mode::Tags,
                 Action::Tick => {
                     self.last_tick_key_events.drain(..);
                 }

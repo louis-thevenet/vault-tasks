@@ -12,6 +12,33 @@
             "<Ctrl-d>": "Quit",
             "<Ctrl-c>": "Quit",
             "<Ctrl-z>": "Suspend",
+            "<Ctrl-Right>":"TabRight",
+            "<Ctrl-l>":"TabRight",
+            "<Ctrl-Left>":"TabLeft",
+            "<Ctrl-h>":"TabLeft",
+        },
+        "Tags": {
+            "<q>": "Quit",
+            "<Ctrl-d>": "Quit",
+            "<Ctrl-c>": "Quit",
+            "<Ctrl-z>": "Suspend",
+
+            "<Ctrl-Right>":"TabRight",
+            "<Ctrl-l>":"TabRight",
+            "<Ctrl-Left>":"TabLeft",
+            "<Ctrl-h>":"TabLeft",
+        },
+        "Explorer": {
+            "<q>": "Quit",
+            "<Ctrl-d>": "Quit",
+            "<Ctrl-c>": "Quit",
+            "<Ctrl-z>": "Suspend",
+
+            "<Ctrl-Right>":"TabRight",
+            "<Ctrl-l>":"TabRight",
+            "<Ctrl-Left>":"TabLeft",
+            "<Ctrl-h>":"TabLeft",
+
             "<j>": "Down",
             "<Down>": "Down",
             "<Tab>": "Down",

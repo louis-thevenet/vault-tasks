@@ -18,4 +18,8 @@ pub enum Action {
     Right,
     Enter,
     Cancel,
+    TabRight,
+    TabLeft,
+    FocusExplorer,
+    FocusTags,
 }

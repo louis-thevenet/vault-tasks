@@ -17,6 +17,7 @@ use crate::{action::Action, config::Config};
 pub struct Explorer {
     command_tx: Option<UnboundedSender<Action>>,
     config: Config,
+    focused: bool,
     task_mgr: TaskManager,
     current_path: Vec<String>,
     state_left_view: ListState,
@@ -126,7 +127,6 @@ impl Explorer {
             .task_mgr
             .get_vault_data_from_path(&path_to_preview)
             .unwrap_or_default();
-        debug!("{:#?}", self.entries_right_view);
     }
     fn build_list(
         entries_to_display: Vec<String>,
@@ -173,6 +173,8 @@ impl Component for Explorer {
 
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
+            Action::FocusExplorer => self.focused = true,
+            Action::FocusTags => self.focused = false,
             Action::Up => {
                 self.state_center_view.previous();
                 self.update_preview();
@@ -190,21 +192,31 @@ impl Component for Explorer {
     }
 
     fn draw(&mut self, frame: &mut Frame, _area: Rect) -> Result<()> {
+        if !self.focused {
+            return Ok(());
+        }
         if self.entries_center_view.is_empty() {
             error!("Center view is empty"); // is it always an error ?
             self.update_entries()?;
             self.state_center_view.selected = Some(0);
         }
 
+        let vertical = Layout::vertical([
+            Constraint::Length(1),
+            Constraint::Min(0),
+            Constraint::Length(1),
+        ]);
+        let [_header_area, inner_area, _footer_areaa] = vertical.areas(frame.area());
+
         // Outer Layout : path on top, main layout on bottom
         let outer_layout = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(vec![Constraint::Length(2), Constraint::Percentage(100)])
-            .split(frame.area());
+            .constraints(vec![Constraint::Length(3), Constraint::Percentage(100)])
+            .split(inner_area);
 
         // Current path
         frame.render_widget(
-            Paragraph::new(format!("./{}", self.current_path.join("/"))),
+            Paragraph::new(format!("\n./{}", self.current_path.join("/"))),
             outer_layout[0],
         );
 
