@@ -78,36 +78,35 @@ impl TaskManager {
     pub fn get_navigator_entries(
         &self,
         selected_header_path: &[String],
-    ) -> Result<(Vec<String>, Vec<String>)> {
+    ) -> Result<Vec<(String, String)>> {
         fn aux(
             file_entry: Vec<VaultData>,
             selected_header_path: &[String],
             path_index: usize,
-        ) -> Result<(Vec<String>, Vec<String>)> {
+        ) -> Result<Vec<(String, String)>> {
             if path_index == selected_header_path.len() {
                 let mut res = vec![];
-                let mut prefixes = vec![];
                 for entry in file_entry {
                     match entry {
                         VaultData::Directory(name, _) => {
-                            res.push(name.clone());
-                            prefixes.push(if name.contains(".md") {
-                                FILE_EMOJI.to_owned()
-                            } else {
-                                DIRECTORY_EMOJI.to_owned()
-                            });
+                            res.push((
+                                if name.contains(".md") {
+                                    FILE_EMOJI.to_owned()
+                                } else {
+                                    DIRECTORY_EMOJI.to_owned()
+                                },
+                                name.clone(),
+                            ));
                         }
                         VaultData::Header(level, name, _) => {
-                            res.push(name);
-                            prefixes.push("#".repeat(level).clone());
+                            res.push(("#".repeat(level).clone(), name));
                         }
                         VaultData::Task(task) => {
-                            res.push(task.name);
-                            prefixes.push(task.state.to_string());
+                            res.push((task.state.to_string(), task.name));
                         }
                     }
                 }
-                Ok((prefixes, res))
+                Ok(res)
             } else {
                 for entry in file_entry {
                     match entry {
@@ -312,12 +311,12 @@ mod tests {
         let task_mgr = TaskManager { tasks: input };
 
         let path = vec![String::from("Test"), String::from("1"), String::from("2")];
-        let expected = (vec![String::from("###")], vec![String::from("3")]);
+        let expected = vec![(String::from("###"), String::from("3"))];
         let res = task_mgr.get_navigator_entries(&path);
         assert_eq!(expected, res.unwrap());
 
         let path = vec![String::from("Test"), String::from("1")];
-        let expected = (vec![String::from("##")], vec![String::from("2")]);
+        let expected = vec![(String::from("##"), String::from("2"))];
         let res = task_mgr.get_navigator_entries(&path);
         assert_eq!(expected, res.unwrap());
     }
@@ -385,10 +384,7 @@ mod tests {
             String::from("3"),
         ];
         let res = task_mgr.get_navigator_entries(&path);
-        assert_eq!(
-            res.unwrap(),
-            (vec!["❌".to_owned()], vec!["test".to_owned()])
-        );
+        assert_eq!(res.unwrap(), vec![("❌".to_owned(), "test".to_owned())]);
     }
 
     #[test]

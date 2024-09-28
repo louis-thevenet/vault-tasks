@@ -18,9 +18,9 @@ pub struct Home {
     task_mgr: TaskManager,
     current_path: Vec<String>,
     state_left_view: ListState,
-    entries_left_view: (Vec<String>, Vec<String>),
+    entries_left_view: Vec<(String, String)>,
     state_center_view: ListState,
-    entries_center_view: (Vec<String>, Vec<String>),
+    entries_center_view: Vec<(String, String)>,
     entries_right_view: FileData,
 }
 
@@ -32,7 +32,9 @@ impl Home {
     fn enter_selected_entry(&mut self) -> Result<()> {
         // Update path with selected entry
         self.current_path.push(
-            self.entries_center_view.1[self.state_center_view.selected.unwrap_or_default()].clone(),
+            self.entries_center_view[self.state_center_view.selected.unwrap_or_default()]
+                .1
+                .clone(),
         );
 
         // Can we enter ?
@@ -68,10 +70,9 @@ impl Home {
             self.state_left_view.select(Some(
                 self.entries_left_view
                     .clone()
-                    .1
                     .into_iter()
                     .enumerate()
-                    .find(|(_, name)| name == new_previous_entry)
+                    .find(|(_, entry)| &entry.1 == new_previous_entry)
                     .unwrap_or_default()
                     .0,
             ));
@@ -83,7 +84,7 @@ impl Home {
         debug!("Updating entries");
         if self.current_path.is_empty() {
             // Vault root
-            self.entries_left_view = (vec![], vec![]);
+            self.entries_left_view = vec![];
         } else {
             self.entries_left_view = self
                 .task_mgr
@@ -102,14 +103,17 @@ impl Home {
     fn update_preview(&mut self) {
         debug!("Updating preview");
         let mut path_to_preview = self.current_path.clone();
-        if self.entries_center_view.1.is_empty() {
+        if self.entries_center_view.is_empty() {
             return;
         }
         path_to_preview.push(
-            self.entries_center_view.1[self.state_center_view.selected.unwrap_or_default()].clone(),
+            self.entries_center_view[self.state_center_view.selected.unwrap_or_default()]
+                .1
+                .clone(),
         );
 
         if let Ok(data) = self.task_mgr.get_vault_data_from_path(&path_to_preview) {
+            debug!("{data:#?}");
             self.entries_right_view = FileData::new(&self.config, &data);
         }
     }
@@ -148,7 +152,7 @@ impl Component for Home {
     }
 
     fn draw(&mut self, frame: &mut Frame, _area: Rect) -> Result<()> {
-        if self.entries_center_view.0.is_empty() {
+        if self.entries_center_view.is_empty() {
             error!("Center view is empty"); // is it always an error ?
             self.update_entries()?;
             self.state_center_view.selected = Some(0);
@@ -180,10 +184,8 @@ impl Component for Home {
         let surrounding_left_block = Block::default().borders(Borders::RIGHT);
         let entries_to_display: Vec<String> = self
             .entries_left_view
-            .1
             .iter()
-            .enumerate()
-            .map(|(i, item)| format!("{} {}", self.entries_left_view.0[i], item))
+            .map(|item| format!("{} {}", item.0, item.1))
             .collect();
 
         let builder = ListBuilder::new(move |context| {
@@ -199,7 +201,7 @@ impl Component for Home {
             (item, main_axis_size)
         });
 
-        let item_count = self.entries_left_view.0.len();
+        let item_count = self.entries_left_view.len();
         let left_entries_list = ListView::new(builder, item_count).block(surrounding_left_block);
         let state = &mut self.state_left_view;
         left_entries_list.render(layout[0], frame.buffer_mut(), state);
@@ -208,10 +210,8 @@ impl Component for Home {
         let surrounding_center_block = Block::default().borders(Borders::RIGHT);
         let entries_to_display: Vec<String> = self
             .entries_center_view
-            .1
             .iter()
-            .enumerate()
-            .map(|(i, item)| format!("{} {}", self.entries_center_view.0[i], item))
+            .map(|item| format!("{} {}", item.0, item.1))
             .collect();
 
         let builder = ListBuilder::new(move |context| {
@@ -227,7 +227,7 @@ impl Component for Home {
             (item, main_axis_size)
         });
 
-        let item_count = self.entries_center_view.0.len();
+        let item_count = self.entries_center_view.len();
         let lateral_entries_list =
             ListView::new(builder, item_count).block(surrounding_center_block);
         let state = &mut self.state_center_view;
