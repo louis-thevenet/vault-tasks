@@ -1,3 +1,4 @@
+use color_eyre::eyre::bail;
 use color_eyre::Result;
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Paragraph};
@@ -7,12 +8,13 @@ use tui_widget_list::{ListBuilder, ListState, ListView};
 
 use super::Component;
 
+use crate::task_core::vault_data::VaultData;
 use crate::task_core::TaskManager;
-use crate::widgets::file_data::FileData;
+use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
 
 #[derive(Default)]
-pub struct Home {
+pub struct Explorer {
     command_tx: Option<UnboundedSender<Action>>,
     config: Config,
     task_mgr: TaskManager,
@@ -21,10 +23,10 @@ pub struct Home {
     entries_left_view: Vec<(String, String)>,
     state_center_view: ListState,
     entries_center_view: Vec<(String, String)>,
-    entries_right_view: FileData,
+    entries_right_view: Vec<VaultData>,
 }
 
-impl Home {
+impl Explorer {
     pub fn new() -> Self {
         Self::default()
     }
@@ -88,10 +90,10 @@ impl Home {
         } else {
             self.entries_left_view = self
                 .task_mgr
-                .get_navigator_entries(&self.current_path[0..self.current_path.len() - 1])?;
+                .get_explorer_entries(&self.current_path[0..self.current_path.len() - 1])?;
         }
         self.entries_center_view =
-            if let Ok(res) = self.task_mgr.get_navigator_entries(&self.current_path) {
+            if let Ok(res) = self.task_mgr.get_explorer_entries(&self.current_path) {
                 res
             } else {
                 self.leave_selected_entry()?;
@@ -100,26 +102,62 @@ impl Home {
         self.update_preview();
         Ok(())
     }
-    fn update_preview(&mut self) {
-        debug!("Updating preview");
+
+    fn get_preview_path(&self) -> Result<Vec<String>> {
         let mut path_to_preview = self.current_path.clone();
         if self.entries_center_view.is_empty() {
-            return;
+            bail!("Error: No selected entry")
         }
         path_to_preview.push(
             self.entries_center_view[self.state_center_view.selected.unwrap_or_default()]
                 .1
                 .clone(),
         );
+        Ok(path_to_preview)
+    }
 
-        if let Ok(data) = self.task_mgr.get_vault_data_from_path(&path_to_preview) {
-            debug!("{data:#?}");
-            self.entries_right_view = FileData::new(&self.config, &data);
-        }
+    fn update_preview(&mut self) {
+        debug!("Updating preview");
+        let Ok(path_to_preview) = self.get_preview_path() else {
+            return;
+        };
+
+        self.entries_right_view = self
+            .task_mgr
+            .get_vault_data_from_path(&path_to_preview)
+            .unwrap_or_default();
+        debug!("{:#?}", self.entries_right_view);
+    }
+    fn build_list(
+        entries_to_display: Vec<String>,
+        surrouding_block: Block<'_>,
+    ) -> ListView<'_, Paragraph<'_>> {
+        let item_count = entries_to_display.len();
+
+        let builder = ListBuilder::new(move |context| {
+            let mut item = Paragraph::new(entries_to_display[context.index].clone());
+            if context.is_selected {
+                item = item.style(
+                    Style::default()
+                        .bg(Color::Rgb(255, 153, 0))
+                        .fg(Color::Rgb(28, 28, 32)),
+                );
+            };
+            let main_axis_size = 1;
+            (item, main_axis_size)
+        });
+
+        ListView::new(builder, item_count).block(surrouding_block)
+    }
+    fn apply_prefixes(entries: &[(String, String)]) -> Vec<String> {
+        entries
+            .iter()
+            .map(|item| format!("{} {}", item.0, item.1))
+            .collect()
     }
 }
 
-impl Component for Home {
+impl Component for Explorer {
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
         self.command_tx = Some(tx);
         Ok(())
@@ -181,62 +219,45 @@ impl Component for Home {
             .split(outer_layout[1]);
 
         // Left Block
-        let surrounding_left_block = Block::default().borders(Borders::RIGHT);
-        let entries_to_display: Vec<String> = self
-            .entries_left_view
-            .iter()
-            .map(|item| format!("{} {}", item.0, item.1))
-            .collect();
-
-        let builder = ListBuilder::new(move |context| {
-            let mut item = Paragraph::new(entries_to_display[context.index].clone());
-            if context.is_selected {
-                item = item.style(
-                    Style::default()
-                        .bg(Color::Rgb(255, 153, 0))
-                        .fg(Color::Rgb(28, 28, 32)),
-                );
-            };
-            let main_axis_size = 1;
-            (item, main_axis_size)
-        });
-
-        let item_count = self.entries_left_view.len();
-        let left_entries_list = ListView::new(builder, item_count).block(surrounding_left_block);
+        let left_entries_list = Self::build_list(
+            Self::apply_prefixes(&self.entries_left_view),
+            Block::default().borders(Borders::RIGHT),
+        );
         let state = &mut self.state_left_view;
         left_entries_list.render(layout[0], frame.buffer_mut(), state);
 
         // Center Block
-        let surrounding_center_block = Block::default().borders(Borders::RIGHT);
-        let entries_to_display: Vec<String> = self
-            .entries_center_view
-            .iter()
-            .map(|item| format!("{} {}", item.0, item.1))
-            .collect();
-
-        let builder = ListBuilder::new(move |context| {
-            let mut item = Paragraph::new(entries_to_display[context.index].clone());
-            if context.is_selected {
-                item = item.style(
-                    Style::default()
-                        .bg(Color::Rgb(255, 153, 0))
-                        .fg(Color::Rgb(28, 28, 32)),
-                );
-            };
-            let main_axis_size = 1;
-            (item, main_axis_size)
-        });
-
-        let item_count = self.entries_center_view.len();
-        let lateral_entries_list =
-            ListView::new(builder, item_count).block(surrounding_center_block);
+        let lateral_entries_list = Self::build_list(
+            Self::apply_prefixes(&self.entries_center_view),
+            Block::default().borders(Borders::RIGHT),
+        );
         let state = &mut self.state_center_view;
         lateral_entries_list.render(layout[1], frame.buffer_mut(), state);
 
         // Right Block
-        self.entries_right_view
-            .clone()
-            .render(layout[2], frame.buffer_mut());
+
+        match self.entries_right_view.first() {
+            Some(VaultData::Task(_) | VaultData::Header(_, _, _)) => {
+                TaskList::new(&self.config, &self.entries_right_view)
+                    .render(layout[2], frame.buffer_mut());
+            }
+            Some(VaultData::Directory(_, _)) => Self::build_list(
+                Self::apply_prefixes(
+                    &self
+                        .task_mgr
+                        .get_explorer_entries(
+                            &self
+                                .get_preview_path()
+                                .unwrap_or_else(|_| self.current_path.clone()),
+                        )
+                        .unwrap_or_default(),
+                ),
+                Block::new(),
+            )
+            .render(layout[2], frame.buffer_mut(), &mut ListState::default()),
+            None => (),
+        }
+
         Ok(())
     }
 }

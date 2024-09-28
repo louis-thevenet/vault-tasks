@@ -7,16 +7,16 @@ use tui_widget_list::{ListBuilder, ListState, ListView};
 
 use crate::{config::Config, task_core::vault_data::VaultData};
 
-use super::file_data_item::FileDataItem;
+use super::task_list_item::TaskListItem;
 
 #[derive(Default, Clone)]
-pub struct FileData {
+pub struct TaskList {
     file_content: Vec<VaultData>,
     not_american_format: bool,
     state: ListState,
 }
 
-impl FileData {
+impl TaskList {
     pub fn new(config: &Config, file_content: &[VaultData]) -> Self {
         Self {
             state: ListState::default(),
@@ -25,7 +25,7 @@ impl FileData {
         }
     }
 }
-impl Widget for FileData {
+impl Widget for TaskList {
     fn render(mut self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
     where
         Self: Sized,
@@ -34,7 +34,7 @@ impl Widget for FileData {
         let count = self.file_content.len();
 
         let builder = ListBuilder::new(move |context| {
-            let item = FileDataItem::new(
+            let item = TaskListItem::new(
                 self.file_content[context.index].clone(),
                 self.not_american_format,
             );

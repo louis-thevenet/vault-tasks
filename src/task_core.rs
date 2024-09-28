@@ -75,7 +75,7 @@ impl TaskManager {
     /// Then returns a vector of prefixes and a vector of corresponding names from headers or directories to be displayed in TUI.
     /// The method only returns items that are on the same level as the target `VaultData`.
     /// Fails when a task is found or if no corresponding entry is found.
-    pub fn get_navigator_entries(
+    pub fn get_explorer_entries(
         &self,
         selected_header_path: &[String],
     ) -> Result<Vec<(String, String)>> {
@@ -326,12 +326,12 @@ mod tests {
 
         let path = vec![String::from("Test"), String::from("1"), String::from("2")];
         let expected = vec![(String::from("###"), String::from("3"))];
-        let res = task_mgr.get_navigator_entries(&path);
+        let res = task_mgr.get_explorer_entries(&path);
         assert_eq!(expected, res.unwrap());
 
         let path = vec![String::from("Test"), String::from("1")];
         let expected = vec![(String::from("##"), String::from("2"))];
-        let res = task_mgr.get_navigator_entries(&path);
+        let res = task_mgr.get_explorer_entries(&path);
         assert_eq!(expected, res.unwrap());
     }
     #[test]
@@ -388,7 +388,7 @@ mod tests {
             String::from("1"),
             String::from("2"),
         ];
-        let res = task_mgr.get_navigator_entries(&path);
+        let res = task_mgr.get_explorer_entries(&path);
         assert!(res.is_err());
 
         let path = vec![
@@ -397,7 +397,7 @@ mod tests {
             String::from("2"),
             String::from("3"),
         ];
-        let res = task_mgr.get_navigator_entries(&path);
+        let res = task_mgr.get_explorer_entries(&path);
         assert_eq!(res.unwrap(), vec![("❌".to_owned(), "test".to_owned())]);
     }
 

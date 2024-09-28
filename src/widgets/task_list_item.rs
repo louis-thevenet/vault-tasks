@@ -2,19 +2,19 @@ use ratatui::{
     prelude::*,
     widgets::{Block, Borders, Paragraph},
 };
+use tracing::error;
 
 use crate::task_core::{
     task::{DueDate, PRIORITY_EMOJI},
     vault_data::VaultData,
-    DIRECTORY_EMOJI, FILE_EMOJI,
 };
 
-pub struct FileDataItem {
+pub struct TaskListItem {
     item: VaultData,
     pub height: usize,
     not_american_format: bool,
 }
-impl FileDataItem {
+impl TaskListItem {
     pub fn new(item: VaultData, not_american_format: bool) -> Self {
         let height = Self::compute_height(&item);
         Self {
@@ -55,22 +55,13 @@ impl FileDataItem {
         }
     }
 }
-impl Widget for FileDataItem {
+impl Widget for TaskListItem {
     fn render(self, area: Rect, buf: &mut Buffer)
     where
         Self: Sized,
     {
         match &self.item {
-            VaultData::Directory(name, _) => Paragraph::new(format!(
-                "{}{}",
-                (if name.contains(".md") {
-                    FILE_EMOJI.to_owned()
-                } else {
-                    DIRECTORY_EMOJI.to_owned()
-                }),
-                name
-            ))
-            .render(area, buf),
+            VaultData::Directory(name, _) => error!("TaskList widget received a directory: {name}"),
             VaultData::Header(_level, name, children) => {
                 let surrounding_block = Block::default()
                     .borders(Borders::TOP )
