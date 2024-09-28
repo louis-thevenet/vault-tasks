@@ -1,6 +1,6 @@
 use color_eyre::{eyre::bail, Result};
 
-use std::{fmt::Display, path::PathBuf};
+use std::{cmp::Ordering, fmt::Display, path::PathBuf};
 use vault_data::VaultData;
 
 use tracing::{debug, error};
@@ -75,39 +75,38 @@ impl TaskManager {
     /// Then returns a vector of prefixes and a vector of corresponding names from headers or directories to be displayed in TUI.
     /// The method only returns items that are on the same level as the target `VaultData`.
     /// Fails when a task is found or if no corresponding entry is found.
-    pub fn get_navigator_entries(
+    pub fn get_explorer_entries(
         &self,
         selected_header_path: &[String],
-    ) -> Result<(Vec<String>, Vec<String>)> {
+    ) -> Result<Vec<(String, String)>> {
         fn aux(
             file_entry: Vec<VaultData>,
             selected_header_path: &[String],
             path_index: usize,
-        ) -> Result<(Vec<String>, Vec<String>)> {
+        ) -> Result<Vec<(String, String)>> {
             if path_index == selected_header_path.len() {
                 let mut res = vec![];
-                let mut prefixes = vec![];
                 for entry in file_entry {
                     match entry {
                         VaultData::Directory(name, _) => {
-                            res.push(name.clone());
-                            prefixes.push(if name.contains(".md") {
-                                FILE_EMOJI.to_owned()
-                            } else {
-                                DIRECTORY_EMOJI.to_owned()
-                            });
+                            res.push((
+                                if name.contains(".md") {
+                                    FILE_EMOJI.to_owned()
+                                } else {
+                                    DIRECTORY_EMOJI.to_owned()
+                                },
+                                name.clone(),
+                            ));
                         }
                         VaultData::Header(level, name, _) => {
-                            res.push(name);
-                            prefixes.push("#".repeat(level).clone());
+                            res.push(("#".repeat(level).clone(), name));
                         }
                         VaultData::Task(task) => {
-                            res.push(task.name);
-                            prefixes.push(task.state.to_string());
+                            res.push((task.state.to_string(), task.name));
                         }
                     }
                 }
-                Ok((prefixes, res))
+                Ok(res)
             } else {
                 for entry in file_entry {
                     match entry {
@@ -138,7 +137,21 @@ impl TaskManager {
         let VaultData::Directory(_, entries) = self.tasks.clone() else {
             bail!("Error: First layer of VaultData was not a Directory")
         };
-        aux(entries, selected_header_path, 0)
+        let mut res = aux(entries, selected_header_path, 0)?;
+        res.sort_by(|a, b| {
+            if a.0 == DIRECTORY_EMOJI {
+                if b.0 == DIRECTORY_EMOJI {
+                    a.1.cmp(&b.1)
+                } else {
+                    Ordering::Less
+                }
+            } else if b.0 == DIRECTORY_EMOJI {
+                Ordering::Greater
+            } else {
+                a.1.cmp(&b.1)
+            }
+        });
+        Ok(res)
     }
 
     /// Follows the `selected_header_path` to retrieve the correct `VaultData`.
@@ -312,13 +325,13 @@ mod tests {
         let task_mgr = TaskManager { tasks: input };
 
         let path = vec![String::from("Test"), String::from("1"), String::from("2")];
-        let expected = (vec![String::from("###")], vec![String::from("3")]);
-        let res = task_mgr.get_navigator_entries(&path);
+        let expected = vec![(String::from("###"), String::from("3"))];
+        let res = task_mgr.get_explorer_entries(&path);
         assert_eq!(expected, res.unwrap());
 
         let path = vec![String::from("Test"), String::from("1")];
-        let expected = (vec![String::from("##")], vec![String::from("2")]);
-        let res = task_mgr.get_navigator_entries(&path);
+        let expected = vec![(String::from("##"), String::from("2"))];
+        let res = task_mgr.get_explorer_entries(&path);
         assert_eq!(expected, res.unwrap());
     }
     #[test]
@@ -375,7 +388,7 @@ mod tests {
             String::from("1"),
             String::from("2"),
         ];
-        let res = task_mgr.get_navigator_entries(&path);
+        let res = task_mgr.get_explorer_entries(&path);
         assert!(res.is_err());
 
         let path = vec![
@@ -384,11 +397,8 @@ mod tests {
             String::from("2"),
             String::from("3"),
         ];
-        let res = task_mgr.get_navigator_entries(&path);
-        assert_eq!(
-            res.unwrap(),
-            (vec!["❌".to_owned()], vec!["test".to_owned()])
-        );
+        let res = task_mgr.get_explorer_entries(&path);
+        assert_eq!(res.unwrap(), vec![("❌".to_owned(), "test".to_owned())]);
     }
 
     #[test]
