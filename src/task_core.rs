@@ -1,6 +1,6 @@
 use color_eyre::{eyre::bail, Result};
 
-use std::{fmt::Display, path::PathBuf};
+use std::{cmp::Ordering, fmt::Display, path::PathBuf};
 use vault_data::VaultData;
 
 use tracing::{debug, error};
@@ -137,7 +137,21 @@ impl TaskManager {
         let VaultData::Directory(_, entries) = self.tasks.clone() else {
             bail!("Error: First layer of VaultData was not a Directory")
         };
-        aux(entries, selected_header_path, 0)
+        let mut res = aux(entries, selected_header_path, 0)?;
+        res.sort_by(|a, b| {
+            if a.0 == DIRECTORY_EMOJI {
+                if b.0 == DIRECTORY_EMOJI {
+                    a.1.cmp(&b.1)
+                } else {
+                    Ordering::Less
+                }
+            } else if b.0 == DIRECTORY_EMOJI {
+                Ordering::Greater
+            } else {
+                a.1.cmp(&b.1)
+            }
+        });
+        Ok(res)
     }
 
     /// Follows the `selected_header_path` to retrieve the correct `VaultData`.
