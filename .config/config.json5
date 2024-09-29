@@ -17,7 +17,7 @@
             "<Ctrl-Left>":"TabLeft",
             "<Ctrl-h>":"TabLeft",
         },
-        "Tags": {
+        "Filter": {
             "<q>": "Quit",
             "<Ctrl-d>": "Quit",
             "<Ctrl-c>": "Quit",
@@ -27,6 +27,8 @@
             "<Ctrl-l>":"TabRight",
             "<Ctrl-Left>":"TabLeft",
             "<Ctrl-h>":"TabLeft",
+
+            "<Enter>": "Enter",
         },
         "Explorer": {
             "<q>": "Quit",

@@ -1,6 +1,6 @@
 use color_eyre::{eyre::bail, Result};
 
-use std::{cmp::Ordering, fmt::Display, path::PathBuf};
+use std::{cmp::Ordering, collections::HashSet, fmt::Display, path::PathBuf};
 use vault_data::VaultData;
 
 use tracing::{debug, error};
@@ -8,7 +8,8 @@ use vault_parser::VaultParser;
 
 use crate::config::Config;
 
-mod parser;
+pub mod filter;
+pub mod parser;
 pub mod task;
 pub mod vault_data;
 mod vault_parser;
@@ -18,11 +19,13 @@ pub const DIRECTORY_EMOJI: &str = "📁";
 
 pub struct TaskManager {
     pub tasks: VaultData,
+    pub tags: HashSet<String>,
 }
 impl Default for TaskManager {
     fn default() -> Self {
         Self {
             tasks: VaultData::Directory("Empty".to_owned(), vec![]),
+            tags: HashSet::new(),
         }
     }
 }
@@ -35,8 +38,27 @@ impl TaskManager {
         Self::rewrite_vault_tasks(config, &tasks)
             .unwrap_or_else(|e| error!("Failed to fix tasks' due dates: {e}"));
 
+        let mut tags = HashSet::new();
+        Self::collect_tags(&tasks, &mut tags);
         debug!("\n{}", tasks);
-        Ok(Self { tasks })
+        debug!("\n{:#?}", tags);
+        Ok(Self { tasks, tags })
+    }
+
+    fn collect_tags(tasks: &VaultData, tags: &mut HashSet<String>) {
+        match tasks {
+            VaultData::Directory(_, children) | VaultData::Header(_, _, children) => {
+                children.iter().for_each(|c| Self::collect_tags(c, tags));
+            }
+            VaultData::Task(task) => {
+                task.tags.clone().unwrap_or_default().iter().for_each(|t| {
+                    tags.insert(t.clone());
+                });
+                task.subtasks
+                    .iter()
+                    .for_each(|task| Self::collect_tags(&VaultData::Task(task.clone()), tags));
+            }
+        }
     }
 
     /// Recursively calls `Task.fix_task_attributes` on every task from the vault.
@@ -274,6 +296,8 @@ impl Display for TaskManager {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use pretty_assertions::assert_eq;
 
     use crate::task_core::{task::Task, vault_data::VaultData};
@@ -327,7 +351,10 @@ mod tests {
             )],
         );
 
-        let task_mgr = TaskManager { tasks: input };
+        let task_mgr = TaskManager {
+            tasks: input,
+            tags: HashSet::new(),
+        };
 
         let path = vec![String::from("Test"), String::from("1"), String::from("2")];
         let expected = vec![(String::from("###"), String::from("3"))];
@@ -386,7 +413,10 @@ mod tests {
             )],
         );
 
-        let task_mgr = TaskManager { tasks: input };
+        let task_mgr = TaskManager {
+            tasks: input,
+            tags: HashSet::new(),
+        };
 
         let path = vec![
             String::from("Testaaa"),
@@ -465,7 +495,10 @@ mod tests {
             )],
         );
 
-        let task_mgr = TaskManager { tasks: input };
+        let task_mgr = TaskManager {
+            tasks: input,
+            tags: HashSet::new(),
+        };
 
         let path = vec![String::from("Test"), String::from("1"), String::from("2")];
         let res = task_mgr.get_vault_data_from_path(&path).unwrap();

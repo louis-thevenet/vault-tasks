@@ -7,7 +7,9 @@ use tracing::{debug, info};
 
 use crate::{
     action::Action,
-    components::{explorer::Explorer, fps::FpsCounter, home::Home, tags::Tags, Component},
+    components::{
+        explorer_tab::ExplorerTab, filter_tab::FilterTab, fps::FpsCounter, home::Home, Component,
+    },
     config::Config,
     tui::{Event, Tui},
 };
@@ -30,7 +32,7 @@ pub enum Mode {
     #[default]
     Home,
     Explorer,
-    Tags,
+    Filter,
 }
 
 impl App {
@@ -42,8 +44,8 @@ impl App {
             components: vec![
                 Box::new(Home::new()),
                 Box::<FpsCounter>::default(),
-                Box::new(Explorer::new()),
-                Box::new(Tags::new()),
+                Box::new(ExplorerTab::new()),
+                Box::new(FilterTab::new()),
             ],
             should_quit: false,
             should_suspend: false,
@@ -117,6 +119,12 @@ impl App {
         let Some(keymap) = self.config.keybindings.get(&self.mode) else {
             return Ok(());
         };
+
+        if self.components.iter().any(|c| c.editing_mode()) {
+            action_tx.send(Action::Key(key))?;
+            return Ok(());
+        }
+
         if let Some(action) = keymap.get(&vec![key]) {
             action_tx.send(action.clone())?;
         } else {
@@ -140,7 +148,7 @@ impl App {
             }
             match action {
                 Action::FocusExplorer => self.mode = Mode::Explorer,
-                Action::FocusTags => self.mode = Mode::Tags,
+                Action::FocusFilter => self.mode = Mode::Filter,
                 Action::Tick => {
                     self.last_tick_key_events.drain(..);
                 }
