@@ -119,6 +119,12 @@ impl App {
         let Some(keymap) = self.config.keybindings.get(&self.mode) else {
             return Ok(());
         };
+
+        if self.components.iter().any(|c| c.editing_mode()) {
+            action_tx.send(Action::Key(key))?;
+            return Ok(());
+        }
+
         if let Some(action) = keymap.get(&vec![key]) {
             action_tx.send(action.clone())?;
         } else {

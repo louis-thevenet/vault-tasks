@@ -124,4 +124,12 @@ pub trait Component {
     ///
     /// * `Result<()>` - An Ok result or an error.
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
+    /// Whether the app should send Actions or `Action::Key`
+    ///
+    /// # Returns
+    ///
+    /// * `bool` - Whether the component is in editing mode or not.
+    fn editing_mode(&self) -> bool {
+        false
+    }
 }
