@@ -81,7 +81,12 @@ impl FilterTab {
             self.task_mgr
                 .tags
                 .iter()
-                .filter(|t| search_tags.clone().iter().any(|t2| t.contains(t2)))
+                .filter(|t| {
+                    search_tags
+                        .clone()
+                        .iter()
+                        .any(|t2| t.to_lowercase().contains(&t2.to_lowercase()))
+                })
                 .cloned()
                 .collect()
         };
