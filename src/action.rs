@@ -1,3 +1,4 @@
+use crossterm::event::KeyEvent;
 use serde::{Deserialize, Serialize};
 use strum::Display;
 
@@ -12,6 +13,7 @@ pub enum Action {
     ClearScreen,
     Error(String),
     Help,
+    Key(KeyEvent),
     Up,
     Down,
     Left,
@@ -21,5 +23,5 @@ pub enum Action {
     TabRight,
     TabLeft,
     FocusExplorer,
-    FocusTags,
+    FocusFilter,
 }

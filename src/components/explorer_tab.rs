@@ -14,7 +14,7 @@ use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
 
 #[derive(Default)]
-pub struct Explorer {
+pub struct ExplorerTab {
     command_tx: Option<UnboundedSender<Action>>,
     config: Config,
     focused: bool,
@@ -27,7 +27,7 @@ pub struct Explorer {
     entries_right_view: Vec<VaultData>,
 }
 
-impl Explorer {
+impl ExplorerTab {
     pub fn new() -> Self {
         Self::default()
     }
@@ -155,9 +155,14 @@ impl Explorer {
             .map(|item| format!("{} {}", item.0, item.1))
             .collect()
     }
+    pub fn render_footer(area: Rect, frame: &mut Frame) {
+        Line::raw("Press hjkl|◄▼▲▶ to move")
+            .centered()
+            .render(area, frame.buffer_mut());
+    }
 }
 
-impl Component for Explorer {
+impl Component for ExplorerTab {
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
         self.command_tx = Some(tx);
         Ok(())
@@ -172,21 +177,24 @@ impl Component for Explorer {
     }
 
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
-        match action {
-            Action::FocusExplorer => self.focused = true,
-            Action::FocusTags => self.focused = false,
-            Action::Up => {
-                self.state_center_view.previous();
-                self.update_preview();
+        if self.focused {
+            match action {
+                Action::FocusFilter => self.focused = false,
+                Action::Up => {
+                    self.state_center_view.previous();
+                    self.update_preview();
+                }
+                Action::Down => {
+                    self.state_center_view.next();
+                    self.update_preview();
+                }
+                Action::Right | Action::Enter => self.enter_selected_entry()?,
+                Action::Left | Action::Cancel => self.leave_selected_entry()?,
+                Action::Help => todo!(),
+                _ => (),
             }
-            Action::Down => {
-                self.state_center_view.next();
-                self.update_preview();
-            }
-            Action::Right | Action::Enter => self.enter_selected_entry()?,
-            Action::Left | Action::Cancel => self.leave_selected_entry()?,
-            Action::Help => todo!(),
-            _ => (),
+        } else if action == Action::FocusExplorer {
+            self.focused = true;
         }
         Ok(None)
     }
@@ -205,8 +213,12 @@ impl Component for Explorer {
             Constraint::Length(1),
             Constraint::Min(0),
             Constraint::Length(1),
+            Constraint::Length(1),
         ]);
-        let [_header_area, inner_area, _footer_areaa] = vertical.areas(frame.area());
+        let [_header_area, inner_area, footer_area, _tab_footer_areaa] =
+            vertical.areas(frame.area());
+
+        Self::render_footer(footer_area, frame);
 
         // Outer Layout : path on top, main layout on bottom
         let outer_layout = Layout::default()
