@@ -172,21 +172,24 @@ impl Component for ExplorerTab {
     }
 
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
-        match action {
-            Action::FocusExplorer => self.focused = true,
-            Action::FocusFilter => self.focused = false,
-            Action::Up => {
-                self.state_center_view.previous();
-                self.update_preview();
+        if self.focused {
+            match action {
+                Action::FocusFilter => self.focused = false,
+                Action::Up => {
+                    self.state_center_view.previous();
+                    self.update_preview();
+                }
+                Action::Down => {
+                    self.state_center_view.next();
+                    self.update_preview();
+                }
+                Action::Right | Action::Enter => self.enter_selected_entry()?,
+                Action::Left | Action::Cancel => self.leave_selected_entry()?,
+                Action::Help => todo!(),
+                _ => (),
             }
-            Action::Down => {
-                self.state_center_view.next();
-                self.update_preview();
-            }
-            Action::Right | Action::Enter => self.enter_selected_entry()?,
-            Action::Left | Action::Cancel => self.leave_selected_entry()?,
-            Action::Help => todo!(),
-            _ => (),
+        } else if action == Action::FocusExplorer {
+            self.focused = true;
         }
         Ok(None)
     }
