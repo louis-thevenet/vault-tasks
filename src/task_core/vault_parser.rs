@@ -60,7 +60,13 @@ impl VaultParser {
                     );
 
                     self.scan(&entry.path(), &mut new_child)?;
-                    children.push(new_child);
+
+                    if let VaultData::Directory(_, c) = new_child.clone() {
+                        if c.is_empty() {
+                        } else {
+                            children.push(new_child);
+                        }
+                    }
                 } else if !std::path::Path::new(
                     &entry.file_name().into_string().unwrap_or_default(),
                 )
