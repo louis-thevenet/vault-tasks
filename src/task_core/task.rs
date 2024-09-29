@@ -163,7 +163,7 @@ impl Task {
             "{}- [{}] {} {}{}{}",
             indent, state_str, self.name, due_date, priority, tags_str
         );
-        res.trim().to_string()
+        res.trim_end().to_string()
     }
 
     pub fn fix_task_attributes(&self, config: &Config, path: &PathBuf) -> Result<()> {
