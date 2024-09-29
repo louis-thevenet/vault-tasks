@@ -41,7 +41,7 @@ pub fn filter(vault_data: &VaultData, search: &Task, compare_states: bool) -> Ve
                         .clone()
                         .unwrap_or_default()
                         .iter()
-                        .any(|x| x.to_lowercase() == t.to_lowercase())
+                        .any(|x| x.to_lowercase().contains(&t.to_lowercase()))
                 });
 
                 let priority_match = if search.priority > 0 {
