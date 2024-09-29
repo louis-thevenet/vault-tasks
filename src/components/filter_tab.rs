@@ -44,6 +44,15 @@ impl FilterTab {
     pub fn new() -> Self {
         Self::default()
     }
+    pub fn render_footer(&self, area: Rect, frame: &mut Frame) {
+        match self.input_mode {
+            InputMode::Normal => Line::raw("Press Enter to start searching"),
+
+            InputMode::Editing => Line::raw("Press Enter to stop searching"),
+        }
+        .centered()
+        .render(area, frame.buffer_mut());
+    }
     fn update_matching_entries(&mut self) {
         let has_state = self.input.value().starts_with("- [");
         let input_value = format!(
@@ -92,7 +101,7 @@ impl Component for FilterTab {
                 Action::Enter => self.input_mode = self.input_mode.invert(),
                 Action::Key(key) if matches!(self.input_mode, InputMode::Editing) => match key.code
                 {
-                    KeyCode::Enter => self.input_mode = self.input_mode.invert(),
+                    KeyCode::Enter | KeyCode::Esc => self.input_mode = self.input_mode.invert(),
                     _ => {
                         self.input.handle_event(&Event::Key(key));
                         self.update_matching_entries()
@@ -119,8 +128,12 @@ impl Component for FilterTab {
             Constraint::Length(3),
             Constraint::Min(0),
             Constraint::Length(1),
+            Constraint::Length(1),
         ]);
-        let [_header_area, search_area, content_area, _footer_areaa] = vertical.areas(frame.area());
+        let [_header_area, search_area, content_area, footer_area, _tab_footer_areaa] =
+            vertical.areas(frame.area());
+
+        self.render_footer(footer_area, frame);
 
         let width = search_area.width.max(3) - 3; // 2 for borders, 1 for cursor
         let scroll = self.input.visual_scroll(width as usize);
