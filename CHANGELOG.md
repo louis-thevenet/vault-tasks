@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.1.0...v0.2.0) (2024-09-29)
+
+
+### Features
+
+* **tui:** add filter tab ([#13](https://github.com/louis-thevenet/vault-tasks/issues/13)) ([825523a](https://github.com/louis-thevenet/vault-tasks/commit/825523ada89134c3637af3127af1c9c8e9cd1b7c))
+* **tui:** add tab bar ([f1344f0](https://github.com/louis-thevenet/vault-tasks/commit/f1344f0c95a332826074925071994dac7e718d28))
+* **tui:** sort explorer entries ([#12](https://github.com/louis-thevenet/vault-tasks/issues/12)) ([ee38072](https://github.com/louis-thevenet/vault-tasks/commit/ee38072e8596f3948f42b7445943bcbad80e65fa))
+* **vault_parser:** only parse markdown files ([cfb8db1](https://github.com/louis-thevenet/vault-tasks/commit/cfb8db1e6e7c493d96349c44895b7a6fba4f0d81))
+
+
+### Bug Fixes
+
+* **core:** remove extra whitespace when fixing tasks in files ([d8a2a86](https://github.com/louis-thevenet/vault-tasks/commit/d8a2a86975710eb20cfd202237a5af77f01c6b7c))
+* **explorer:** only sort file and directory entries ([c2abfef](https://github.com/louis-thevenet/vault-tasks/commit/c2abfef535fbc978089f925c8c61cb14f340bbfc))
+* **tui:** false error on startup : initiate entries list on creation ([0a9e7ed](https://github.com/louis-thevenet/vault-tasks/commit/0a9e7ed19b50a1d3bcc5001b682cd49e4a9c25fa))
+
 ## 0.1.0 (2024-09-22)
 
 
