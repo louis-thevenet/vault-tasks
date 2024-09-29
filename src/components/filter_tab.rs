@@ -1,6 +1,6 @@
 use color_eyre::Result;
 use crossterm::event::{Event, KeyCode};
-use ratatui::widgets::Paragraph;
+use ratatui::widgets::{List, Paragraph};
 use ratatui::{prelude::*, widgets::Block};
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -17,13 +17,14 @@ use tui_input::{backend::crossterm::EventHandler, Input};
 
 #[derive(Default)]
 pub struct FilterTab {
-    task_mgr: TaskManager,
-    matching_entries: Vec<Task>,
     command_tx: Option<UnboundedSender<Action>>,
     config: Config,
     focused: bool,
     input: Input,
     input_mode: InputMode,
+    matching_entries: Vec<Task>,
+    matching_tags: Vec<String>,
+    task_mgr: TaskManager,
 }
 
 #[derive(Default)]
@@ -70,7 +71,21 @@ impl FilterTab {
                 return;
             }
         };
+
         self.matching_entries = filter(&self.task_mgr.tasks, &search, has_state);
+
+        self.matching_tags = if search.tags.is_none() {
+            self.task_mgr.tags.iter().cloned().collect::<Vec<String>>()
+        } else {
+            let search_tags = search.tags.unwrap_or_default();
+            self.task_mgr
+                .tags
+                .iter()
+                .filter(|t| search_tags.clone().iter().any(|t2| t.contains(t2)))
+                .cloned()
+                .collect()
+        };
+        self.matching_tags.sort();
     }
 }
 impl Component for FilterTab {
@@ -104,7 +119,7 @@ impl Component for FilterTab {
                     KeyCode::Enter | KeyCode::Esc => self.input_mode = self.input_mode.invert(),
                     _ => {
                         self.input.handle_event(&Event::Key(key));
-                        self.update_matching_entries()
+                        self.update_matching_entries();
                     }
                 },
                 _ => (),
@@ -168,6 +183,12 @@ impl Component for FilterTab {
                 .scroll((0, scroll as u16));
         frame.render_widget(input, search_area);
 
+        let [tag_area, list_area] =
+            Layout::horizontal([Constraint::Length(15), Constraint::Min(0)]).areas(content_area);
+
+        let tag_list = List::new(self.matching_tags.iter().map(std::string::String::as_str))
+            .block(Block::bordered().title("Found Tags"));
+
         let entries_list = TaskList::new(
             &self.config,
             &self
@@ -177,7 +198,8 @@ impl Component for FilterTab {
                 .map(|t| VaultData::Task(t.clone()))
                 .collect::<Vec<VaultData>>(),
         );
-        entries_list.render(content_area, frame.buffer_mut());
+        Widget::render(tag_list, tag_area, frame.buffer_mut());
+        entries_list.render(list_area, frame.buffer_mut());
         Ok(())
     }
 }

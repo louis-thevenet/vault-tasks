@@ -19,7 +19,7 @@ pub const DIRECTORY_EMOJI: &str = "📁";
 
 pub struct TaskManager {
     pub tasks: VaultData,
-    tags: HashSet<String>,
+    pub tags: HashSet<String>,
 }
 impl Default for TaskManager {
     fn default() -> Self {
