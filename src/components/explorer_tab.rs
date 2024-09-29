@@ -155,7 +155,7 @@ impl ExplorerTab {
             .map(|item| format!("{} {}", item.0, item.1))
             .collect()
     }
-    pub fn render_footer(&self, area: Rect, frame: &mut Frame) {
+    pub fn render_footer(area: Rect, frame: &mut Frame) {
         Line::raw("Press hjkl|◄▼▲▶ to move")
             .centered()
             .render(area, frame.buffer_mut());
@@ -218,7 +218,7 @@ impl Component for ExplorerTab {
         let [_header_area, inner_area, footer_area, _tab_footer_areaa] =
             vertical.areas(frame.area());
 
-        self.render_footer(footer_area, frame);
+        Self::render_footer(footer_area, frame);
 
         // Outer Layout : path on top, main layout on bottom
         let outer_layout = Layout::default()

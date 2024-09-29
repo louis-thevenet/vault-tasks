@@ -45,18 +45,18 @@ impl TaskManager {
         Ok(Self { tasks, tags })
     }
 
-    fn collect_tags(tasks: &VaultData, mut tags: &mut HashSet<String>) {
+    fn collect_tags(tasks: &VaultData, tags: &mut HashSet<String>) {
         match tasks {
-            VaultData::Directory(_, children) | VaultData::Header(_, _, children) => children
-                .iter()
-                .for_each(|c| Self::collect_tags(c, &mut tags)),
+            VaultData::Directory(_, children) | VaultData::Header(_, _, children) => {
+                children.iter().for_each(|c| Self::collect_tags(c, tags));
+            }
             VaultData::Task(task) => {
                 task.tags.clone().unwrap_or_default().iter().for_each(|t| {
                     tags.insert(t.clone());
                 });
                 task.subtasks
                     .iter()
-                    .for_each(|task| Self::collect_tags(&VaultData::Task(task.clone()), &mut tags))
+                    .for_each(|task| Self::collect_tags(&VaultData::Task(task.clone()), tags));
             }
         }
     }
