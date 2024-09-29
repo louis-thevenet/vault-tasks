@@ -1,13 +1,8 @@
-use std::time::Duration;
-
-use color_eyre::eyre::bail;
-use color_eyre::owo_colors::OwoColorize;
 use color_eyre::Result;
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
+use crossterm::event::{Event, KeyCode};
 use ratatui::widgets::Paragraph;
 use ratatui::{prelude::*, widgets::Block};
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::{debug, error};
 
 use super::Component;
 
@@ -49,17 +44,24 @@ impl FilterTab {
     pub fn new() -> Self {
         Self::default()
     }
-    fn update_matching_entries(&mut self) -> Result<()> {
-        let input_with_state = &format!("- [ ] {}", self.input.value());
-        let mut input_str = input_with_state.as_str();
-        let search = match parse_task(&mut input_str, &self.config) {
+    fn update_matching_entries(&mut self) {
+        let has_state = self.input.value().starts_with("- [");
+        let input_value = format!(
+            "{}{}",
+            if has_state { "" } else { "- [ ]" },
+            self.input.value()
+        );
+        let search = match parse_task(&mut input_value.as_str(), &self.config) {
             Ok(t) => t,
-            Err(e) => {
-                bail!("Error: {e}");
+            Err(_e) => {
+                self.matching_entries = vec![Task {
+                    name: String::from("Uncomplete search prompt"),
+                    ..Default::default()
+                }];
+                return;
             }
         };
-        self.matching_entries = filter(&self.task_mgr.tasks, &search);
-        Ok(())
+        self.matching_entries = filter(&self.task_mgr.tasks, &search, has_state);
     }
 }
 impl Component for FilterTab {
@@ -71,6 +73,7 @@ impl Component for FilterTab {
     fn register_config_handler(&mut self, config: Config) -> Result<()> {
         self.task_mgr = TaskManager::load_from_config(&config)?;
         self.config = config;
+        self.update_matching_entries();
         Ok(())
     }
 
@@ -92,7 +95,7 @@ impl Component for FilterTab {
                     KeyCode::Enter => self.input_mode = self.input_mode.invert(),
                     _ => {
                         self.input.handle_event(&Event::Key(key));
-                        self.update_matching_entries()?
+                        self.update_matching_entries()
                     }
                 },
                 _ => (),
