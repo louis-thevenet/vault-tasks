@@ -9,7 +9,7 @@ use vault_parser::VaultParser;
 use crate::config::Config;
 
 pub mod filter;
-mod parser;
+pub mod parser;
 pub mod task;
 pub mod vault_data;
 mod vault_parser;

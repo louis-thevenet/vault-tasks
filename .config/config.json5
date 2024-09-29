@@ -27,6 +27,8 @@
             "<Ctrl-l>":"TabRight",
             "<Ctrl-Left>":"TabLeft",
             "<Ctrl-h>":"TabLeft",
+
+            "<Enter>": "Enter",
         },
         "Explorer": {
             "<q>": "Quit",
