@@ -17,17 +17,17 @@ use crate::{action::Action, config::Config};
 use tui_input::backend::crossterm::EventHandler;
 
 #[derive(Default)]
-pub struct FilterTab {
+pub struct FilterTab<'a> {
     command_tx: Option<UnboundedSender<Action>>,
     config: Config,
     is_focused: bool,
     matching_entries: Vec<Task>,
     matching_tags: Vec<String>,
-    search_bar_widget: SearchBar,
+    search_bar_widget: SearchBar<'a>,
     task_mgr: TaskManager,
 }
 
-impl FilterTab {
+impl<'a> FilterTab<'a> {
     pub fn new() -> Self {
         Self::default()
     }
@@ -86,7 +86,7 @@ impl FilterTab {
         self.matching_tags.sort();
     }
 }
-impl Component for FilterTab {
+impl<'a> Component for FilterTab<'a> {
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
         self.command_tx = Some(tx);
         Ok(())
@@ -108,7 +108,7 @@ impl Component for FilterTab {
             match action {
                 Action::FocusExplorer => self.is_focused = false,
                 Action::FocusFilter => self.is_focused = true,
-                Action::Enter => {
+                Action::Enter | Action::Search => {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
                 }
                 Action::Key(key) if self.search_bar_widget.is_focused => match key.code {
@@ -166,6 +166,14 @@ impl Component for FilterTab {
                 search_area.y + 1,
             ));
         }
+
+        self.search_bar_widget.block = Some(Block::bordered().style(Style::new().fg(
+            if self.search_bar_widget.is_focused {
+                Color::Rgb(255, 153, 0)
+            } else {
+                Color::default()
+            },
+        )));
         self.search_bar_widget
             .render(search_area, frame.buffer_mut());
 
