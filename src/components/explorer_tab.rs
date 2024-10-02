@@ -90,6 +90,7 @@ impl<'a> ExplorerTab<'a> {
 
     fn update_entries(&mut self) -> Result<()> {
         debug!("Updating entries");
+
         if self.current_path.is_empty() {
             // Vault root
             self.entries_left_view = vec![];
@@ -105,6 +106,12 @@ impl<'a> ExplorerTab<'a> {
                 self.leave_selected_entry()?;
                 return Ok(());
             };
+        if self.entries_left_view.len() <= self.state_left_view.selected.unwrap_or_default() {
+            self.state_left_view.select(None);
+        }
+        if self.entries_center_view.len() <= self.state_center_view.selected.unwrap_or_default() {
+            self.state_center_view.select(None);
+        }
         self.update_preview();
         Ok(())
     }
@@ -182,6 +189,10 @@ impl<'a> Component for ExplorerTab<'a> {
     fn register_config_handler(&mut self, config: Config) -> Result<()> {
         self.task_mgr = TaskManager::load_from_config(&config)?;
         self.config = config;
+        self.task_mgr.current_filter = Some(parse_search_input(
+            self.search_bar_widget.input.value(),
+            &self.config,
+        ));
         self.update_entries()?;
         self.state_center_view.selected = Some(0);
         Ok(())
@@ -219,7 +230,14 @@ impl<'a> Component for ExplorerTab<'a> {
                                 .handle_event(&Event::Key(key_event));
                         }
                     };
-                    self.update_preview();
+
+                    // Update search input in TaskManager
+                    self.task_mgr.current_filter = Some(parse_search_input(
+                        self.search_bar_widget.input.value(),
+                        &self.config,
+                    ));
+
+                    self.update_entries()?;
                 }
                 Action::Help => todo!(),
                 _ => (),

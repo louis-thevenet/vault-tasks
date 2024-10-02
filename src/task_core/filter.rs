@@ -117,7 +117,6 @@ pub fn filter(vault_data: &VaultData, search: &Task, compare_states: bool) -> Op
             }
         }
         VaultData::Task(task) => {
-            debug!("{search}");
             if tasks_match(search, task, compare_states) {
                 Some(vault_data.clone())
             } else {

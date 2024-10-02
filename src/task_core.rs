@@ -1,12 +1,13 @@
 use color_eyre::{eyre::bail, Result};
+use task::Task;
 
 use std::{cmp::Ordering, collections::HashSet, fmt::Display, path::PathBuf};
 use vault_data::VaultData;
 
+use crate::config::Config;
+use filter::filter;
 use tracing::{debug, error};
 use vault_parser::VaultParser;
-
-use crate::config::Config;
 
 pub mod filter;
 pub mod parser;
@@ -20,12 +21,14 @@ pub const DIRECTORY_EMOJI: &str = "📁";
 pub struct TaskManager {
     pub tasks: VaultData,
     pub tags: HashSet<String>,
+    pub current_filter: Option<(Task, bool)>,
 }
 impl Default for TaskManager {
     fn default() -> Self {
         Self {
             tasks: VaultData::Directory("Empty".to_owned(), vec![]),
             tags: HashSet::new(),
+            current_filter: None,
         }
     }
 }
@@ -42,7 +45,11 @@ impl TaskManager {
         Self::collect_tags(&tasks, &mut tags);
         debug!("\n{}", tasks);
         debug!("\n{:#?}", tags);
-        Ok(Self { tasks, tags })
+        Ok(Self {
+            tasks,
+            tags,
+            ..Default::default()
+        })
     }
 
     fn collect_tags(tasks: &VaultData, tags: &mut HashSet<String>) {
@@ -156,7 +163,13 @@ impl TaskManager {
             }
         }
 
-        let VaultData::Directory(_, entries) = self.tasks.clone() else {
+        let filtered_tasks = if let Some((task, has_state)) = &self.current_filter {
+            filter(&self.tasks, task, *has_state)
+        } else {
+            return Ok(vec![(String::new(), String::from("No result"))]);
+        };
+
+        let Some(VaultData::Directory(_, entries)) = filtered_tasks else {
             bail!("Error: First layer of VaultData was not a Directory")
         };
         let mut res = aux(entries, selected_header_path, 0)?;
@@ -238,7 +251,12 @@ impl TaskManager {
             }
         }
 
-        let VaultData::Directory(_, entries) = self.tasks.clone() else {
+        let filtered_tasks = if let Some((task, has_state)) = &self.current_filter {
+            filter(&self.tasks, task, *has_state)
+        } else {
+            None
+        };
+        let Some(VaultData::Directory(_, entries)) = filtered_tasks else {
             bail!("First layer of VaultData was not a Directory")
         };
         for entry in entries {
@@ -279,7 +297,12 @@ impl TaskManager {
             }
         }
 
-        let VaultData::Directory(_, entries) = self.tasks.clone() else {
+        let filtered_tasks = if let Some((task, has_state)) = &self.current_filter {
+            filter(&self.tasks, task, *has_state)
+        } else {
+            return false;
+        };
+        let Some(VaultData::Directory(_, entries)) = filtered_tasks else {
             return false;
         };
         entries
@@ -354,6 +377,7 @@ mod tests {
         let task_mgr = TaskManager {
             tasks: input,
             tags: HashSet::new(),
+            ..Default::default()
         };
 
         let path = vec![String::from("Test"), String::from("1"), String::from("2")];
@@ -416,6 +440,7 @@ mod tests {
         let task_mgr = TaskManager {
             tasks: input,
             tags: HashSet::new(),
+            ..Default::default()
         };
 
         let path = vec![
@@ -498,6 +523,7 @@ mod tests {
         let task_mgr = TaskManager {
             tasks: input,
             tags: HashSet::new(),
+            ..Default::default()
         };
 
         let path = vec![String::from("Test"), String::from("1"), String::from("2")];
