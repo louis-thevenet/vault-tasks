@@ -6,7 +6,7 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use super::Component;
 
-use crate::task_core::filter::filter;
+use crate::task_core::filter::{filter_to_vec, parse_search_input};
 use crate::task_core::parser::task::parse_task;
 use crate::task_core::task::Task;
 use crate::task_core::vault_data::VaultData;
@@ -41,30 +41,11 @@ impl<'a> FilterTab<'a> {
         .render(area, frame.buffer_mut());
     }
     fn update_matching_entries(&mut self) {
-        // Are searching for a specific state ?
-        let has_state = self.search_bar_widget.input.value().starts_with("- [");
-
-        // Make the input parsable
-        let input_value = format!(
-            "{}{}",
-            if has_state { "" } else { "- [ ]" },
-            self.search_bar_widget.input.value()
-        );
-
-        // Parse the input
-        let search = match parse_task(&mut input_value.as_str(), &self.config) {
-            Ok(t) => t,
-            Err(_e) => {
-                self.matching_entries = vec![Task {
-                    name: String::from("Uncomplete search prompt"),
-                    ..Default::default()
-                }];
-                return;
-            }
-        };
+        let (search, has_state) =
+            parse_search_input(self.search_bar_widget.input.value(), &self.config);
 
         // Filter tasks
-        self.matching_entries = filter(&self.task_mgr.tasks, &search, has_state);
+        self.matching_entries = filter_to_vec(&self.task_mgr.tasks, &search, has_state);
 
         // Filter tags
         self.matching_tags = if search.tags.is_none() {

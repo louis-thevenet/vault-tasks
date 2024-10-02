@@ -29,6 +29,7 @@
             "<Ctrl-h>":"TabLeft",
 
             "<Enter>": "Enter",
+            "<s>":"Search",
         },
         "Explorer": {
             "<q>": "Quit",
@@ -53,6 +54,8 @@
             "<Right>": "Right",
             "<Enter>": "Enter",
             "<Backspace>": "Cancel",
+
+            "<s>": "Search",
         },
     },
 }
