@@ -1,5 +1,3 @@
-use tracing::debug;
-
 use crate::{config::Config, task_core::task::DueDate};
 
 use super::{parser::task::parse_task, task::Task, vault_data::VaultData};
@@ -23,7 +21,7 @@ pub fn parse_search_input(input: &str, config: &Config) -> (Task, bool) {
 }
 
 fn tasks_match(to_search: &Task, to_filter: &Task, compare_states: bool) -> bool {
-    let state_match = to_search.state == to_filter.state;
+    let state_match = (to_search.state == to_filter.state) || !compare_states;
 
     let name_match = if to_search.name.is_empty() {
         true
@@ -60,7 +58,7 @@ fn tasks_match(to_search: &Task, to_filter: &Task, compare_states: bool) -> bool
         true
     };
 
-    (!compare_states || state_match) && name_match && date_match && tags_match && priority_match
+    state_match && name_match && date_match && tags_match && priority_match
 }
 
 pub fn filter_to_vec(vault_data: &VaultData, search: &Task, compare_states: bool) -> Vec<Task> {
@@ -72,7 +70,7 @@ pub fn filter_to_vec(vault_data: &VaultData, search: &Task, compare_states: bool
                 }
             }
             VaultData::Task(task) => {
-                if tasks_match(task, search, compare_states) {
+                if tasks_match(search, task, compare_states) {
                     res.push(task.clone());
                 }
 
@@ -91,9 +89,9 @@ pub fn filter(vault_data: &VaultData, search: &Task, compare_states: bool) -> Op
         VaultData::Header(level, name, children) => {
             let mut actual_children = vec![];
             for child in children {
-                let mut child_clone = child.clone();
-                if filter(&mut child_clone, search, compare_states).is_some() {
-                    actual_children.push(child_clone);
+                let child_clone = child.clone();
+                if let Some(child) = filter(&child_clone, search, compare_states) {
+                    actual_children.push(child);
                 }
             }
             if actual_children.is_empty() {
@@ -105,9 +103,9 @@ pub fn filter(vault_data: &VaultData, search: &Task, compare_states: bool) -> Op
         VaultData::Directory(name, children) => {
             let mut actual_children = vec![];
             for child in children {
-                let mut child_clone = child.clone();
-                if filter(&mut child_clone, search, compare_states).is_some() {
-                    actual_children.push(child_clone);
+                let child_clone = child.clone();
+                if let Some(child) = filter(&child_clone, search, compare_states) {
+                    actual_children.push(child);
                 }
             }
             if actual_children.is_empty() {
@@ -121,10 +119,11 @@ pub fn filter(vault_data: &VaultData, search: &Task, compare_states: bool) -> Op
                 Some(vault_data.clone())
             } else {
                 let mut actual_children = vec![];
-                for child in task.subtasks.iter() {
-                    if filter(&mut VaultData::Task(child.clone()), search, compare_states).is_some()
+                for child in &task.subtasks {
+                    if let Some(VaultData::Task(child)) =
+                        filter(&VaultData::Task(child.clone()), search, compare_states)
                     {
-                        actual_children.push(child.clone());
+                        actual_children.push(child);
                     }
                 }
                 if actual_children.is_empty() {
@@ -144,6 +143,7 @@ mod tests {
     use chrono::NaiveDate;
 
     use crate::task_core::{
+        filter::filter,
         task::{DueDate, Task},
         vault_data::VaultData,
     };
@@ -449,6 +449,99 @@ mod tests {
                 name: String::from("target"),
                 tags: Some(vec!["test".to_string()]),
                 due_date: DueDate::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap()),
+                ..Default::default()
+            },
+            false,
+        );
+        assert_eq!(res, expected);
+    }
+    #[test]
+    fn filter_subtasks_test() {
+        let input = VaultData::Directory(
+            "test".to_owned(),
+            vec![
+                VaultData::Header(
+                    0,
+                    "Test".to_string(),
+                    vec![
+                        VaultData::Header(
+                            1,
+                            "1".to_string(),
+                            vec![VaultData::Header(
+                                2,
+                                "2".to_string(),
+                                vec![VaultData::Task(Task {
+                                    name: "task".to_string(),
+                                    line_number: 8,
+                                    tags: Some(vec!["test".to_string()]),
+                                    description: Some("test\ndesc".to_string()),
+                                    subtasks: vec![Task {
+                                        name: "subtask".to_string(),
+                                        ..Default::default()
+                                    }],
+                                    ..Default::default()
+                                })],
+                            )],
+                        ),
+                        VaultData::Header(
+                            1,
+                            "1.2".to_string(),
+                            vec![
+                                VaultData::Header(3, "3".to_string(), vec![]),
+                                VaultData::Header(
+                                    2,
+                                    "4".to_string(),
+                                    vec![VaultData::Task(Task {
+                                        name: "false target 2".to_string(),
+                                        line_number: 8,
+                                        tags: Some(vec!["test".to_string()]),
+                                        description: Some("test\ndesc".to_string()),
+                                        ..Default::default()
+                                    })],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                VaultData::Task(Task {
+                    name: "test 3".to_string(),
+                    line_number: 8,
+                    tags: Some(vec!["test".to_string()]),
+                    description: Some("test\ndesc".to_string()),
+                    ..Default::default()
+                }),
+            ],
+        );
+        let expected = Some(VaultData::Directory(
+            "test".to_owned(),
+            vec![VaultData::Header(
+                0,
+                "Test".to_string(),
+                vec![VaultData::Header(
+                    1,
+                    "1".to_string(),
+                    vec![VaultData::Header(
+                        2,
+                        "2".to_string(),
+                        vec![VaultData::Task(Task {
+                            name: "task".to_string(),
+                            line_number: 8,
+                            tags: Some(vec!["test".to_string()]),
+                            description: Some("test\ndesc".to_string()),
+                            subtasks: vec![Task {
+                                name: "subtask".to_string(),
+                                ..Default::default()
+                            }],
+                            ..Default::default()
+                        })],
+                    )],
+                )],
+            )],
+        ));
+        let res = filter(
+            &input,
+            &Task {
+                name: String::from("subtask"),
                 ..Default::default()
             },
             false,

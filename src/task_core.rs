@@ -166,7 +166,7 @@ impl TaskManager {
         let filtered_tasks = if let Some((task, has_state)) = &self.current_filter {
             filter(&self.tasks, task, *has_state)
         } else {
-            return Ok(vec![(String::new(), String::from("No result"))]);
+            Some(self.tasks.clone())
         };
 
         let Some(VaultData::Directory(_, entries)) = filtered_tasks else {
@@ -254,7 +254,7 @@ impl TaskManager {
         let filtered_tasks = if let Some((task, has_state)) = &self.current_filter {
             filter(&self.tasks, task, *has_state)
         } else {
-            None
+            Some(self.tasks.clone())
         };
         let Some(VaultData::Directory(_, entries)) = filtered_tasks else {
             bail!("First layer of VaultData was not a Directory")
