@@ -30,6 +30,7 @@
 
             "<Enter>": "Enter",
             "<s>":"Search",
+            "<Esc>":"Escape",
         },
         "Explorer": {
             "<q>": "Quit",
@@ -56,6 +57,7 @@
             "<Backspace>": "Cancel",
 
             "<s>": "Search",
+            "<Esc>":"Escape",
         },
     },
 }
