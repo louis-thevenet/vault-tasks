@@ -39,7 +39,7 @@ impl TaskManager {
         let tasks = vault_parser.scan_vault()?;
 
         Self::rewrite_vault_tasks(config, &tasks)
-            .unwrap_or_else(|e| error!("Failed to fix tasks' due dates: {e}"));
+            .unwrap_or_else(|e| error!("Failed to fix tasks: {e}"));
 
         let mut tags = HashSet::new();
         Self::collect_tags(&tasks, &mut tags);
@@ -169,29 +169,32 @@ impl TaskManager {
             Some(self.tasks.clone())
         };
 
-        let Some(VaultData::Directory(_, entries)) = filtered_tasks else {
-            bail!("Error: First layer of VaultData was not a Directory")
-        };
-        let mut res = aux(entries, selected_header_path, 0)?;
+        match filtered_tasks {
+            Some(VaultData::Directory(_, entries)) => {
+                let mut res = aux(entries, selected_header_path, 0)?;
 
-        if let Some(entry) = res.first() {
-            if entry.0 == DIRECTORY_EMOJI || entry.0 == FILE_EMOJI {
-                res.sort_by(|a, b| {
-                    if a.0 == DIRECTORY_EMOJI {
-                        if b.0 == DIRECTORY_EMOJI {
-                            a.1.cmp(&b.1)
-                        } else {
-                            Ordering::Less
-                        }
-                    } else if b.0 == DIRECTORY_EMOJI {
-                        Ordering::Greater
-                    } else {
-                        a.1.cmp(&b.1)
+                if let Some(entry) = res.first() {
+                    if entry.0 == DIRECTORY_EMOJI || entry.0 == FILE_EMOJI {
+                        res.sort_by(|a, b| {
+                            if a.0 == DIRECTORY_EMOJI {
+                                if b.0 == DIRECTORY_EMOJI {
+                                    a.1.cmp(&b.1)
+                                } else {
+                                    Ordering::Less
+                                }
+                            } else if b.0 == DIRECTORY_EMOJI {
+                                Ordering::Greater
+                            } else {
+                                a.1.cmp(&b.1)
+                            }
+                        });
                     }
-                });
+                }
+                Ok(res)
             }
+            None => Ok(vec![(String::new(), "Empty Vault".to_string())]),
+            _ => bail!("Error: First layer of VaultData was not a Directory"),
         }
-        Ok(res)
     }
 
     /// Follows the `selected_header_path` to retrieve the correct `VaultData`.
@@ -256,15 +259,23 @@ impl TaskManager {
         } else {
             Some(self.tasks.clone())
         };
-        let Some(VaultData::Directory(_, entries)) = filtered_tasks else {
-            bail!("First layer of VaultData was not a Directory")
-        };
-        for entry in entries {
-            if let Ok(res) = aux(entry, selected_header_path, 0) {
-                return Ok(res);
+        match filtered_tasks {
+            Some(VaultData::Directory(_, entries)) => {
+                for entry in entries {
+                    if let Ok(res) = aux(entry, selected_header_path, 0) {
+                        return Ok(res);
+                    }
+                }
+                bail!("Entry not found");
+            }
+            None => Ok(vec![VaultData::Directory(
+                "Empty vault".to_string(),
+                vec![],
+            )]),
+            _ => {
+                bail!("First layer of VaultData was not a Directory");
             }
         }
-        bail!("Error: Couldn't find corresponding file")
     }
 
     pub fn can_enter(&self, selected_header_path: &[String]) -> bool {

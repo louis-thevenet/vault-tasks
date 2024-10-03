@@ -98,7 +98,8 @@ impl<'a> ExplorerTab<'a> {
         } else {
             self.entries_left_view = self
                 .task_mgr
-                .get_explorer_entries(&self.current_path[0..self.current_path.len() - 1])?;
+                .get_explorer_entries(&self.current_path[0..self.current_path.len() - 1])
+                .unwrap_or_default();
         }
         self.entries_center_view =
             if let Ok(res) = self.task_mgr.get_explorer_entries(&self.current_path) {
@@ -201,7 +202,6 @@ impl<'a> Component for ExplorerTab<'a> {
 
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         if self.is_focused {
-            debug!("action in explorer:{action}");
             match action {
                 Action::FocusFilter => self.is_focused = false,
 
@@ -221,10 +221,11 @@ impl<'a> Component for ExplorerTab<'a> {
                         self.search_bar_widget.input.value(),
                         &self.config,
                     ));
-                    self.current_path = vec![];
-                    self.state_center_view.select(Some(0));
-                    self.state_left_view.select(None);
                     self.update_entries()?;
+                    // If last search yields no result in current path
+                    while self.entries_center_view.is_empty() {
+                        self.leave_selected_entry()?;
+                    }
                 }
 
                 Action::Up => {
