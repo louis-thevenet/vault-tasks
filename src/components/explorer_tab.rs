@@ -75,6 +75,10 @@ impl<'a> ExplorerTab<'a> {
         self.update_entries()?;
 
         // Find previously selected entry
+        self.select_previous_left_entry();
+        Ok(())
+    }
+    fn select_previous_left_entry(&mut self) {
         if let Some(new_previous_entry) = self.current_path.last() {
             self.state_left_view.select(Some(
                 self.entries_left_view
@@ -86,9 +90,7 @@ impl<'a> ExplorerTab<'a> {
                     .0,
             ));
         }
-        Ok(())
     }
-
     fn update_entries(&mut self) -> Result<()> {
         debug!("Updating entries");
 
@@ -117,11 +119,14 @@ impl<'a> ExplorerTab<'a> {
         if self.entries_center_view.is_empty() {
             bail!("Error: No selected entry")
         }
-        path_to_preview.push(
-            self.entries_center_view[self.state_center_view.selected.unwrap_or_default()]
-                .1
-                .clone(),
-        );
+        match self
+            .entries_center_view
+            .get(self.state_center_view.selected.unwrap_or_default())
+        {
+            Some(res) => path_to_preview.push(res.clone().1),
+
+            None => bail!("fail"),
+        }
         Ok(path_to_preview)
     }
 
@@ -222,9 +227,18 @@ impl<'a> Component for ExplorerTab<'a> {
                         &self.config,
                     ));
                     self.update_entries()?;
-                    // If last search yields no result in current path
-                    while self.entries_center_view.is_empty() {
-                        self.leave_selected_entry()?;
+                    if self.state_left_view.selected.unwrap_or_default()
+                        >= self.entries_left_view.len()
+                    {
+                        self.state_left_view.select(None);
+                    } else {
+                        self.select_previous_left_entry();
+                    }
+                    if self.state_center_view.selected.unwrap_or_default()
+                        >= self.entries_center_view.len()
+                    {
+                        self.state_center_view.select(Some(0));
+                        self.update_entries()?;
                     }
                 }
 
