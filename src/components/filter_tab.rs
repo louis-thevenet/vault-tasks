@@ -83,24 +83,26 @@ impl<'a> Component for FilterTab<'a> {
     fn editing_mode(&self) -> bool {
         self.is_focused && self.search_bar_widget.is_focused
     }
+    fn escape_editing_mode(&self) -> Vec<Action> {
+        vec![
+            Action::Enter,
+            Action::Search,
+            Action::Cancel,
+            Action::Escape,
+        ]
+    }
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         if self.is_focused {
             match action {
                 Action::FocusExplorer => self.is_focused = false,
                 Action::FocusFilter => self.is_focused = true,
-                Action::Enter | Action::Search => {
+                Action::Enter | Action::Search | Action::Cancel | Action::Escape => {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
                 }
-                Action::Key(key) if self.search_bar_widget.is_focused => match key.code {
-                    KeyCode::Enter | KeyCode::Esc => {
-                        self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
-                    }
-
-                    _ => {
-                        self.search_bar_widget.input.handle_event(&Event::Key(key));
-                        self.update_matching_entries();
-                    }
-                },
+                Action::Key(key) if self.search_bar_widget.is_focused => {
+                    self.search_bar_widget.input.handle_event(&Event::Key(key));
+                    self.update_matching_entries();
+                }
                 _ => (),
             }
         } else {

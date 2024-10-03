@@ -124,6 +124,13 @@ pub trait Component {
     ///
     /// * `Result<()>` - An Ok result or an error.
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
+    /// Returns zero or more `Action` that should never be sent as `Action::RawKeyEvent` even if `Self::is_editing` returns `true`.
+    ///
+    /// # Returns
+    /// * `Vec<Action>` - A list of `Action` that should never be sent as `Action::RawKeyEvent`.
+    fn escape_editing_mode(&self) -> Vec<Action> {
+        vec![]
+    }
     /// Whether the app should send Actions or `Action::Key`
     ///
     /// # Returns

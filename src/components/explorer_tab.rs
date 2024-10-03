@@ -1,6 +1,6 @@
 use color_eyre::eyre::bail;
 use color_eyre::Result;
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::Event;
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Paragraph};
 use tokio::sync::mpsc::UnboundedSender;
@@ -187,38 +187,29 @@ impl<'a> Component for ExplorerTab<'a> {
         Ok(())
     }
 
+    fn escape_editing_mode(&self) -> Vec<Action> {
+        vec![Action::Enter, Action::Escape]
+    }
     fn editing_mode(&self) -> bool {
         self.is_focused && self.search_bar_widget.is_focused
     }
 
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         if self.is_focused {
+            debug!("action in explorer:{action}");
             match action {
                 Action::FocusFilter => self.is_focused = false,
-                Action::Up => {
-                    self.state_center_view.previous();
-                    self.update_preview();
+
+                Action::Enter | Action::Escape if self.search_bar_widget.is_focused => {
+                    self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
                 }
-                Action::Down => {
-                    self.state_center_view.next();
-                    self.update_preview();
-                }
-                Action::Right | Action::Enter => self.enter_selected_entry()?,
-                Action::Left | Action::Cancel => self.leave_selected_entry()?,
                 Action::Search => {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
                 }
                 Action::Key(key_event) if self.search_bar_widget.is_focused => {
-                    match key_event.code {
-                        KeyCode::Enter | KeyCode::Esc => {
-                            self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
-                        }
-                        _ => {
-                            self.search_bar_widget
-                                .input
-                                .handle_event(&Event::Key(key_event));
-                        }
-                    };
+                    self.search_bar_widget
+                        .input
+                        .handle_event(&Event::Key(key_event));
 
                     // Update search input in TaskManager
                     self.task_mgr.current_filter = Some(parse_search_input(
@@ -229,6 +220,20 @@ impl<'a> Component for ExplorerTab<'a> {
                     self.state_center_view.select(Some(0));
                     self.state_left_view.select(None);
                     self.update_entries()?;
+                }
+
+                Action::Up => {
+                    self.state_center_view.previous();
+                    self.update_preview();
+                }
+                Action::Down => {
+                    self.state_center_view.next();
+                    self.update_preview();
+                }
+                Action::Right | Action::Enter => self.enter_selected_entry()?,
+                Action::Left | Action::Escape => self.leave_selected_entry()?,
+                Action::Cancel => {
+                    self.leave_selected_entry()?;
                 }
                 Action::Help => todo!(),
                 _ => (),
