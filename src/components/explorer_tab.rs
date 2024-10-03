@@ -178,6 +178,11 @@ impl<'a> Component for ExplorerTab<'a> {
     fn register_config_handler(&mut self, config: Config) -> Result<()> {
         self.task_mgr = TaskManager::load_from_config(&config)?;
         self.config = config;
+        self.search_bar_widget.input = self
+            .search_bar_widget
+            .input
+            .clone()
+            .with_value("- [ ] ".to_string());
         self.task_mgr.current_filter = Some(parse_search_input(
             self.search_bar_widget.input.value(),
             &self.config,
