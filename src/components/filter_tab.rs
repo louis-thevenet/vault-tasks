@@ -1,5 +1,5 @@
 use color_eyre::Result;
-use crossterm::event::{Event, KeyCode};
+use crossterm::event::Event;
 use ratatui::widgets::List;
 use ratatui::{prelude::*, widgets::Block};
 use tokio::sync::mpsc::UnboundedSender;
@@ -84,12 +84,7 @@ impl<'a> Component for FilterTab<'a> {
         self.is_focused && self.search_bar_widget.is_focused
     }
     fn escape_editing_mode(&self) -> Vec<Action> {
-        vec![
-            Action::Enter,
-            Action::Search,
-            Action::Cancel,
-            Action::Escape,
-        ]
+        vec![Action::Enter, Action::Cancel, Action::Escape]
     }
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         if self.is_focused {
