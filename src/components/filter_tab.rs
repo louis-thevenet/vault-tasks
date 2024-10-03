@@ -7,7 +7,6 @@ use tokio::sync::mpsc::UnboundedSender;
 use super::Component;
 
 use crate::task_core::filter::{filter_to_vec, parse_search_input};
-use crate::task_core::parser::task::parse_task;
 use crate::task_core::task::Task;
 use crate::task_core::vault_data::VaultData;
 use crate::task_core::TaskManager;
