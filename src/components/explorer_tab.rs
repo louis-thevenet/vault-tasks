@@ -5,12 +5,13 @@ use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Paragraph};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error};
+
 use tui_input::backend::crossterm::EventHandler;
 use tui_widget_list::{ListBuilder, ListState, ListView};
 
 use super::Component;
 
-use crate::task_core::filter::{filter, parse_search_input};
+use crate::task_core::filter::parse_search_input;
 use crate::task_core::vault_data::VaultData;
 use crate::task_core::TaskManager;
 use crate::widgets::search_bar::SearchBar;
@@ -106,12 +107,6 @@ impl<'a> ExplorerTab<'a> {
                 self.leave_selected_entry()?;
                 return Ok(());
             };
-        if self.entries_left_view.len() <= self.state_left_view.selected.unwrap_or_default() {
-            self.state_left_view.select(None);
-        }
-        if self.entries_center_view.len() <= self.state_center_view.selected.unwrap_or_default() {
-            self.state_center_view.select(None);
-        }
         self.update_preview();
         Ok(())
     }
@@ -135,16 +130,10 @@ impl<'a> ExplorerTab<'a> {
             return;
         };
 
-        let (search, has_state) =
-            parse_search_input(self.search_bar_widget.input.value(), &self.config);
-
         self.entries_right_view = self
             .task_mgr
             .get_vault_data_from_path(&path_to_preview)
-            .unwrap_or_default()
-            .iter()
-            .filter_map(|v| filter(v, &search, has_state))
-            .collect::<Vec<VaultData>>();
+            .unwrap_or_default();
     }
     fn build_list(
         entries_to_display: Vec<String>,
@@ -236,7 +225,9 @@ impl<'a> Component for ExplorerTab<'a> {
                         self.search_bar_widget.input.value(),
                         &self.config,
                     ));
-
+                    self.current_path = vec![];
+                    self.state_center_view.select(Some(0));
+                    self.state_left_view.select(None);
                     self.update_entries()?;
                 }
                 Action::Help => todo!(),
@@ -301,13 +292,13 @@ impl<'a> Component for ExplorerTab<'a> {
             ));
         }
 
-        self.search_bar_widget.block = Some(Block::bordered().style(Style::new().fg(
-            if self.search_bar_widget.is_focused {
+        self.search_bar_widget.block = Some(Block::bordered().title("Search").style(
+            Style::new().fg(if self.search_bar_widget.is_focused {
                 Color::Rgb(255, 153, 0)
             } else {
                 Color::default()
-            },
-        )));
+            }),
+        ));
         self.search_bar_widget
             .render(search_area, frame.buffer_mut());
 
