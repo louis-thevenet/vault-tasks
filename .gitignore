@@ -20,3 +20,5 @@ target/
 .direnv/
 
 .data/*.log
+
+tarpaulin-report.html
