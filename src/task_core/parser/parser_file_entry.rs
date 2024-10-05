@@ -28,6 +28,7 @@ enum FileToken {
 #[allow(clippy::module_name_repetitions)]
 pub struct ParserFileEntry<'a> {
     pub config: &'a Config,
+    pub filename: String,
 }
 
 impl<'i> ParserFileEntry<'i> {
@@ -38,7 +39,8 @@ impl<'i> ParserFileEntry<'i> {
     fn parse_task(&self, input: &mut &str) -> PResult<FileToken> {
         let indent_length = Self::parse_indent(input).unwrap_or(0);
 
-        let mut task_parser = |input: &mut &str| parse_task(input, self.config);
+        let mut task_parser =
+            |input: &mut &str| parse_task(input, self.filename.clone(), self.config);
         let task_res = task_parser.parse_next(input)?;
         Ok(FileToken::Task(task_res, indent_length))
     }
@@ -408,11 +410,12 @@ impl<'i> ParserFileEntry<'i> {
         }
     }
 
-    pub fn parse_file(&self, filename: &str, input: &&str) -> Option<VaultData> {
+    pub fn parse_file(&mut self, filename: &str, input: &&str) -> Option<VaultData> {
         let lines = input.split('\n');
 
         let mut res = VaultData::Header(0, filename.to_owned(), vec![]);
 
+        self.filename = filename.to_owned();
         self.parse_file_aux(lines.enumerate().peekable(), &mut res, 0);
 
         // Filename is changed from Header to Directory variant at the end
@@ -453,7 +456,10 @@ mod tests {
         let mut config = Config::default();
         config.tasks_config.indent_length = 2;
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
-        let parser = ParserFileEntry { config: &config };
+        let parser = ParserFileEntry {
+            config: &config,
+            filename: String::new(),
+        };
         let expected = VaultData::Header(
             0,
             "Test".to_string(),
@@ -531,7 +537,10 @@ mod tests {
         let mut config = Config::default();
         config.tasks_config.indent_length = 2;
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
-        let parser = ParserFileEntry { config: &config };
+        let parser = ParserFileEntry {
+            config: &config,
+            filename: String::new(),
+        };
         let expected = VaultData::Header(
             0,
             "Test".to_string(),
@@ -596,7 +605,10 @@ mod tests {
         let mut config = Config::default();
         config.tasks_config.indent_length = 2;
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
-        let parser = ParserFileEntry { config: &config };
+        let parser = ParserFileEntry {
+            config: &config,
+            filename: String::new(),
+        };
         let expected = VaultData::Header(
             0,
             "Test".to_string(),

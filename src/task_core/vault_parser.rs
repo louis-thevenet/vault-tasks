@@ -88,8 +88,9 @@ impl VaultParser {
     fn parse_file(&self, entry: &DirEntry) -> Option<VaultData> {
         debug!("Parsing {:?}", entry.file_name());
         let content = fs::read_to_string(entry.path()).unwrap_or_default();
-        let parser = ParserFileEntry {
+        let mut parser = ParserFileEntry {
             config: &self.config,
+            filename: String::new(),
         };
 
         parser.parse_file(entry.file_name().to_str().unwrap(), &content.as_str())

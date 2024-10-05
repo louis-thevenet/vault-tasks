@@ -47,7 +47,7 @@ fn parse_token(input: &mut &str, config: &Config) -> PResult<Token> {
 
 /// Parses a `Task` from an input string. An optional description can be added.
 #[allow(clippy::module_name_repetitions)]
-pub fn parse_task(input: &mut &str, config: &Config) -> PResult<Task> {
+pub fn parse_task(input: &mut &str, filename: String, config: &Config) -> PResult<Task> {
     // `split_whitespace()` will break the "- [ ]" pattern
     let task_state = match parse_task_state(input)? {
         Token::State(state) => Ok(state),
@@ -62,6 +62,7 @@ pub fn parse_task(input: &mut &str, config: &Config) -> PResult<Task> {
 
     let mut task = Task {
         state: task_state,
+        filename,
         ..Default::default()
     };
 
@@ -113,7 +114,6 @@ pub fn parse_task(input: &mut &str, config: &Config) -> PResult<Task> {
         DueDate::NoDate
     };
     task.due_date = due_date_time;
-
     Ok(task)
 }
 #[cfg(test)]
@@ -130,7 +130,7 @@ mod test {
         let mut input = "- [x] 10/15 task_name #done";
         let mut config = Config::default();
         config.tasks_config.use_american_format = true;
-        let res = parse_task(&mut input, &config);
+        let res = parse_task(&mut input, String::new(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         let year = chrono::Local::now().year();
@@ -142,7 +142,7 @@ mod test {
             priority: 0,
             state: State::Done,
             line_number: 1,
-            subtasks: vec![],
+            ..Default::default()
         };
         assert_eq!(res, expected);
     }
@@ -151,7 +151,7 @@ mod test {
     fn test_parse_task_only_state() {
         let mut input = "- [ ]";
         let config = Config::default();
-        let res = parse_task(&mut input, &config);
+        let res = parse_task(&mut input, String::new(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         let expected = Task {
@@ -163,6 +163,7 @@ mod test {
             priority: 0,
             state: State::ToDo,
             line_number: 1,
+            filename: String::new(),
         };
         assert_eq!(res, expected);
     }
@@ -170,7 +171,7 @@ mod test {
     fn test_parse_task_with_due_date_words() {
         let mut input = "- [ ] today 15:30 task_name";
         let config = Config::default();
-        let res = parse_task(&mut input, &config);
+        let res = parse_task(&mut input, String::new(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         let expected_date = chrono::Local::now().date_naive();
@@ -183,7 +184,7 @@ mod test {
     fn test_parse_task_with_weekday() {
         let mut input = "- [ ] monday 15:30 task_name";
         let config = Config::default();
-        let res = parse_task(&mut input, &config);
+        let res = parse_task(&mut input, String::new(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
 
@@ -203,7 +204,7 @@ mod test {
     fn test_parse_task_with_weekday_this() {
         let mut input = "- [ ] this monday 15:30 task_name";
         let config = Config::default();
-        let res = parse_task(&mut input, &config);
+        let res = parse_task(&mut input, String::new(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         let now = chrono::Local::now();
@@ -222,7 +223,7 @@ mod test {
     fn test_parse_task_with_weekday_next() {
         let mut input = "- [ ] next monday 15:30 task_name";
         let config = Config::default();
-        let res = parse_task(&mut input, &config);
+        let res = parse_task(&mut input, String::new(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         let now = chrono::Local::now();
@@ -241,7 +242,7 @@ mod test {
     fn test_parse_task_without_due_date() {
         let mut input = "- [ ] task_name";
         let config = Config::default();
-        let res = parse_task(&mut input, &config);
+        let res = parse_task(&mut input, String::new(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         let expected_due_date = DueDate::NoDate;
@@ -252,7 +253,7 @@ mod test {
     fn test_parse_task_with_invalid_state() {
         let mut input = "- [invalid] task_name";
         let config = Config::default();
-        let res = parse_task(&mut input, &config);
+        let res = parse_task(&mut input, String::new(), &config);
         assert!(res.is_err());
     }
 
@@ -260,7 +261,7 @@ mod test {
     fn test_parse_task_without_state() {
         let mut input = "task_name";
         let config = Config::default();
-        let res = parse_task(&mut input, &config);
+        let res = parse_task(&mut input, String::new(), &config);
         assert!(res.is_err());
     }
 
@@ -268,7 +269,7 @@ mod test {
     fn test_parse_task_with_invalid_priority() {
         let mut input = "- [ ] task_name p-9";
         let config = Config::default();
-        let res = parse_task(&mut input, &config);
+        let res = parse_task(&mut input, String::new(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         assert_eq!(res.priority, 0); // Default priority is used when the provided one is invalid
@@ -278,7 +279,7 @@ mod test {
     fn test_parse_task_without_name() {
         let mut input = "- [ ]";
         let config = Config::default();
-        let res = parse_task(&mut input, &config);
+        let res = parse_task(&mut input, String::new(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         assert_eq!(res.name, ""); // Default name is used when no name is provided
