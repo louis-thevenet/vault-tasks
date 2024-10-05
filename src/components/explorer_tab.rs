@@ -352,11 +352,20 @@ impl<'a> Component for ExplorerTab<'a> {
 
         // Right Block
 
+        // If we have tasks, then render a TaskList widget
         match self.entries_right_view.first() {
             Some(VaultData::Task(_) | VaultData::Header(_, _, _)) => {
-                TaskList::new(&self.config, &self.entries_right_view)
-                    .render(preview_area, frame.buffer_mut());
+                TaskList::new(
+                    &self.config,
+                    &self.entries_right_view,
+                    self.get_preview_path() // If we're previewing a file, then don't show filenames
+                        .unwrap_or_default() // Else, show filename in tasks
+                        .iter()
+                        .any(|e| e.contains(".md")),
+                )
+                .render(preview_area, frame.buffer_mut());
             }
+            // Else render a ListView widget
             Some(VaultData::Directory(_, _)) => Self::build_list(
                 Self::apply_prefixes(
                     &self

@@ -171,6 +171,7 @@ impl<'a> Component for FilterTab<'a> {
                 .iter()
                 .map(|t| VaultData::Task(t.clone()))
                 .collect::<Vec<VaultData>>(),
+            true,
         );
 
         Widget::render(tag_list, tag_area, frame.buffer_mut());

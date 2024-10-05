@@ -13,14 +13,17 @@ pub struct TaskListItem {
     item: VaultData,
     pub height: usize,
     not_american_format: bool,
+    display_filename: bool,
 }
+
 impl TaskListItem {
-    pub fn new(item: VaultData, not_american_format: bool) -> Self {
+    pub fn new(item: VaultData, not_american_format: bool, display_filename: bool) -> Self {
         let height = Self::compute_height(&item);
         Self {
             item,
             height,
             not_american_format,
+            display_filename,
         }
     }
 
@@ -91,7 +94,7 @@ impl Widget for TaskListItem {
                 surrounding_block.render(area, buf);
 
                 for (i, child) in children.iter().enumerate() {
-                    let sb_widget = Self::new(child.clone(), self.not_american_format);
+                    let sb_widget = Self::new(child.clone(), self.not_american_format, false);
                     sb_widget.render(layout[i], buf);
                 }
             }
@@ -146,13 +149,21 @@ impl Widget for TaskListItem {
                 if lines.is_empty() && task.subtasks.is_empty() {
                     Paragraph::new(title).block(surrounding_block)
                 } else {
-                    Paragraph::new(Text::from(lines)).block(surrounding_block.title(title.clone()))
+                    Paragraph::new(Text::from(lines)).block(
+                        surrounding_block.title_top(title.clone()).title_bottom(
+                            if self.display_filename {
+                                Line::from(task.filename.clone()).right_aligned()
+                            } else {
+                                Line::from("")
+                            },
+                        ),
+                    )
                 }
                 .render(area, buf);
 
                 for (i, sb) in task.subtasks.iter().enumerate() {
                     let sb_widget =
-                        Self::new(VaultData::Task(sb.clone()), self.not_american_format);
+                        Self::new(VaultData::Task(sb.clone()), self.not_american_format, false);
                     sb_widget.render(layout[i + 1], buf);
                 }
             }

@@ -82,6 +82,7 @@ pub struct Task {
     pub subtasks: Vec<Task>,
     pub description: Option<String>,
     pub due_date: DueDate,
+    pub filename: String,
     pub line_number: usize,
     pub name: String,
     pub priority: usize,
@@ -100,6 +101,7 @@ impl Default for Task {
             description: None,
             line_number: 1,
             subtasks: vec![],
+            filename: String::new(),
         }
     }
 }
@@ -223,7 +225,7 @@ mod tests {
             tags: Some(vec![String::from("tag1"), String::from("tag2")]),
             description: Some(String::from("This is a test task.")),
             line_number: 2,
-            subtasks: vec![],
+            ..Default::default()
         };
         let res = task.get_fixed_attributes(&config, 0);
         assert_eq!(res, "- [ ] Test Task 2021/12/03 p1 #tag1 #tag2");
@@ -240,7 +242,7 @@ mod tests {
             tags: Some(vec![String::from("tag3")]),
             description: None,
             line_number: 3,
-            subtasks: vec![],
+            ..Default::default()
         };
 
         let res = task.get_fixed_attributes(&config, 0);

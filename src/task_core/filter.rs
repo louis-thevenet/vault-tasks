@@ -11,7 +11,7 @@ pub fn parse_search_input(input: &str, config: &Config) -> (Task, bool) {
     let input_value = format!("{}{}", if has_state { "" } else { "- [ ]" }, input);
 
     // Parse the input
-    let search = match parse_task(&mut input_value.as_str(), config) {
+    let search = match parse_task(&mut input_value.as_str(), String::new(), config) {
         Ok(t) => t,
         Err(_e) => Task {
             name: String::from("Uncomplete search prompt"),
