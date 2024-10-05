@@ -14,14 +14,16 @@ pub struct TaskList {
     file_content: Vec<VaultData>,
     not_american_format: bool,
     state: ListState,
+    display_filename: bool,
 }
 
 impl TaskList {
-    pub fn new(config: &Config, file_content: &[VaultData]) -> Self {
+    pub fn new(config: &Config, file_content: &[VaultData], display_filename: bool) -> Self {
         Self {
             state: ListState::default(),
             not_american_format: !config.tasks_config.use_american_format,
             file_content: file_content.to_vec(),
+            display_filename,
         }
     }
 }
@@ -37,6 +39,7 @@ impl Widget for TaskList {
             let item = TaskListItem::new(
                 self.file_content[context.index].clone(),
                 self.not_american_format,
+                self.display_filename,
             );
             let height = item.height;
             (item, height.try_into().unwrap())

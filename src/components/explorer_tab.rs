@@ -130,6 +130,28 @@ impl<'a> ExplorerTab<'a> {
         Ok(path_to_preview)
     }
 
+    /// If a file is selected, returns en empty `String`, else returns the name of the file that is being previewed.
+    fn get_filename_to_display(&self) -> String {
+        let current_filename = self
+            .get_preview_path()
+            .unwrap_or_default()
+            .into_iter()
+            .find(|d| {
+                std::path::Path::new(d)
+                    .extension()
+                    .map_or(false, |ext| ext.eq_ignore_ascii_case("md"))
+            })
+            .unwrap_or_default();
+
+        if current_filename
+            == self.entries_center_view[self.state_center_view.selected.unwrap_or_default()].1
+        {
+            String::new()
+        } else {
+            current_filename
+        }
+    }
+
     fn update_preview(&mut self) {
         debug!("Updating preview");
         let Ok(path_to_preview) = self.get_preview_path() else {
@@ -352,11 +374,20 @@ impl<'a> Component for ExplorerTab<'a> {
 
         // Right Block
 
+        // If we have tasks, then render a TaskList widget
         match self.entries_right_view.first() {
             Some(VaultData::Task(_) | VaultData::Header(_, _, _)) => {
-                TaskList::new(&self.config, &self.entries_right_view)
-                    .render(preview_area, frame.buffer_mut());
+                TaskList::new(
+                    &self.config,
+                    &self.entries_right_view,
+                    self.get_preview_path() // If we're previewing a file, then don't show filenames
+                        .unwrap_or_default() // Else, show filename in tasks
+                        .iter()
+                        .any(|e| e.contains(".md")),
+                )
+                .render(preview_area, frame.buffer_mut());
             }
+            // Else render a ListView widget
             Some(VaultData::Directory(_, _)) => Self::build_list(
                 Self::apply_prefixes(
                     &self
