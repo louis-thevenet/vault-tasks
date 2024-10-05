@@ -130,28 +130,6 @@ impl<'a> ExplorerTab<'a> {
         Ok(path_to_preview)
     }
 
-    /// If a file is selected, returns en empty `String`, else returns the name of the file that is being previewed.
-    fn get_filename_to_display(&self) -> String {
-        let current_filename = self
-            .get_preview_path()
-            .unwrap_or_default()
-            .into_iter()
-            .find(|d| {
-                std::path::Path::new(d)
-                    .extension()
-                    .map_or(false, |ext| ext.eq_ignore_ascii_case("md"))
-            })
-            .unwrap_or_default();
-
-        if current_filename
-            == self.entries_center_view[self.state_center_view.selected.unwrap_or_default()].1
-        {
-            String::new()
-        } else {
-            current_filename
-        }
-    }
-
     fn update_preview(&mut self) {
         debug!("Updating preview");
         let Ok(path_to_preview) = self.get_preview_path() else {
