@@ -2,6 +2,7 @@ use crate::{config::Config, task_core::task::DueDate};
 
 use super::{parser::task::parse_task, task::Task, vault_data::VaultData};
 
+/// Parses a [`Task`] from an input `&str`. Returns the `Task` and whether the input specify a task state (- [X] or - [ ]) or not.
 pub fn parse_search_input(input: &str, config: &Config) -> (Task, bool) {
     // Are searching for a specific state ?
     let has_state = input.starts_with("- [");
@@ -142,13 +143,50 @@ pub fn filter(vault_data: &VaultData, search: &Task, compare_states: bool) -> Op
 mod tests {
     use chrono::NaiveDate;
 
-    use crate::task_core::{
-        filter::filter,
-        task::{DueDate, Task},
-        vault_data::VaultData,
+    use crate::{
+        config::Config,
+        task_core::{
+            filter::filter,
+            task::{DueDate, State, Task},
+            vault_data::VaultData,
+        },
     };
 
-    use super::filter_to_vec;
+    use super::{filter_to_vec, parse_search_input};
+
+    #[test]
+    fn parse_search_input_test() {
+        let input = "- [ ] #tag today name p5";
+        let config = Config::default();
+        let (res, has_state) = parse_search_input(input, &config);
+        let expected = Task {
+            due_date: DueDate::Day(chrono::Local::now().date_naive()),
+            name: String::from("name"),
+            priority: 5,
+            state: State::ToDo,
+            tags: Some(vec![String::from("tag")]),
+            ..Default::default()
+        };
+        assert_eq!(expected, res);
+        assert!(has_state);
+    }
+
+    #[test]
+    fn parse_search_input_no_state_test() {
+        let input = "#tag today name p5";
+        let config = Config::default();
+        let (res, has_state) = parse_search_input(input, &config);
+        let expected = Task {
+            due_date: DueDate::Day(chrono::Local::now().date_naive()),
+            name: String::from("name"),
+            priority: 5,
+            state: State::ToDo,
+            tags: Some(vec![String::from("tag")]),
+            ..Default::default()
+        };
+        assert_eq!(expected, res);
+        assert!(!has_state);
+    }
 
     #[test]
     fn filter_tags_test() {
