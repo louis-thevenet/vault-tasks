@@ -94,7 +94,11 @@ impl Widget for TaskListItem {
                 surrounding_block.render(area, buf);
 
                 for (i, child) in children.iter().enumerate() {
-                    let sb_widget = Self::new(child.clone(), self.not_american_format, false);
+                    let sb_widget = Self::new(
+                        child.clone(),
+                        self.not_american_format,
+                        self.display_filename,
+                    );
                     sb_widget.render(layout[i], buf);
                 }
             }
@@ -103,7 +107,14 @@ impl Widget for TaskListItem {
                 let state = task.state.to_string();
 
                 let title = Span::styled(format!("{state} {}", task.name), Style::default());
-                let surrounding_block = Block::default().borders(Borders::ALL);
+                let surrounding_block =
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .title_bottom(if self.display_filename {
+                            Line::from(task.filename.clone()).right_aligned()
+                        } else {
+                            Line::from("")
+                        });
 
                 let mut data_line = String::new();
                 let due_date_str = task.due_date.to_display_format(self.not_american_format);
@@ -149,15 +160,8 @@ impl Widget for TaskListItem {
                 if lines.is_empty() && task.subtasks.is_empty() {
                     Paragraph::new(title).block(surrounding_block)
                 } else {
-                    Paragraph::new(Text::from(lines)).block(
-                        surrounding_block.title_top(title.clone()).title_bottom(
-                            if self.display_filename {
-                                Line::from(task.filename.clone()).right_aligned()
-                            } else {
-                                Line::from("")
-                            },
-                        ),
-                    )
+                    Paragraph::new(Text::from(lines))
+                        .block(surrounding_block.title_top(title.clone()))
                 }
                 .render(area, buf);
 

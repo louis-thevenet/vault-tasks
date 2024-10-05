@@ -173,6 +173,25 @@ impl<'a> ExplorerTab<'a> {
             .centered()
             .render(area, frame.buffer_mut());
     }
+    fn path_to_paragraph(&self) -> Paragraph {
+        Paragraph::new(
+            self.current_path
+                .iter()
+                .map(|item| {
+                    let span = Span::from(item.to_string());
+                    if item.contains(".md") {
+                        span.bold()
+                    } else {
+                        span
+                    }
+                })
+                .fold(Line::from("."), |mut acc, x| {
+                    acc.push_span(Span::from("/"));
+                    acc.push_span(x);
+                    acc
+                }),
+        )
+    }
 }
 
 impl<'a> Component for ExplorerTab<'a> {
@@ -329,10 +348,7 @@ impl<'a> Component for ExplorerTab<'a> {
             .render(search_area, frame.buffer_mut());
 
         // Current path
-        frame.render_widget(
-            Paragraph::new(format!("\n./{}", self.current_path.join("/"))),
-            path_area,
-        );
+        frame.render_widget(self.path_to_paragraph(), path_area);
 
         // Left Block
         let left_entries_list = Self::build_list(
@@ -355,15 +371,8 @@ impl<'a> Component for ExplorerTab<'a> {
         // If we have tasks, then render a TaskList widget
         match self.entries_right_view.first() {
             Some(VaultData::Task(_) | VaultData::Header(_, _, _)) => {
-                TaskList::new(
-                    &self.config,
-                    &self.entries_right_view,
-                    self.get_preview_path() // If we're previewing a file, then don't show filenames
-                        .unwrap_or_default() // Else, show filename in tasks
-                        .iter()
-                        .any(|e| e.contains(".md")),
-                )
-                .render(preview_area, frame.buffer_mut());
+                TaskList::new(&self.config, &self.entries_right_view, false)
+                    .render(preview_area, frame.buffer_mut());
             }
             // Else render a ListView widget
             Some(VaultData::Directory(_, _)) => Self::build_list(
