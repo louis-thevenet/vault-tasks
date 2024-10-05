@@ -5,6 +5,8 @@
         "parse_dot_files": false,
         "vault_path": "./test-vault",
         "ignored": [],
+        "explorer_default_search_string":"- [ ] ",
+        "filter_default_search_string":"",
     },
     "keybindings": {
         "Home": {
@@ -29,6 +31,8 @@
             "<Ctrl-h>":"TabLeft",
 
             "<Enter>": "Enter",
+            "<s>":"Search",
+            "<Esc>":"Escape",
         },
         "Explorer": {
             "<q>": "Quit",
@@ -53,6 +57,9 @@
             "<Right>": "Right",
             "<Enter>": "Enter",
             "<Backspace>": "Cancel",
+
+            "<s>": "Search",
+            "<Esc>":"Escape",
         },
     },
 }

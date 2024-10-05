@@ -119,15 +119,26 @@ impl App {
         let Some(keymap) = self.config.keybindings.get(&self.mode) else {
             return Ok(());
         };
-
-        if self.components.iter().any(|c| c.editing_mode()) {
-            action_tx.send(Action::Key(key))?;
-            return Ok(());
-        }
-
         if let Some(action) = keymap.get(&vec![key]) {
+            info!("Got action: {action:?}");
+            // Look for components in editing mode
+            for component in &self.components {
+                // Is it in editing mode and is the action in the escape list ?
+                if component.editing_mode() && !component.escape_editing_mode().contains(action) {
+                    info!("Action was sent as raw key");
+                    action_tx.send(Action::Key(key))?;
+                    return Ok(());
+                }
+            }
             action_tx.send(action.clone())?;
         } else {
+            // If there is a component in editing mode, send the raw key
+            if self.components.iter().any(|c| c.editing_mode()) {
+                info!("Got raw key: {key:?}");
+                action_tx.send(Action::Key(key))?;
+                return Ok(());
+            }
+
             // If the key was not handled as a single key action,
             // then consider it for multi-key combinations.
             self.last_tick_key_events.push(key);

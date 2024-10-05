@@ -1,23 +1,28 @@
 use color_eyre::eyre::bail;
 use color_eyre::Result;
+use crossterm::event::Event;
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Paragraph};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error};
+
+use tui_input::backend::crossterm::EventHandler;
 use tui_widget_list::{ListBuilder, ListState, ListView};
 
 use super::Component;
 
+use crate::task_core::filter::parse_search_input;
 use crate::task_core::vault_data::VaultData;
 use crate::task_core::TaskManager;
+use crate::widgets::search_bar::SearchBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
 
 #[derive(Default)]
-pub struct ExplorerTab {
+pub struct ExplorerTab<'a> {
     command_tx: Option<UnboundedSender<Action>>,
     config: Config,
-    focused: bool,
+    is_focused: bool,
     task_mgr: TaskManager,
     current_path: Vec<String>,
     state_left_view: ListState,
@@ -25,9 +30,10 @@ pub struct ExplorerTab {
     state_center_view: ListState,
     entries_center_view: Vec<(String, String)>,
     entries_right_view: Vec<VaultData>,
+    search_bar_widget: SearchBar<'a>,
 }
 
-impl ExplorerTab {
+impl<'a> ExplorerTab<'a> {
     pub fn new() -> Self {
         Self::default()
     }
@@ -69,6 +75,10 @@ impl ExplorerTab {
         self.update_entries()?;
 
         // Find previously selected entry
+        self.select_previous_left_entry();
+        Ok(())
+    }
+    fn select_previous_left_entry(&mut self) {
         if let Some(new_previous_entry) = self.current_path.last() {
             self.state_left_view.select(Some(
                 self.entries_left_view
@@ -80,18 +90,18 @@ impl ExplorerTab {
                     .0,
             ));
         }
-        Ok(())
     }
-
     fn update_entries(&mut self) -> Result<()> {
         debug!("Updating entries");
+
         if self.current_path.is_empty() {
             // Vault root
             self.entries_left_view = vec![];
         } else {
             self.entries_left_view = self
                 .task_mgr
-                .get_explorer_entries(&self.current_path[0..self.current_path.len() - 1])?;
+                .get_explorer_entries(&self.current_path[0..self.current_path.len() - 1])
+                .unwrap_or_default();
         }
         self.entries_center_view =
             if let Ok(res) = self.task_mgr.get_explorer_entries(&self.current_path) {
@@ -109,11 +119,14 @@ impl ExplorerTab {
         if self.entries_center_view.is_empty() {
             bail!("Error: No selected entry")
         }
-        path_to_preview.push(
-            self.entries_center_view[self.state_center_view.selected.unwrap_or_default()]
-                .1
-                .clone(),
-        );
+        match self
+            .entries_center_view
+            .get(self.state_center_view.selected.unwrap_or_default())
+        {
+            Some(res) => path_to_preview.push(res.clone().1),
+
+            None => bail!("fail"),
+        }
         Ok(path_to_preview)
     }
 
@@ -162,7 +175,7 @@ impl ExplorerTab {
     }
 }
 
-impl Component for ExplorerTab {
+impl<'a> Component for ExplorerTab<'a> {
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
         self.command_tx = Some(tx);
         Ok(())
@@ -171,15 +184,65 @@ impl Component for ExplorerTab {
     fn register_config_handler(&mut self, config: Config) -> Result<()> {
         self.task_mgr = TaskManager::load_from_config(&config)?;
         self.config = config;
+        self.search_bar_widget.input = self.search_bar_widget.input.clone().with_value(
+            self.config
+                .tasks_config
+                .explorer_default_search_string
+                .clone(),
+        );
+        self.task_mgr.current_filter = Some(parse_search_input(
+            self.search_bar_widget.input.value(),
+            &self.config,
+        ));
         self.update_entries()?;
         self.state_center_view.selected = Some(0);
         Ok(())
     }
 
+    fn escape_editing_mode(&self) -> Vec<Action> {
+        vec![Action::Enter, Action::Escape]
+    }
+    fn editing_mode(&self) -> bool {
+        self.is_focused && self.search_bar_widget.is_focused
+    }
+
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
-        if self.focused {
+        if self.is_focused {
             match action {
-                Action::FocusFilter => self.focused = false,
+                Action::FocusFilter => self.is_focused = false,
+
+                Action::Enter | Action::Escape if self.search_bar_widget.is_focused => {
+                    self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
+                }
+                Action::Search => {
+                    self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
+                }
+                Action::Key(key_event) if self.search_bar_widget.is_focused => {
+                    self.search_bar_widget
+                        .input
+                        .handle_event(&Event::Key(key_event));
+
+                    // Update search input in TaskManager
+                    self.task_mgr.current_filter = Some(parse_search_input(
+                        self.search_bar_widget.input.value(),
+                        &self.config,
+                    ));
+                    self.update_entries()?;
+                    if self.state_left_view.selected.unwrap_or_default()
+                        >= self.entries_left_view.len()
+                    {
+                        self.state_left_view.select(None);
+                    } else {
+                        self.select_previous_left_entry();
+                    }
+                    if self.state_center_view.selected.unwrap_or_default()
+                        >= self.entries_center_view.len()
+                    {
+                        self.state_center_view.select(Some(0));
+                        self.update_entries()?;
+                    }
+                }
+
                 Action::Up => {
                     self.state_center_view.previous();
                     self.update_preview();
@@ -189,18 +252,21 @@ impl Component for ExplorerTab {
                     self.update_preview();
                 }
                 Action::Right | Action::Enter => self.enter_selected_entry()?,
-                Action::Left | Action::Cancel => self.leave_selected_entry()?,
+                Action::Left | Action::Escape => self.leave_selected_entry()?,
+                Action::Cancel => {
+                    self.leave_selected_entry()?;
+                }
                 Action::Help => todo!(),
                 _ => (),
             }
         } else if action == Action::FocusExplorer {
-            self.focused = true;
+            self.is_focused = true;
         }
         Ok(None)
     }
 
     fn draw(&mut self, frame: &mut Frame, _area: Rect) -> Result<()> {
-        if !self.focused {
+        if !self.is_focused {
             return Ok(());
         }
         if self.entries_center_view.is_empty() {
@@ -215,32 +281,58 @@ impl Component for ExplorerTab {
             Constraint::Length(1),
             Constraint::Length(1),
         ]);
-        let [_header_area, inner_area, footer_area, _tab_footer_areaa] =
+        let [_header_area, inner_area, footer_area, _tab_footer_area] =
             vertical.areas(frame.area());
 
         Self::render_footer(footer_area, frame);
 
-        // Outer Layout : path on top, main layout on bottom
-        let outer_layout = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(vec![Constraint::Length(3), Constraint::Percentage(100)])
-            .split(inner_area);
+        let [search_path_area, explorer_area] =
+            Layout::vertical(vec![Constraint::Length(3), Constraint::Percentage(100)])
+                .areas(inner_area);
+
+        let [path_area, search_area] =
+            Layout::horizontal(vec![Constraint::Percentage(70), Constraint::Percentage(30)])
+                .areas(search_path_area);
+
+        // Main Layout
+        let [previous_area, current_area, preview_area] = Layout::horizontal(vec![
+            Constraint::Percentage(10),
+            Constraint::Percentage(30),
+            Constraint::Percentage(60),
+        ])
+        .areas(explorer_area);
+
+        // Search Bar
+        if self.search_bar_widget.is_focused {
+            let width = search_area.width.max(3) - 3; // 2 for borders, 1 for cursor
+            let scroll = self.search_bar_widget.input.visual_scroll(width as usize);
+
+            // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
+            frame.set_cursor_position((
+                // Put cursor past the end of the input text
+                search_area.x.saturating_add(
+                    ((self.search_bar_widget.input.visual_cursor()).max(scroll) - scroll) as u16,
+                ) + 1,
+                // Move one line down, from the border to the input line
+                search_area.y + 1,
+            ));
+        }
+
+        self.search_bar_widget.block = Some(Block::bordered().title("Search").style(
+            Style::new().fg(if self.search_bar_widget.is_focused {
+                Color::Rgb(255, 153, 0)
+            } else {
+                Color::default()
+            }),
+        ));
+        self.search_bar_widget
+            .render(search_area, frame.buffer_mut());
 
         // Current path
         frame.render_widget(
             Paragraph::new(format!("\n./{}", self.current_path.join("/"))),
-            outer_layout[0],
+            path_area,
         );
-
-        // Main Layout
-        let layout = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(vec![
-                Constraint::Percentage(10),
-                Constraint::Percentage(30),
-                Constraint::Percentage(60),
-            ])
-            .split(outer_layout[1]);
 
         // Left Block
         let left_entries_list = Self::build_list(
@@ -248,7 +340,7 @@ impl Component for ExplorerTab {
             Block::default().borders(Borders::RIGHT),
         );
         let state = &mut self.state_left_view;
-        left_entries_list.render(layout[0], frame.buffer_mut(), state);
+        left_entries_list.render(previous_area, frame.buffer_mut(), state);
 
         // Center Block
         let lateral_entries_list = Self::build_list(
@@ -256,14 +348,14 @@ impl Component for ExplorerTab {
             Block::default().borders(Borders::RIGHT),
         );
         let state = &mut self.state_center_view;
-        lateral_entries_list.render(layout[1], frame.buffer_mut(), state);
+        lateral_entries_list.render(current_area, frame.buffer_mut(), state);
 
         // Right Block
 
         match self.entries_right_view.first() {
             Some(VaultData::Task(_) | VaultData::Header(_, _, _)) => {
                 TaskList::new(&self.config, &self.entries_right_view)
-                    .render(layout[2], frame.buffer_mut());
+                    .render(preview_area, frame.buffer_mut());
             }
             Some(VaultData::Directory(_, _)) => Self::build_list(
                 Self::apply_prefixes(
@@ -278,7 +370,7 @@ impl Component for ExplorerTab {
                 ),
                 Block::new(),
             )
-            .render(layout[2], frame.buffer_mut(), &mut ListState::default()),
+            .render(preview_area, frame.buffer_mut(), &mut ListState::default()),
             None => (),
         }
 

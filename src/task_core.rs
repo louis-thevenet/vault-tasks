@@ -1,12 +1,13 @@
 use color_eyre::{eyre::bail, Result};
+use task::Task;
 
 use std::{cmp::Ordering, collections::HashSet, fmt::Display, path::PathBuf};
 use vault_data::VaultData;
 
+use crate::config::Config;
+use filter::filter;
 use tracing::{debug, error};
 use vault_parser::VaultParser;
-
-use crate::config::Config;
 
 pub mod filter;
 pub mod parser;
@@ -20,12 +21,14 @@ pub const DIRECTORY_EMOJI: &str = "📁";
 pub struct TaskManager {
     pub tasks: VaultData,
     pub tags: HashSet<String>,
+    pub current_filter: Option<(Task, bool)>,
 }
 impl Default for TaskManager {
     fn default() -> Self {
         Self {
             tasks: VaultData::Directory("Empty".to_owned(), vec![]),
             tags: HashSet::new(),
+            current_filter: None,
         }
     }
 }
@@ -36,13 +39,17 @@ impl TaskManager {
         let tasks = vault_parser.scan_vault()?;
 
         Self::rewrite_vault_tasks(config, &tasks)
-            .unwrap_or_else(|e| error!("Failed to fix tasks' due dates: {e}"));
+            .unwrap_or_else(|e| error!("Failed to fix tasks: {e}"));
 
         let mut tags = HashSet::new();
         Self::collect_tags(&tasks, &mut tags);
         debug!("\n{}", tasks);
         debug!("\n{:#?}", tags);
-        Ok(Self { tasks, tags })
+        Ok(Self {
+            tasks,
+            tags,
+            ..Default::default()
+        })
     }
 
     fn collect_tags(tasks: &VaultData, tags: &mut HashSet<String>) {
@@ -156,29 +163,38 @@ impl TaskManager {
             }
         }
 
-        let VaultData::Directory(_, entries) = self.tasks.clone() else {
-            bail!("Error: First layer of VaultData was not a Directory")
+        let filtered_tasks = if let Some((task, has_state)) = &self.current_filter {
+            filter(&self.tasks, task, *has_state)
+        } else {
+            Some(self.tasks.clone())
         };
-        let mut res = aux(entries, selected_header_path, 0)?;
 
-        if let Some(entry) = res.first() {
-            if entry.0 == DIRECTORY_EMOJI || entry.0 == FILE_EMOJI {
-                res.sort_by(|a, b| {
-                    if a.0 == DIRECTORY_EMOJI {
-                        if b.0 == DIRECTORY_EMOJI {
-                            a.1.cmp(&b.1)
-                        } else {
-                            Ordering::Less
-                        }
-                    } else if b.0 == DIRECTORY_EMOJI {
-                        Ordering::Greater
-                    } else {
-                        a.1.cmp(&b.1)
+        match filtered_tasks {
+            Some(VaultData::Directory(_, entries)) => {
+                let mut res = aux(entries, selected_header_path, 0)?;
+
+                if let Some(entry) = res.first() {
+                    if entry.0 == DIRECTORY_EMOJI || entry.0 == FILE_EMOJI {
+                        res.sort_by(|a, b| {
+                            if a.0 == DIRECTORY_EMOJI {
+                                if b.0 == DIRECTORY_EMOJI {
+                                    a.1.cmp(&b.1)
+                                } else {
+                                    Ordering::Less
+                                }
+                            } else if b.0 == DIRECTORY_EMOJI {
+                                Ordering::Greater
+                            } else {
+                                a.1.cmp(&b.1)
+                            }
+                        });
                     }
-                });
+                }
+                Ok(res)
             }
+            None => Ok(vec![(String::new(), "Empty Vault".to_string())]),
+            _ => bail!("Error: First layer of VaultData was not a Directory"),
         }
-        Ok(res)
     }
 
     /// Follows the `selected_header_path` to retrieve the correct `VaultData`.
@@ -238,15 +254,28 @@ impl TaskManager {
             }
         }
 
-        let VaultData::Directory(_, entries) = self.tasks.clone() else {
-            bail!("First layer of VaultData was not a Directory")
+        let filtered_tasks = if let Some((task, has_state)) = &self.current_filter {
+            filter(&self.tasks, task, *has_state)
+        } else {
+            Some(self.tasks.clone())
         };
-        for entry in entries {
-            if let Ok(res) = aux(entry, selected_header_path, 0) {
-                return Ok(res);
+        match filtered_tasks {
+            Some(VaultData::Directory(_, entries)) => {
+                for entry in entries {
+                    if let Ok(res) = aux(entry, selected_header_path, 0) {
+                        return Ok(res);
+                    }
+                }
+                bail!("Entry not found");
+            }
+            None => Ok(vec![VaultData::Directory(
+                "Empty vault".to_string(),
+                vec![],
+            )]),
+            _ => {
+                bail!("First layer of VaultData was not a Directory");
             }
         }
-        bail!("Error: Couldn't find corresponding file")
     }
 
     pub fn can_enter(&self, selected_header_path: &[String]) -> bool {
@@ -279,7 +308,12 @@ impl TaskManager {
             }
         }
 
-        let VaultData::Directory(_, entries) = self.tasks.clone() else {
+        let filtered_tasks = if let Some((task, has_state)) = &self.current_filter {
+            filter(&self.tasks, task, *has_state)
+        } else {
+            return false;
+        };
+        let Some(VaultData::Directory(_, entries)) = filtered_tasks else {
             return false;
         };
         entries
@@ -354,6 +388,7 @@ mod tests {
         let task_mgr = TaskManager {
             tasks: input,
             tags: HashSet::new(),
+            ..Default::default()
         };
 
         let path = vec![String::from("Test"), String::from("1"), String::from("2")];
@@ -416,6 +451,7 @@ mod tests {
         let task_mgr = TaskManager {
             tasks: input,
             tags: HashSet::new(),
+            ..Default::default()
         };
 
         let path = vec![
@@ -498,6 +534,7 @@ mod tests {
         let task_mgr = TaskManager {
             tasks: input,
             tags: HashSet::new(),
+            ..Default::default()
         };
 
         let path = vec![String::from("Test"), String::from("1"), String::from("2")];
