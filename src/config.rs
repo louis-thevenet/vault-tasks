@@ -41,6 +41,10 @@ pub struct TasksConfig {
     pub use_american_format: bool,
     #[serde(default)]
     pub vault_path: PathBuf,
+    #[serde(default)]
+    pub explorer_default_search_string: String,
+    #[serde(default)]
+    pub filter_default_search_string: String,
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]

@@ -76,6 +76,12 @@ impl<'a> Component for FilterTab<'a> {
         self.task_mgr = TaskManager::load_from_config(&config)?;
         self.config = config;
         self.search_bar_widget.is_focused = true; // Start with search bar focused
+        self.search_bar_widget.input = self.search_bar_widget.input.clone().with_value(
+            self.config
+                .tasks_config
+                .filter_default_search_string
+                .clone(),
+        );
         self.update_matching_entries();
         Ok(())
     }
