@@ -17,6 +17,7 @@ mod vault_parser;
 
 pub const FILE_EMOJI: &str = "📄";
 pub const DIRECTORY_EMOJI: &str = "📁";
+pub const WARNING_EMOJI: &str = "⚠️";
 
 pub struct TaskManager {
     pub tasks: VaultData,
@@ -26,7 +27,7 @@ pub struct TaskManager {
 impl Default for TaskManager {
     fn default() -> Self {
         Self {
-            tasks: VaultData::Directory("Empty".to_owned(), vec![]),
+            tasks: VaultData::Directory("Empty Vault".to_owned(), vec![]),
             tags: HashSet::new(),
             current_filter: None,
         }
@@ -159,7 +160,7 @@ impl TaskManager {
                         }
                     }
                 }
-                bail!("Error: Couldn't find corresponding entry");
+                bail!("Couldn't find corresponding entry");
             }
         }
 
@@ -192,8 +193,11 @@ impl TaskManager {
                 }
                 Ok(res)
             }
-            None => Ok(vec![(String::new(), "Empty Vault".to_string())]),
-            _ => bail!("Error: First layer of VaultData was not a Directory"),
+            None => bail!("Empty Vault"),
+            _ => {
+                error!("First layer of VaultData was not a Directory");
+                bail!("First layer of VaultData was not a Directory")
+            }
         }
     }
 
@@ -224,7 +228,7 @@ impl TaskManager {
                             }
                             Ok(res)
                         } else {
-                            bail!("Error: Couldn't find corresponding entry");
+                            bail!("Couldn't find corresponding entry");
                         }
                     }
                     VaultData::Task(task) => {
@@ -247,7 +251,7 @@ impl TaskManager {
                             }
                             Ok(res)
                         } else {
-                            bail!("Error: Couldn't find corresponding entry");
+                            bail!("Couldn't find corresponding entry");
                         }
                     }
                 }
@@ -266,14 +270,13 @@ impl TaskManager {
                         return Ok(res);
                     }
                 }
-                bail!("Entry not found");
+                error!("Vault was not empty but the entry was not found");
+                bail!("Vault was not empty but the entry was not found");
             }
-            None => Ok(vec![VaultData::Directory(
-                "Empty vault".to_string(),
-                vec![],
-            )]),
+            None => bail!("Empty Vault"),
             _ => {
-                bail!("First layer of VaultData was not a Directory");
+                error!("First layer of VaultData was not a Directory");
+                bail!("Empty Vault")
             }
         }
     }

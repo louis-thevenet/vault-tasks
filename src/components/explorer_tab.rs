@@ -13,7 +13,7 @@ use super::Component;
 
 use crate::task_core::filter::parse_search_input;
 use crate::task_core::vault_data::VaultData;
-use crate::task_core::TaskManager;
+use crate::task_core::{TaskManager, WARNING_EMOJI};
 use crate::widgets::search_bar::SearchBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
@@ -91,6 +91,7 @@ impl<'a> ExplorerTab<'a> {
             ));
         }
     }
+    /// Updates left and center entries.
     fn update_entries(&mut self) -> Result<()> {
         debug!("Updating entries");
 
@@ -98,18 +99,21 @@ impl<'a> ExplorerTab<'a> {
             // Vault root
             self.entries_left_view = vec![];
         } else {
-            self.entries_left_view = self
+            self.entries_left_view = match self
                 .task_mgr
                 .get_explorer_entries(&self.current_path[0..self.current_path.len() - 1])
-                .unwrap_or_default();
-        }
-        self.entries_center_view =
-            if let Ok(res) = self.task_mgr.get_explorer_entries(&self.current_path) {
-                res
-            } else {
-                self.leave_selected_entry()?;
-                return Ok(());
+            {
+                Ok(res) => res,
+                Err(e) => vec![(String::from(WARNING_EMOJI), (e.to_string()))],
             };
+        }
+        self.entries_center_view = match self.task_mgr.get_explorer_entries(&self.current_path) {
+            Ok(res) => res,
+            Err(e) => {
+                self.leave_selected_entry()?;
+                vec![(String::from(WARNING_EMOJI), e.to_string())]
+            }
+        };
         self.update_preview();
         Ok(())
     }
@@ -117,15 +121,18 @@ impl<'a> ExplorerTab<'a> {
     fn get_preview_path(&self) -> Result<Vec<String>> {
         let mut path_to_preview = self.current_path.clone();
         if self.entries_center_view.is_empty() {
-            bail!("Error: No selected entry")
+            bail!("Center view is empty for {:?}", self.current_path)
         }
         match self
             .entries_center_view
             .get(self.state_center_view.selected.unwrap_or_default())
         {
             Some(res) => path_to_preview.push(res.clone().1),
-
-            None => bail!("fail"),
+            None => bail!(
+                "Index ({:?}) of selected entry out of range {:?}",
+                self.state_center_view.selected,
+                self.entries_center_view
+            ),
         }
         Ok(path_to_preview)
     }
@@ -136,10 +143,10 @@ impl<'a> ExplorerTab<'a> {
             return;
         };
 
-        self.entries_right_view = self
-            .task_mgr
-            .get_vault_data_from_path(&path_to_preview)
-            .unwrap_or_default();
+        self.entries_right_view = match self.task_mgr.get_vault_data_from_path(&path_to_preview) {
+            Ok(res) => res,
+            Err(e) => vec![VaultData::Directory(e.to_string(), vec![])],
+        };
     }
     fn build_list(
         entries_to_display: Vec<String>,
@@ -258,8 +265,8 @@ impl<'a> Component for ExplorerTab<'a> {
                         >= self.entries_center_view.len()
                     {
                         self.state_center_view.select(Some(0));
-                        self.update_entries()?;
                     }
+                    self.update_preview();
                 }
 
                 Action::Up => {
@@ -271,10 +278,7 @@ impl<'a> Component for ExplorerTab<'a> {
                     self.update_preview();
                 }
                 Action::Right | Action::Enter => self.enter_selected_entry()?,
-                Action::Left | Action::Escape => self.leave_selected_entry()?,
-                Action::Cancel => {
-                    self.leave_selected_entry()?;
-                }
+                Action::Cancel | Action::Left | Action::Escape => self.leave_selected_entry()?,
                 Action::Help => todo!(),
                 _ => (),
             }

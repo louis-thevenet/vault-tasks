@@ -62,8 +62,7 @@ impl VaultParser {
                     self.scan(&entry.path(), &mut new_child)?;
 
                     if let VaultData::Directory(_, c) = new_child.clone() {
-                        if c.is_empty() {
-                        } else {
+                        if !c.is_empty() {
                             children.push(new_child);
                         }
                     }
