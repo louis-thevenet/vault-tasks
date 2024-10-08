@@ -36,6 +36,12 @@ impl Default for TaskManager {
 impl TaskManager {
     /// Loads a vault from a `Config` and returns a `TaskManager`.
     pub fn load_from_config(config: &Config) -> Result<Self> {
+        let mut res = Self::default();
+        res.reload(config)?;
+        Ok(res)
+    }
+
+    pub fn reload(&mut self, config: &Config) -> Result<()> {
         let vault_parser = VaultParser::new(config.clone());
         let tasks = vault_parser.scan_vault()?;
 
@@ -44,15 +50,14 @@ impl TaskManager {
 
         let mut tags = HashSet::new();
         Self::collect_tags(&tasks, &mut tags);
+
         debug!("\n{}", tasks);
         debug!("\n{:#?}", tags);
-        Ok(Self {
-            tasks,
-            tags,
-            ..Default::default()
-        })
-    }
 
+        self.tasks = tasks;
+        self.tags = tags;
+        Ok(())
+    }
     fn collect_tags(tasks: &VaultData, tags: &mut HashSet<String>) {
         match tasks {
             VaultData::Directory(_, children) | VaultData::Header(_, _, children) => {
