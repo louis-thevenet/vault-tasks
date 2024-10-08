@@ -266,7 +266,7 @@ impl<'a> Component for ExplorerTab<'a> {
         self.is_focused && self.search_bar_widget.is_focused
     }
 
-    fn update(&mut self, action: Action) -> Result<Option<Action>> {
+    fn update(&mut self, tui: &mut Tui, action: Action) -> Result<Option<Action>> {
         if self.is_focused {
             match action {
                 Action::FocusFilter => self.is_focused = false,

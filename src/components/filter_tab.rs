@@ -10,6 +10,7 @@ use crate::task_core::filter::{filter_to_vec, parse_search_input};
 use crate::task_core::task::Task;
 use crate::task_core::vault_data::VaultData;
 use crate::task_core::TaskManager;
+use crate::tui::Tui;
 use crate::widgets::search_bar::SearchBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
@@ -92,7 +93,7 @@ impl<'a> Component for FilterTab<'a> {
     fn escape_editing_mode(&self) -> Vec<Action> {
         vec![Action::Enter, Action::Cancel, Action::Escape]
     }
-    fn update(&mut self, action: Action) -> Result<Option<Action>> {
+    fn update(&mut self, _tui: &mut Tui, action: Action) -> Result<Option<Action>> {
         if self.is_focused {
             match action {
                 Action::FocusExplorer => self.is_focused = false,
