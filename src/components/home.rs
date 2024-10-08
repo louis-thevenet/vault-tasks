@@ -1,5 +1,5 @@
 use super::Component;
-use crate::{action::Action, config::Config};
+use crate::{action::Action, config::Config, tui::Tui};
 use color_eyre::Result;
 use ratatui::{prelude::*, widgets::Tabs};
 use strum::{Display, EnumIter, FromRepr, IntoEnumIterator};
@@ -69,7 +69,7 @@ impl Component for Home {
         Ok(())
     }
 
-    fn update(&mut self, action: Action) -> Result<Option<Action>> {
+    fn update(&mut self, _tui: &mut Tui, action: Action) -> Result<Option<Action>> {
         match action {
             Action::TabRight => self.next_tab(),
             Action::TabLeft => self.previous_tab(),

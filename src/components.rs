@@ -6,7 +6,11 @@ use ratatui::{
 };
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::{action::Action, config::Config, tui::Event};
+use crate::{
+    action::Action,
+    config::Config,
+    tui::{Event, Tui},
+};
 
 pub mod explorer_tab;
 pub mod filter_tab;
@@ -109,7 +113,8 @@ pub trait Component {
     /// # Returns
     ///
     /// * `Result<Option<Action>>` - An action to be processed or none.
-    fn update(&mut self, action: Action) -> Result<Option<Action>> {
+    fn update(&mut self, tui: &mut Tui, action: Action) -> Result<Option<Action>> {
+        let _ = tui; // to appease clippy
         let _ = action; // to appease clippy
         Ok(None)
     }

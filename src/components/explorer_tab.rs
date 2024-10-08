@@ -4,7 +4,7 @@ use crossterm::event::Event;
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Paragraph};
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 use tui_input::backend::crossterm::EventHandler;
 use tui_widget_list::{ListBuilder, ListState, ListView};
@@ -14,6 +14,7 @@ use super::Component;
 use crate::task_core::filter::parse_search_input;
 use crate::task_core::vault_data::VaultData;
 use crate::task_core::{TaskManager, WARNING_EMOJI};
+use crate::tui::Tui;
 use crate::widgets::search_bar::SearchBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
@@ -199,6 +200,35 @@ impl<'a> ExplorerTab<'a> {
                 }),
         )
     }
+
+    fn open_current_file(&mut self, tui: &mut Tui) -> Result<()> {
+        let mut path = self.config.tasks_config.vault_path.clone();
+        for e in &self
+            .get_preview_path()
+            .unwrap_or_else(|_| self.current_path.clone())
+        {
+            path.push(e);
+            if path
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
+            {
+                break;
+            }
+        }
+
+        info!("Opening {:?} in default editor.", path);
+        if let Some(tx) = &self.command_tx {
+            tui.exit()?;
+            edit::edit_file(path)?;
+            tui.enter()?;
+            tx.send(Action::ClearScreen)?;
+            self.task_mgr.reload(&self.config)?;
+            self.update_entries()?;
+        } else {
+            bail!("Failed to open current path")
+        }
+        Ok(())
+    }
 }
 
 impl<'a> Component for ExplorerTab<'a> {
@@ -232,7 +262,7 @@ impl<'a> Component for ExplorerTab<'a> {
         self.is_focused && self.search_bar_widget.is_focused
     }
 
-    fn update(&mut self, action: Action) -> Result<Option<Action>> {
+    fn update(&mut self, tui: &mut Tui, action: Action) -> Result<Option<Action>> {
         if self.is_focused {
             match action {
                 Action::FocusFilter => self.is_focused = false,
@@ -279,6 +309,7 @@ impl<'a> Component for ExplorerTab<'a> {
                 }
                 Action::Right | Action::Enter => self.enter_selected_entry()?,
                 Action::Cancel | Action::Left | Action::Escape => self.leave_selected_entry()?,
+                Action::Open => self.open_current_file(tui)?,
                 Action::Help => todo!(),
                 _ => (),
             }

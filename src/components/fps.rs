@@ -11,7 +11,7 @@ use ratatui::{
 
 use super::Component;
 
-use crate::action::Action;
+use crate::{action::Action, tui::Tui};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FpsCounter {
@@ -68,7 +68,7 @@ impl FpsCounter {
 }
 
 impl Component for FpsCounter {
-    fn update(&mut self, action: Action) -> Result<Option<Action>> {
+    fn update(&mut self, _tui: &mut Tui, action: Action) -> Result<Option<Action>> {
         match action {
             Action::Tick => self.app_tick()?,
             Action::Render => self.render_tick()?,
