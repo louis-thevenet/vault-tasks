@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.2.0...v0.3.0) (2024-10-10)
+
+
+### Features
+
+* add search bar to vault explorer ([#16](https://github.com/louis-thevenet/vault-tasks/issues/16)) ([e2a66ba](https://github.com/louis-thevenet/vault-tasks/commit/e2a66ba4d1c1d73943f34175c8df16cd54de1a80))
+* **tui:** display origin file in task widget ([#17](https://github.com/louis-thevenet/vault-tasks/issues/17)) ([72dd287](https://github.com/louis-thevenet/vault-tasks/commit/72dd28740f56b5b044b5e0c87f169739525b7311))
+* **tui:** improve error reporting ([0d7ce2f](https://github.com/louis-thevenet/vault-tasks/commit/0d7ce2fff8b3e08a2efa0a5db823d3af4c1434cb))
+* **tui:** open selected entry in default editor ([#18](https://github.com/louis-thevenet/vault-tasks/issues/18)) ([4cc4177](https://github.com/louis-thevenet/vault-tasks/commit/4cc417721c0356ded734bd7c2fdb1526969a12d7))
+
+
+### Bug Fixes
+
+* **core:** empty directories being added to vault ([5d49b40](https://github.com/louis-thevenet/vault-tasks/commit/5d49b40f05f6b4fbe0e00b26eff3df04b7d662cb))
+* **core:** task indenting no longer gets deleted ([49e2402](https://github.com/louis-thevenet/vault-tasks/commit/49e24025dbd253c2e377531f36320d2a74cf5d68))
+* **explorer:** make file name bold in path instead of showing in preview ([cb693d0](https://github.com/louis-thevenet/vault-tasks/commit/cb693d07d70821cd1fa9d762f6bb2fe611316784))
+* **filter_tab:** tags list filter no longer case sensitive ([a4f308a](https://github.com/louis-thevenet/vault-tasks/commit/a4f308a420bb81e1cd89460b3521b56e7f2e8250))
+* **tui:** wrong height for subtasks ([fc1374d](https://github.com/louis-thevenet/vault-tasks/commit/fc1374d4314090a2c0d81c2391b1d488c642ff4a))
+
 ## [0.2.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.1.0...v0.2.0) (2024-09-29)
 
 
