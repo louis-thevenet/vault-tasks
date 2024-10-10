@@ -93,7 +93,7 @@ impl<'a> Component for FilterTab<'a> {
     fn escape_editing_mode(&self) -> Vec<Action> {
         vec![Action::Enter, Action::Cancel, Action::Escape]
     }
-    fn update(&mut self, _tui: &mut Tui, action: Action) -> Result<Option<Action>> {
+    fn update(&mut self, _tui: Option<&mut Tui>, action: Action) -> Result<Option<Action>> {
         if self.is_focused {
             match action {
                 Action::FocusExplorer => self.is_focused = false,

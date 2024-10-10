@@ -113,7 +113,7 @@ pub trait Component {
     /// # Returns
     ///
     /// * `Result<Option<Action>>` - An action to be processed or none.
-    fn update(&mut self, tui: &mut Tui, action: Action) -> Result<Option<Action>> {
+    fn update(&mut self, tui: Option<&mut Tui>, action: Action) -> Result<Option<Action>> {
         let _ = tui; // to appease clippy
         let _ = action; // to appease clippy
         Ok(None)

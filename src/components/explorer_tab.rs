@@ -201,7 +201,10 @@ impl<'a> ExplorerTab<'a> {
         )
     }
 
-    fn open_current_file(&mut self, tui: &mut Tui) -> Result<()> {
+    fn open_current_file(&mut self, tui_opt: Option<&mut Tui>) -> Result<()> {
+        let Some(tui) = tui_opt else {
+            bail!("Could not open current entry, Tui was None")
+        };
         let mut path = self.config.tasks_config.vault_path.clone();
         for e in &self
             .get_preview_path()
@@ -262,7 +265,7 @@ impl<'a> Component for ExplorerTab<'a> {
         self.is_focused && self.search_bar_widget.is_focused
     }
 
-    fn update(&mut self, tui: &mut Tui, action: Action) -> Result<Option<Action>> {
+    fn update(&mut self, tui: Option<&mut Tui>, action: Action) -> Result<Option<Action>> {
         if self.is_focused {
             match action {
                 Action::FocusFilter => self.is_focused = false,

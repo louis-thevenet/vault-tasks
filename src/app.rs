@@ -172,7 +172,7 @@ impl App {
                 _ => {}
             }
             for component in &mut self.components {
-                if let Some(action) = component.update(tui, action.clone())? {
+                if let Some(action) = component.update(Some(tui), action.clone())? {
                     self.action_tx.send(action)?;
                 };
             }
