@@ -47,7 +47,7 @@ pub struct TasksConfig {
     pub filter_default_search_string: String,
 }
 
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     #[serde(default)]
     pub config: AppConfig,
@@ -71,9 +71,14 @@ lazy_static! {
             .map(PathBuf::from);
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        json5::from_str(CONFIG).unwrap()
+    }
+}
 impl Config {
     pub fn new() -> Result<Self, config::ConfigError> {
-        let default_config: Self = json5::from_str(CONFIG).unwrap();
+        let default_config: Self = Self::default();
         let data_dir = get_data_dir();
         let config_dir = get_config_dir();
         let mut builder = config::Config::builder()
