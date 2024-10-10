@@ -49,6 +49,7 @@
 
           nativeBuildInputs = nativeBuildInputs;
           buildInputs = buildInputs;
+          postInstall = "install -Dm444 desktop/vault-tasks.desktop -t $out/share/applications";
         };
 
         # Rust dev environment
