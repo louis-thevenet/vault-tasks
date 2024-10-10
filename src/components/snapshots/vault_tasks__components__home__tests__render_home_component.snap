@@ -1,0 +1,24 @@
+---
+source: src/components/home.rs
+expression: terminal.backend()
+---
+"  Explorer     Filter                                                           "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                    Ctrl+◄► to change tab | Press q to quit                     "

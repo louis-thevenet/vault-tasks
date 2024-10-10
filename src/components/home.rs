@@ -116,3 +116,32 @@ impl SelectedTab {
         format!("  {self}  ").into()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use insta::assert_snapshot;
+    use ratatui::{backend::TestBackend, Terminal};
+    use tokio::sync::mpsc::unbounded_channel;
+
+    use crate::{
+        components::{home::Home, Component},
+        config::Config,
+    };
+
+    #[test]
+    fn test_render_home_component() {
+        let mut home = Home::new();
+        let (tx, _rx) = unbounded_channel();
+
+        home.register_action_handler(tx).unwrap();
+        home.register_config_handler(Config::new().unwrap())
+            .unwrap();
+
+        let mut terminal = Terminal::new(TestBackend::new(80, 20)).unwrap();
+
+        terminal
+            .draw(|frame| home.draw(frame, frame.area()).unwrap())
+            .unwrap();
+        assert_snapshot!(terminal.backend());
+    }
+}

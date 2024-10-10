@@ -181,3 +181,111 @@ impl<'a> Component for FilterTab<'a> {
         Ok(())
     }
 }
+#[cfg(test)]
+mod tests {
+
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    use insta::assert_snapshot;
+    use ratatui::{backend::TestBackend, Terminal};
+    use tokio::sync::mpsc::unbounded_channel;
+
+    use crate::{
+        action::Action,
+        components::{filter_tab::FilterTab, Component},
+        config::Config,
+    };
+
+    #[test]
+    fn test_render_filter_tab_component() {
+        let mut filter_tab = FilterTab::new();
+        let (tx, _rx) = unbounded_channel();
+
+        filter_tab.register_action_handler(tx).unwrap();
+        filter_tab
+            .register_config_handler(Config::default())
+            .unwrap();
+
+        let mut terminal = Terminal::new(TestBackend::new(80, 100)).unwrap();
+
+        terminal
+            .draw(|frame| filter_tab.draw(frame, frame.area()).unwrap())
+            .unwrap();
+        assert_snapshot!(terminal.backend());
+
+        filter_tab.update(None, Action::FocusFilter).unwrap();
+
+        terminal
+            .draw(|frame| filter_tab.draw(frame, frame.area()).unwrap())
+            .unwrap();
+        assert_snapshot!(terminal.backend());
+    }
+
+    #[test]
+    fn test_filter_tab_search() {
+        let mut filter_tab = FilterTab::new();
+        let (tx, _rx) = unbounded_channel();
+
+        filter_tab.register_action_handler(tx).unwrap();
+        filter_tab
+            .register_config_handler(Config::default())
+            .unwrap();
+
+        filter_tab.update(None, Action::FocusFilter).unwrap();
+
+        let mut terminal = Terminal::new(TestBackend::new(80, 100)).unwrap();
+        let key_codes = "#tobuy".chars().map(KeyCode::Char);
+
+        for code in key_codes {
+            filter_tab
+                .update(
+                    None,
+                    Action::Key(KeyEvent::new(code, KeyModifiers::empty())),
+                )
+                .unwrap();
+        }
+        terminal
+            .draw(|frame| filter_tab.draw(frame, frame.area()).unwrap())
+            .unwrap();
+        insta::with_settings!({
+            info => &"Searching for #tobuy tag".to_owned(), // the template context
+        }, {
+                assert_snapshot!(terminal.backend());
+        });
+
+        let key_codes = [KeyCode::Backspace; 6];
+        for code in key_codes {
+            filter_tab
+                .update(
+                    None,
+                    Action::Key(KeyEvent::new(code, KeyModifiers::empty())),
+                )
+                .unwrap();
+        }
+        terminal
+            .draw(|frame| filter_tab.draw(frame, frame.area()).unwrap())
+            .unwrap();
+        insta::with_settings!({
+            info => &"Empty field".to_owned(), // the template context
+        }, {
+                assert_snapshot!(terminal.backend());
+        });
+
+        let key_codes = "2024/09/29".chars().map(KeyCode::Char);
+        for code in key_codes {
+            filter_tab
+                .update(
+                    None,
+                    Action::Key(KeyEvent::new(code, KeyModifiers::empty())),
+                )
+                .unwrap();
+        }
+        terminal
+            .draw(|frame| filter_tab.draw(frame, frame.area()).unwrap())
+            .unwrap();
+        insta::with_settings!({
+            info => &"Searching for 2021/09/29".to_owned(), // the template context
+        }, {
+                assert_snapshot!(terminal.backend());
+        });
+    }
+}
