@@ -11,7 +11,7 @@ use crate::task_core::{
 
 pub struct TaskListItem {
     item: VaultData,
-    pub height: usize,
+    pub height: u16,
     not_american_format: bool,
     display_filename: bool,
 }
@@ -27,33 +27,31 @@ impl TaskListItem {
         }
     }
 
-    fn compute_height(item: &VaultData) -> usize {
+    fn compute_height(item: &VaultData) -> u16 {
         match &item {
             VaultData::Directory(_, _) => 1,
             VaultData::Header(_, _, children) => {
-                children.iter().map(Self::compute_height).sum::<usize>() + 2 // name in block
+                children.iter().map(Self::compute_height).sum::<u16>() + 1 // name in block (border only on top)
             }
             VaultData::Task(task) => {
-                let mut count = 0;
+                let mut count: u16 = 2; // block
                 if let Some(d) = &task.description {
-                    count += d.split('\n').count();
-                }
-                if task.tags.is_some() {
-                    count += 1;
+                    count += u16::try_from(d.split('\n').count()).unwrap_or_else(|e| {
+                        error!("Could not convert description length to u16 :{e}");
+                        0
+                    });
                 }
                 if task.due_date != DueDate::NoDate || task.priority > 0 {
                     count += 1;
                 }
-
+                if task.tags.is_some() {
+                    count += 1;
+                }
                 for sb in &task.subtasks {
                     count += Self::compute_height(&VaultData::Task(sb.clone()));
                 }
-
-                if count > 0 {
-                    count + 2 // content + block
-                } else {
-                    3 // name + block
-                }
+                count.max(3) // If count == 2 then we add task name will be in the block
+                             // Else name goes in block title
             }
         }
     }
@@ -82,9 +80,7 @@ impl Widget for TaskListItem {
 
                 let mut constraints = vec![];
                 for child in children {
-                    constraints.push(Constraint::Length(
-                        Self::compute_height(child).try_into().unwrap(),
-                    ));
+                    constraints.push(Constraint::Length(Self::compute_height(child)));
                 }
                 let layout = Layout::default()
                     .direction(Direction::Vertical)
@@ -151,7 +147,13 @@ impl Widget for TaskListItem {
                 }
 
                 let mut constraints = vec![Constraint::Length((lines.len()).try_into().unwrap())];
-                constraints.append(&mut vec![Constraint::Min(1); task.subtasks.len()]);
+
+                for st in &task.subtasks {
+                    constraints.push(Constraint::Length(Self::compute_height(&VaultData::Task(
+                        st.clone(),
+                    ))));
+                }
+
                 let layout = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints(constraints)
