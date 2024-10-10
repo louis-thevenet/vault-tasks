@@ -25,14 +25,15 @@
         cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
         rust-toolchain = pkgs.symlinkJoin {
           name = "rust-toolchain";
-          paths = [
-            pkgs.rustc
-            pkgs.cargo
-            pkgs.cargo-watch
-            pkgs.rust-analyzer
-            pkgs.rustPlatform.rustcSrc
-            pkgs.cargo-dist
-            pkgs.cargo-tarpaulin
+          paths = with pkgs; [
+            rustc
+            cargo
+            cargo-watch
+            rust-analyzer
+            rustPlatform.rustcSrc
+            cargo-dist
+            cargo-tarpaulin
+            cargo-insta
           ];
         };
 

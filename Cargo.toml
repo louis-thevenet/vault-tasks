@@ -69,3 +69,10 @@ targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-
 # Publish jobs to run in CI
 pr-run-mode = "plan"
 install-updater = true
+
+[dev-dependencies]
+insta = { version = "1.40.0", features = ["yaml"] }
+
+[profile.dev.package]
+insta.opt-level = 3
+similar.opt-level = 3
