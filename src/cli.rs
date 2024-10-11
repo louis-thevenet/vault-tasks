@@ -15,15 +15,26 @@ pub struct Cli {
     #[arg(short, long, value_name = "FLOAT", default_value_t = 60.0)]
     pub frame_rate: f64,
 
+    /// Use a custom config file
     #[arg(short, long, value_name = "PATH")]
     pub config_path: Option<PathBuf>,
 
+    /// Vault path to open
+    pub vault_path: Option<PathBuf>,
+
+    /// Optional subcommand to run
     #[command(subcommand)]
     pub command: Option<Commands>,
 }
 #[derive(Subcommand, Debug, Clone)]
 pub enum Commands {
-    GenerateConfig,
+    /// Open explorer view
+    #[command(alias = "test")]
+    Explorer,
+    /// Open filter view
+    Filter,
+    /// Generates a new configuration file from the default one
+    GenerateConfig { path: Option<PathBuf> },
 }
 
 const VERSION_MESSAGE: &str = concat!(

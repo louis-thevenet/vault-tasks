@@ -7,6 +7,7 @@ use tracing::{debug, info};
 
 use crate::{
     action::Action,
+    cli::{Cli, Commands},
     components::{
         explorer_tab::ExplorerTab, filter_tab::FilterTab, fps::FpsCounter, home::Home, Component,
     },
@@ -14,8 +15,13 @@ use crate::{
     tui::{Event, Tui},
 };
 
+struct InitialState {
+    tab: Action,
+}
+
 pub struct App {
     config: Config,
+    initial_state: InitialState,
     tick_rate: f64,
     frame_rate: f64,
     components: Vec<Box<dyn Component>>,
@@ -36,11 +42,13 @@ pub enum Mode {
 }
 
 impl App {
-    pub fn new(tick_rate: f64, frame_rate: f64) -> Result<Self> {
+    pub fn new(args: &Cli) -> Result<Self> {
+        let config = Config::new(args)?;
+        let initial_state = Self::get_initial_state(args);
         let (action_tx, action_rx) = mpsc::unbounded_channel();
         Ok(Self {
-            tick_rate,
-            frame_rate,
+            tick_rate: args.tick_rate,
+            frame_rate: args.frame_rate,
             components: vec![
                 Box::new(Home::new()),
                 Box::<FpsCounter>::default(),
@@ -49,14 +57,23 @@ impl App {
             ],
             should_quit: false,
             should_suspend: false,
-            config: Config::new()?,
+            config,
             mode: Mode::Home,
             last_tick_key_events: Vec::new(),
             action_tx,
             action_rx,
+            initial_state,
         })
     }
-
+    const fn get_initial_state(args: &Cli) -> InitialState {
+        let tab = match args.command {
+            Some(Commands::Filter) => Action::FocusFilter,
+            Some(Commands::Explorer | Commands::GenerateConfig { path: _ }) | None => {
+                Action::FocusExplorer
+            }
+        };
+        InitialState { tab }
+    }
     pub async fn run(&mut self) -> Result<()> {
         let mut tui = Tui::new()?
             // .mouse(true) // uncomment this line to enable mouse support
@@ -75,6 +92,9 @@ impl App {
         }
 
         let action_tx = self.action_tx.clone();
+
+        action_tx.send(self.initial_state.tab.clone())?;
+
         loop {
             self.handle_events(&mut tui).await?;
             self.handle_actions(&mut tui)?;

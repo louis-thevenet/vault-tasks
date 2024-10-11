@@ -5,10 +5,9 @@ use std::{
     fs::{create_dir_all, File},
     io::Write,
     path::PathBuf,
-    process::exit,
 };
 
-use crate::{action::Action, app::Mode};
+use crate::{action::Action, app::Mode, cli::Cli};
 use color_eyre::{eyre::bail, Result};
 use config::ConfigError;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
@@ -17,7 +16,7 @@ use directories::ProjectDirs;
 use lazy_static::lazy_static;
 use ratatui::style::{Color, Modifier, Style};
 use serde::{de::Deserializer, Deserialize};
-use tracing::debug;
+use tracing::{debug, info};
 
 const CONFIG: &str = include_str!("../.config/config.json5");
 
@@ -73,14 +72,20 @@ lazy_static! {
 
 impl Default for Config {
     fn default() -> Self {
-        json5::from_str(CONFIG).unwrap()
+        let mut config: Self = json5::from_str(CONFIG).unwrap();
+        if cfg!(test) {
+            config.tasks_config.vault_path = PathBuf::from("./test-vault");
+        }
+        config
     }
 }
 impl Config {
-    pub fn new() -> Result<Self, config::ConfigError> {
+    pub fn new(args: &Cli) -> Result<Self, config::ConfigError> {
         let default_config: Self = Self::default();
+
         let data_dir = get_data_dir();
-        let config_dir = get_config_dir();
+        let config_dir = args.config_path.clone().unwrap_or_else(get_config_dir);
+
         let mut builder = config::Config::builder()
             .set_default("data_dir", data_dir.to_str().unwrap())?
             .set_default("config_dir", config_dir.to_str().unwrap())?;
@@ -102,24 +107,13 @@ impl Config {
                 found_config = true;
             }
         }
+
         if !found_config && !cfg!(test) {
-            eprintln!(
+            info!(
                 "No configuration file found.\nCreate one at {config_dir:?} or generate one using `vault-tasks generate-config`");
-            exit(-1)
         }
 
         let mut cfg: Self = builder.build()?.try_deserialize()?;
-
-        if !cfg.tasks_config.vault_path.exists() && !cfg!(test) {
-            return Err(ConfigError::Message(format!(
-                "Vautl path does not exist: {:?}",
-                cfg.tasks_config.vault_path
-            )));
-        }
-
-        if cfg.tasks_config.indent_length == 0 {
-            cfg.tasks_config.indent_length = default_config.tasks_config.indent_length;
-        }
 
         for (mode, default_bindings) in default_config.keybindings.iter() {
             let user_bindings = cfg.keybindings.entry(*mode).or_default();
@@ -136,12 +130,40 @@ impl Config {
             }
         }
 
+        if let Some(path) = &args.vault_path {
+            cfg.tasks_config.vault_path = path.clone();
+        }
+
+        cfg.check_config()?;
         debug!("{cfg:#?}");
         Ok(cfg)
     }
+    fn check_config(&mut self) -> Result<(), ConfigError> {
+        if self
+            .tasks_config
+            .vault_path
+            .to_str()
+            .is_some_and(str::is_empty)
+        {
+            return Err(ConfigError::Message(
+                "No vault path provided and no default path set in config".to_string(),
+            ));
+        }
+        if !self.tasks_config.vault_path.exists() && !cfg!(test) {
+            return Err(ConfigError::Message(format!(
+                "Vault path does not exist: {:?}",
+                self.tasks_config.vault_path
+            )));
+        }
 
-    pub fn generate_config() -> Result<()> {
-        let config_dir = get_config_dir();
+        if self.tasks_config.indent_length == 0 {
+            self.tasks_config.indent_length = Self::default().tasks_config.indent_length;
+        }
+        Ok(())
+    }
+
+    pub fn generate_config(path: Option<PathBuf>) -> Result<()> {
+        let config_dir = path.unwrap_or_else(get_config_dir);
         let dest = config_dir.join("config.json5");
         if create_dir_all(config_dir).is_err() {
             bail!("Failed to create config directory at {dest:?}".to_owned());
@@ -153,7 +175,7 @@ impl Config {
         } else {
             bail!("Failed to create default config at {dest:?}".to_owned());
         }
-        println!("Configuration has been created at {dest:?}. \nPlease fill the `vault-path` key to use the app.");
+        println!("Configuration has been created at {dest:?}. You can fill the `vault-path` value to set a default vault.");
         Ok(())
     }
 }

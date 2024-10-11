@@ -1,6 +1,7 @@
 ---
 source: src/components/filter_tab.rs
 expression: terminal.backend()
+info: Searching for 2021/09/29
 ---
 "                                                                                "
 "┌──────────────────────────────────────────────────────────────────────────────┐"

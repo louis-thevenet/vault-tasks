@@ -73,6 +73,8 @@ impl Component for Home {
         match action {
             Action::TabRight => self.next_tab(),
             Action::TabLeft => self.previous_tab(),
+            Action::FocusExplorer => self.selected_tab = SelectedTab::Explorer,
+            Action::FocusFilter => self.selected_tab = SelectedTab::Filter,
             _ => (),
         }
         Ok(None)

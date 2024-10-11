@@ -2,6 +2,7 @@ use clap::Parser;
 use cli::Cli;
 use color_eyre::Result;
 use config::Config;
+use tracing::debug;
 
 use crate::app::App;
 
@@ -23,10 +24,12 @@ async fn main() -> Result<()> {
 
     let args = Cli::parse();
 
-    if matches!(args.command, Some(cli::Commands::GenerateConfig)) {
-        return Config::generate_config();
+    if let Some(cli::Commands::GenerateConfig { path }) = args.command {
+        return Config::generate_config(path);
     }
 
-    let mut app = App::new(args.tick_rate, args.frame_rate)?;
+    debug!("{args:#?}");
+
+    let mut app = App::new(&args)?;
     app.run().await
 }
