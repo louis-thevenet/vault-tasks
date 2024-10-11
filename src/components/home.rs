@@ -134,8 +134,7 @@ mod tests {
         let (tx, _rx) = unbounded_channel();
 
         home.register_action_handler(tx).unwrap();
-        home.register_config_handler(Config::new().unwrap())
-            .unwrap();
+        home.register_config_handler(Config::default()).unwrap();
 
         let mut terminal = Terminal::new(TestBackend::new(80, 20)).unwrap();
 

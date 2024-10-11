@@ -559,8 +559,8 @@ mod tests {
     }
 
     #[test]
-    fn test_config() -> Result<()> {
-        let c = Config::new()?;
+    fn test_config() {
+        let c = Config::default();
         assert_eq!(
             c.keybindings
                 .get(&Mode::Home)
@@ -569,7 +569,6 @@ mod tests {
                 .unwrap(),
             &Action::Quit
         );
-        Ok(())
     }
 
     #[test]
