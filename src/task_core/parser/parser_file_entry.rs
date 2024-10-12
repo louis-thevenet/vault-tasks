@@ -121,15 +121,13 @@ impl<'i> ParserFileEntry<'i> {
                 VaultData::Task(task) => {
                     let mut current_task_depth = current_task_depth;
                     let mut last_task = task;
-                    if current_task_depth < target_task_depth {
-                        while current_task_depth < target_header_depth {
-                            if last_task.subtasks.is_empty() {
-                                error!("Could not find parent task, indenting may be wrong. Closest task line number: {}",last_task.line_number);
-                                bail!("Failed to insert task")
-                            }
-                            last_task = last_task.subtasks.last_mut().unwrap();
-                            current_task_depth += 1;
+                    while current_task_depth < target_task_depth {
+                        if last_task.subtasks.is_empty() {
+                            error!("Could not find parent task, indenting may be wrong. Closest task line number: {}",last_task.line_number);
+                            bail!("Failed to insert task")
                         }
+                        last_task = last_task.subtasks.last_mut().unwrap();
+                        current_task_depth += 1;
                     }
                     last_task.subtasks.push(task_to_insert);
                     Ok(())
@@ -429,6 +427,8 @@ impl<'i> ParserFileEntry<'i> {
 #[cfg(test)]
 mod tests {
 
+    use insta::assert_snapshot;
+
     use crate::{
         config::Config,
         task_core::{task::Task, vault_data::VaultData},
@@ -627,5 +627,90 @@ mod tests {
         );
         parser.parse_file_aux(input, &mut res, 0);
         assert_eq!(res, expected);
+    }
+    #[test]
+    fn test_nested_tasks() {
+        let input = r"# 1 Header
+## Test
+- [ ] Test a
+  - [ ] Test b
+    - [ ] Test c
+"
+        .split('\n')
+        .enumerate()
+        .peekable();
+
+        let mut config = Config::default();
+        config.tasks_config.indent_length = 2;
+        let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
+        let parser = ParserFileEntry {
+            config: &config,
+            filename: String::new(),
+        };
+        let expected = VaultData::Header(
+            0,
+            "Test".to_string(),
+            vec![VaultData::Header(
+                1,
+                "1 Header".to_string(),
+                vec![VaultData::Header(
+                    2,
+                    "Test".to_string(),
+                    vec![VaultData::Task(Task {
+                        name: "Test a".to_string(),
+                        line_number: 3,
+                        subtasks: vec![Task {
+                            name: "Test b".to_string(),
+                            line_number: 4,
+                            subtasks: vec![Task {
+                                name: "Test c".to_string(),
+                                line_number: 5,
+                                ..Default::default()
+                            }],
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    })],
+                )],
+            )],
+        );
+        parser.parse_file_aux(input, &mut res, 0);
+        println!("{res:#?}");
+        assert_eq!(res, expected);
+    }
+    #[test]
+    fn test_nested_tasks_desc() {
+        let input = r"# 1 Header
+- [ ] t1
+  t1
+  - [ ] t2
+    t2
+  t1
+    t2
+    - [ ] t3
+    t2
+  t1
+      t3
+  t1
+      - [ ] t4
+    t2
+        t4
+      t3
+        t4
+
+"
+        .split('\n')
+        .enumerate()
+        .peekable();
+
+        let mut config = Config::default();
+        config.tasks_config.indent_length = 2;
+        let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
+        let parser = ParserFileEntry {
+            config: &config,
+            filename: String::new(),
+        };
+        parser.parse_file_aux(input, &mut res, 0);
+        assert_snapshot!(res);
     }
 }

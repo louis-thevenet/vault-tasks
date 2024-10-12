@@ -7,4 +7,7 @@
   - [ ] subtask with tags #tag1 #tag2
   - [ ] subtask
 
-- [ ] task #tag
+- [ ] Test a
+  - [ ] Test b
+    - [ ] Test c
+

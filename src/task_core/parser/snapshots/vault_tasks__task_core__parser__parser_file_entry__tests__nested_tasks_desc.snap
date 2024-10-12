@@ -1,0 +1,31 @@
+---
+source: src/task_core/parser/parser_file_entry.rs
+expression: res
+---
+0. Test
+‾‾‾‾‾‾‾
+	1. 1 Header
+	‾‾‾‾‾‾‾‾‾‾‾
+		Name: 	 -> t1
+		State: 	 -> ❌
+		Desc.:	 -> "t1
+		t1
+		t1
+		t1"
+		
+			Name: 	 -> t2
+			State: 	 -> ❌
+			Desc.:	 -> "t2
+			t2
+			t2
+			t2"
+			
+				Name: 	 -> t3
+				State: 	 -> ❌
+				Desc.:	 -> "t3
+				t3"
+				
+					Name: 	 -> t4
+					State: 	 -> ❌
+					Desc.:	 -> "t4
+					t4"
