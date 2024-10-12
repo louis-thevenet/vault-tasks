@@ -210,13 +210,13 @@ impl<'a> ExplorerTab<'a> {
             .get_preview_path()
             .unwrap_or_else(|_| self.current_path.clone())
         {
-            path.push(e);
             if path
                 .extension()
                 .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
             {
                 break;
             }
+            path.push(e);
         }
 
         info!("Opening {:?} in default editor.", path);

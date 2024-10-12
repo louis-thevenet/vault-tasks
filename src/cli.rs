@@ -7,6 +7,9 @@ use crate::config::{get_config_dir, get_data_dir};
 #[derive(Parser, Debug)]
 #[command(author, version = version(), about)]
 pub struct Cli {
+    /// Vault to open (can be a single file or a directory)
+    pub vault_path: Option<PathBuf>,
+
     /// Tick rate, i.e. number of ticks per second
     #[arg(short, long, value_name = "FLOAT", default_value_t = 4.0)]
     pub tick_rate: f64,
@@ -18,9 +21,6 @@ pub struct Cli {
     /// Use a custom config file
     #[arg(short, long, value_name = "PATH")]
     pub config_path: Option<PathBuf>,
-
-    /// Vault path to open
-    pub vault_path: Option<PathBuf>,
 
     /// Optional subcommand to run
     #[command(subcommand)]

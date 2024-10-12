@@ -38,7 +38,20 @@ impl VaultParser {
             return Ok(());
         }
 
-        let entries = path.read_dir()?;
+        let entries = if path.is_dir() {
+            path.read_dir()?
+                .collect::<Vec<Result<DirEntry, std::io::Error>>>()
+        } else {
+            path.parent()
+                .unwrap()
+                .read_dir()?
+                .filter(|e| {
+                    let e = e.as_ref().unwrap();
+                    e.file_name().eq(&path.file_name().unwrap())
+                })
+                .collect::<Vec<Result<DirEntry, std::io::Error>>>()
+        };
+
         for entry_err in entries {
             let Ok(entry) = entry_err else { continue };
             let name = entry.file_name().into_string().unwrap();
