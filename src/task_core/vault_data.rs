@@ -57,7 +57,7 @@ impl Display for VaultData {
                     }
 
                     for subtask in &task.subtasks {
-                        for line in subtask.to_string().split('\n') {
+                        for line in VaultData::Task(subtask.clone()).to_string().split('\n') {
                             write_indent(depth + 1, f)?;
                             writeln!(f, "{line}")?;
                         }
