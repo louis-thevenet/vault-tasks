@@ -5,7 +5,7 @@ use tracing::error;
 use winnow::{
     ascii::{space0, space1},
     combinator::{alt, preceded, repeat},
-    token::take_till,
+    token::{take_till, take_while},
     PResult, Parser,
 };
 
@@ -23,6 +23,8 @@ enum FileToken {
     Description(String, usize),
     /// Task, Indent length
     Task(Task, usize),
+    /// A tag found outside a task in the file
+    FileTag(String),
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -60,6 +62,14 @@ impl<'i> ParserFileEntry<'i> {
             desc_content.to_string(),
             indent_length,
         ))
+    }
+    fn parse_file_tag(input: &mut &str) -> PResult<FileToken> {
+        let tag = preceded(
+            '#',
+            take_while(1.., ('_', '0'..='9', 'A'..='Z', 'a'..='z', '0'..='9')),
+        )
+        .parse_next(input)?;
+        Ok(FileToken::FileTag(tag.to_owned()))
     }
     fn insert_task_at(
         file_entry: &mut VaultData,
@@ -327,11 +337,13 @@ impl<'i> ParserFileEntry<'i> {
         &self,
         mut input: Peekable<I>,
         file_entry: &mut VaultData,
+        file_tags: &mut Vec<String>,
         header_depth: usize,
     ) where
         I: Iterator<Item = (usize, &'a str)>,
     {
         let mut parser = alt((
+            Self::parse_file_tag,
             Self::parse_header,
             |input: &mut &str| self.parse_task(input),
             Self::parse_description,
@@ -357,7 +369,7 @@ impl<'i> ParserFileEntry<'i> {
                 {
                     error!("Failed to insert task");
                 }
-                self.parse_file_aux(input, file_entry, header_depth);
+                self.parse_file_aux(input, file_entry, file_tags, header_depth);
             }
             Ok(FileToken::Header((header, new_depth))) => {
                 Self::insert_header_at(
@@ -366,7 +378,7 @@ impl<'i> ParserFileEntry<'i> {
                     new_depth - 1,
                     0,
                 );
-                self.parse_file_aux(input, file_entry, new_depth);
+                self.parse_file_aux(input, file_entry, file_tags, new_depth);
             }
             Ok(FileToken::Description(description, indent_length)) => {
                 if Self::append_description(
@@ -377,12 +389,17 @@ impl<'i> ParserFileEntry<'i> {
                 )
                 .is_err()
                 {
-                    error!("Failed to insert description {description}]");
+                    error!("Failed to insert description {description}");
                 }
-                self.parse_file_aux(input, file_entry, header_depth);
+                self.parse_file_aux(input, file_entry, file_tags, header_depth);
             }
-
-            Err(_) => self.parse_file_aux(input, file_entry, header_depth),
+            Ok(FileToken::FileTag(tag)) => {
+                if !file_tags.contains(&tag) {
+                    file_tags.push(tag);
+                }
+                self.parse_file_aux(input, file_entry, file_tags, header_depth);
+            }
+            Err(_) => self.parse_file_aux(input, file_entry, file_tags, header_depth),
         }
     }
 
@@ -412,9 +429,13 @@ impl<'i> ParserFileEntry<'i> {
         let lines = input.split('\n');
 
         let mut res = VaultData::Header(0, filename.to_owned(), vec![]);
+        let mut file_tags = vec![];
+        self.filename = filename.to_string();
+        self.parse_file_aux(lines.enumerate().peekable(), &mut res, &mut file_tags, 0);
 
-        self.filename = filename.to_owned();
-        self.parse_file_aux(lines.enumerate().peekable(), &mut res, 0);
+        if self.config.tasks_config.file_tags_propagation {
+            file_tags.iter().for_each(|t| add_global_tag(&mut res, t));
+        }
 
         // Filename is changed from Header to Directory variant at the end
         if let Some(VaultData::Header(_, name, children)) = Self::clean_file_entry(&mut res) {
@@ -424,6 +445,36 @@ impl<'i> ParserFileEntry<'i> {
         }
     }
 }
+
+fn add_global_tag(file_entry: &mut VaultData, tag: &String) {
+    fn add_tag_aux(file_entry: &mut VaultData, tag: &String) {
+        match file_entry {
+            VaultData::Header(_, _, children) | VaultData::Directory(_, children) => {
+                for child in children.iter_mut().rev() {
+                    add_tag_aux(child, tag);
+                }
+            }
+            VaultData::Task(task) => {
+                fn insert_tag_task(task: &mut Task, tag: &String) {
+                    match task.tags.clone() {
+                        Some(mut tags) if !tags.contains(tag) => {
+                            tags.push(tag.to_string());
+                            task.tags = Some(tags);
+                        }
+                        None => task.tags = Some(vec![tag.to_string()]),
+                        _ => (),
+                    }
+
+                    for st in &mut task.subtasks {
+                        insert_tag_task(st, tag);
+                    }
+                }
+                insert_tag_task(task, tag);
+            }
+        }
+    }
+    add_tag_aux(file_entry, tag);
+}
 #[cfg(test)]
 mod tests {
 
@@ -431,7 +482,7 @@ mod tests {
 
     use crate::{
         config::Config,
-        task_core::{task::Task, vault_data::VaultData},
+        task_core::{parser::parser_file_entry::add_global_tag, task::Task, vault_data::VaultData},
     };
 
     use super::ParserFileEntry;
@@ -492,7 +543,7 @@ mod tests {
                 ),
             ],
         );
-        parser.parse_file_aux(input, &mut res, 0);
+        parser.parse_file_aux(input, &mut res, &mut vec![], 0);
         assert_eq!(res, expected);
 
         let expected_after_cleaning = VaultData::Header(
@@ -586,8 +637,37 @@ mod tests {
                 ],
             )],
         );
-        parser.parse_file_aux(input, &mut res, 0);
+        parser.parse_file_aux(input, &mut res, &mut vec![], 0);
         assert_eq!(res, expected);
+    }
+    #[test]
+    fn test_insert_global_tag() {
+        let input = r"# 1 Header
+- [ ] Task
+
+## 2 Header
+### 3 Header
+- [ ] Task
+- [ ] Task 2
+## 2 Header 2
+- [ ] Task
+  Description
+
+"
+        .split('\n')
+        .enumerate()
+        .peekable();
+
+        let mut config = Config::default();
+        config.tasks_config.indent_length = 2;
+        let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
+        let parser = ParserFileEntry {
+            config: &config,
+            filename: String::new(),
+        };
+        parser.parse_file_aux(input, &mut res, &mut vec![], 0);
+        add_global_tag(&mut res, &String::from("test"));
+        assert_snapshot!(res);
     }
     #[test]
     fn test_fake_description() {
@@ -625,7 +705,7 @@ mod tests {
                 ],
             )],
         );
-        parser.parse_file_aux(input, &mut res, 0);
+        parser.parse_file_aux(input, &mut res, &mut vec![], 0);
         assert_eq!(res, expected);
     }
     #[test]
@@ -674,7 +754,7 @@ mod tests {
                 )],
             )],
         );
-        parser.parse_file_aux(input, &mut res, 0);
+        parser.parse_file_aux(input, &mut res, &mut vec![], 0);
         println!("{res:#?}");
         assert_eq!(res, expected);
     }
@@ -710,7 +790,7 @@ mod tests {
             config: &config,
             filename: String::new(),
         };
-        parser.parse_file_aux(input, &mut res, 0);
+        parser.parse_file_aux(input, &mut res, &mut vec![], 0);
         assert_snapshot!(res);
     }
 }

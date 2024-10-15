@@ -3,6 +3,7 @@
         "use_american_format": true,
         "indent_length": 2,
         "parse_dot_files": false,
+        "file_tags_propagation": true,
         // "vault_path": "./test-vault",
         "ignored": [],
         "explorer_default_search_string":"- [ ] ",

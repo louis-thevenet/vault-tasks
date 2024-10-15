@@ -4,8 +4,11 @@ use super::token::Token;
 
 /// Parses tags of the form "#tag".
 pub fn parse_tag(input: &mut &str) -> PResult<Token> {
-    let tag =
-        preceded('#', take_while(1.., ('0'..='9', 'A'..='Z', 'a'..='z'))).parse_next(input)?;
+    let tag = preceded(
+        '#',
+        take_while(1.., ('_', '0'..='9', 'A'..='Z', 'a'..='z', '0'..='9')),
+    )
+    .parse_next(input)?;
     Ok(Token::Tag(tag.to_string()))
 }
 
@@ -17,6 +20,14 @@ mod tests {
     fn test_parse_tag_sucess() {
         let mut with_tag = "#test";
         assert_eq!(parse_tag(&mut with_tag), Ok(Token::Tag("test".to_string())));
+    }
+    #[test]
+    fn test_parse_tag_symbols() {
+        let mut with_tag = "#test_underscore123";
+        assert_eq!(
+            parse_tag(&mut with_tag),
+            Ok(Token::Tag("test_underscore123".to_string()))
+        );
     }
     #[test]
     fn test_parse_tag_fail() {

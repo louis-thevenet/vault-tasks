@@ -33,6 +33,8 @@ pub struct TasksConfig {
     #[serde(default)]
     pub parse_dot_files: bool,
     #[serde(default)]
+    pub file_tags_propagation: bool,
+    #[serde(default)]
     pub ignored: Vec<PathBuf>,
     #[serde(default)]
     pub indent_length: usize,

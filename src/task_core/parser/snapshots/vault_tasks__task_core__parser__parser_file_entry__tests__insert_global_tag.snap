@@ -1,0 +1,30 @@
+---
+source: src/task_core/parser/parser_file_entry.rs
+expression: res
+---
+0. Test
+‾‾‾‾‾‾‾
+	1. 1 Header
+	‾‾‾‾‾‾‾‾‾‾‾
+		Name: 	 -> Task
+		State: 	 -> ❌
+		Tags: 	 -> ["test"]
+		
+		2. 2 Header
+		‾‾‾‾‾‾‾‾‾‾‾
+			3. 3 Header
+			‾‾‾‾‾‾‾‾‾‾‾
+				Name: 	 -> Task
+				State: 	 -> ❌
+				Tags: 	 -> ["test"]
+				
+				Name: 	 -> Task 2
+				State: 	 -> ❌
+				Tags: 	 -> ["test"]
+				
+		2. 2 Header 2
+		‾‾‾‾‾‾‾‾‾‾‾‾‾
+			Name: 	 -> Task
+			State: 	 -> ❌
+			Desc.:	 -> "Description"
+			Tags: 	 -> ["test"]
