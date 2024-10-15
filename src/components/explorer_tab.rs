@@ -201,7 +201,7 @@ impl<'a> ExplorerTab<'a> {
         )
     }
 
-    fn open_current_file(&mut self, tui_opt: Option<&mut Tui>) -> Result<()> {
+    fn open_current_file(&self, tui_opt: Option<&mut Tui>) -> Result<()> {
         let Some(tui) = tui_opt else {
             bail!("Could not open current entry, Tui was None")
         };
@@ -225,10 +225,11 @@ impl<'a> ExplorerTab<'a> {
             edit::edit_file(path)?;
             tui.enter()?;
             tx.send(Action::ClearScreen)?;
-            self.task_mgr.reload(&self.config)?;
-            self.update_entries()?;
         } else {
             bail!("Failed to open current path")
+        }
+        if let Some(tx) = self.command_tx.clone() {
+            tx.send(Action::ReloadVault)?;
         }
         Ok(())
     }
@@ -313,12 +314,26 @@ impl<'a> Component for ExplorerTab<'a> {
                 Action::Right | Action::Enter => self.enter_selected_entry()?,
                 Action::Cancel | Action::Left | Action::Escape => self.leave_selected_entry()?,
                 Action::Open => self.open_current_file(tui)?,
+                Action::ReloadVault => {
+                    self.task_mgr.reload(&self.config)?;
+                    self.update_entries()?;
+                }
                 Action::Help => todo!(),
                 _ => (),
             }
-        } else if action == Action::FocusExplorer {
-            self.is_focused = true;
+        } else {
+            match action {
+                Action::FocusExplorer => {
+                    self.is_focused = true;
+                }
+                Action::ReloadVault => {
+                    self.task_mgr.reload(&self.config)?;
+                    self.update_entries()?;
+                }
+                _ => (),
+            }
         }
+
         Ok(None)
     }
 

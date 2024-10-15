@@ -105,10 +105,18 @@ impl<'a> Component for FilterTab<'a> {
                     self.search_bar_widget.input.handle_event(&Event::Key(key));
                     self.update_matching_entries();
                 }
+                Action::ReloadVault => {
+                    self.task_mgr.reload(&self.config)?;
+                    self.update_matching_entries();
+                }
                 _ => (),
             }
         } else {
             match action {
+                Action::ReloadVault => {
+                    self.task_mgr.reload(&self.config)?;
+                    self.update_matching_entries();
+                }
                 Action::FocusExplorer => self.is_focused = false,
                 Action::FocusFilter => self.is_focused = true,
                 _ => (),

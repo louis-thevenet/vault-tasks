@@ -14,6 +14,7 @@ pub enum Action {
     Error(String),
     Help,
     Key(KeyEvent),
+    ReloadVault,
     Up,
     Down,
     Left,
