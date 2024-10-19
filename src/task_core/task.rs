@@ -88,6 +88,7 @@ pub struct Task {
     pub priority: usize,
     pub state: State,
     pub tags: Option<Vec<String>>,
+    pub is_today: bool,
 }
 
 impl Default for Task {
@@ -102,6 +103,7 @@ impl Default for Task {
             line_number: 1,
             subtasks: vec![],
             filename: String::new(),
+            is_today: false,
         }
     }
 }
@@ -161,9 +163,15 @@ impl Task {
                 .join(" ")
         });
 
+        let today_tag = if self.is_today {
+            String::from(" @today")
+        } else {
+            String::new()
+        };
+
         let res = format!(
-            "{}- [{}] {} {}{}{}",
-            indent, state_str, self.name, due_date, priority, tags_str
+            "{}- [{}] {} {}{}{}{}",
+            indent, state_str, self.name, due_date, priority, tags_str, today_tag
         );
         res.trim_end().to_string()
     }
@@ -247,5 +255,23 @@ mod tests {
 
         let res = task.get_fixed_attributes(&config, 0);
         assert_eq!(res, "- [X] Test Task with No Date p2 #tag3");
+    }
+    #[test]
+    fn test_fix_attributes_with_today_tag() {
+        let config = Config::default();
+        let task = Task {
+            due_date: DueDate::NoDate,
+            name: String::from("Test Task with Today tag"),
+            priority: 2,
+            state: State::Done,
+            tags: Some(vec![String::from("tag3")]),
+            description: None,
+            line_number: 3,
+            is_today: true,
+            ..Default::default()
+        };
+
+        let res = task.get_fixed_attributes(&config, 0);
+        assert_eq!(res, "- [X] Test Task with Today tag p2 #tag3 @today");
     }
 }

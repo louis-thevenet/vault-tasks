@@ -10,4 +10,5 @@ pub enum Token {
     Priority(usize),
     Tag(String),
     State(State),
+    TodayFlag,
 }

@@ -1,6 +1,6 @@
 # Recipe: Chocolate Lava Cake
 
-- [X] Gather ingredients (Serves 4): 2024/09/29 #cooking
+- [X] Gather ingredients (Serves 4): 2024/09/29 #cooking @today
   - [X] 1 cup unsalted butter 2024/09/29 #toBuy
   - [X] 8 oz bittersweet chocolate, chopped 2024/09/29 #toBuy
   - [X] 6 large eggs 2024/09/29 #toBuy
@@ -10,7 +10,7 @@
   - [X] 1 cup all-purpose flour 2024/09/29 #toBuy
   - [X] Confectioners' sugar, for dusting 2024/09/29 #toBuy
 
-- [X] Melt butter and chocolate: 2024/09/30 #cooking
+- [X] Melt butter and chocolate: 2024/09/30 #cooking @today
   - [X] In a microwave or double boiler, melt butter and chocolate together until smooth. Set aside to cool slightly. 2024/09/30
   - [X] Preheat the oven to 425°F (220°C). Grease four ramekins with non-stick spray. 2024/09/30
 

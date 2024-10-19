@@ -1,3 +1,4 @@
+mod parse_today;
 mod parser_due_date;
 mod parser_priorities;
 mod parser_state;
@@ -6,6 +7,7 @@ mod parser_time;
 mod token;
 
 use chrono::NaiveDateTime;
+use parse_today::parse_today;
 use parser_due_date::parse_naive_date;
 use parser_priorities::parse_priority;
 use parser_state::parse_task_state;
@@ -32,6 +34,7 @@ fn parse_token(input: &mut &str, config: &Config) -> PResult<Token> {
         parse_tag,
         parse_task_state,
         parse_priority,
+        parse_today,
         |input: &mut &str| {
             let res = repeat(0.., any)
                 .fold(String::new, |mut string, c| {
@@ -85,6 +88,7 @@ pub fn parse_task(input: &mut &str, filename: String, config: &Config) -> PResul
                     task.tags = Some(vec![tag]);
                 }
             }
+            Ok(Token::TodayFlag) => task.is_today = true,
             Err(error) => error!("Error: {error:?}"),
         }
     }
@@ -164,6 +168,7 @@ mod test {
             state: State::ToDo,
             line_number: 1,
             filename: String::new(),
+            is_today: false,
         };
         assert_eq!(res, expected);
     }
@@ -272,7 +277,7 @@ mod test {
         let res = parse_task(&mut input, String::new(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
-        assert_eq!(res.priority, 0); // Default priority is used when the provided one is invalid
+        assert_eq!(res.priority, 0);
     }
 
     #[test]
@@ -283,5 +288,14 @@ mod test {
         assert!(res.is_ok());
         let res = res.unwrap();
         assert_eq!(res.name, ""); // Default name is used when no name is provided
+    }
+    #[test]
+    fn test_parse_task_with_today_flag() {
+        let mut input = "- [ ] @t";
+        let config = Config::default();
+        let res = parse_task(&mut input, String::new(), &config);
+        assert!(res.is_ok());
+        let res = res.unwrap();
+        assert!(res.is_today);
     }
 }

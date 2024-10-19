@@ -33,6 +33,12 @@ fn tasks_match(to_search: &Task, to_filter: &Task, compare_states: bool) -> bool
             .contains(&to_search.name.to_lowercase())
     };
 
+    let today_flag_match = if to_search.is_today {
+        to_filter.is_today
+    } else {
+        true
+    };
+
     let date_match = match (to_filter.due_date.clone(), to_search.due_date.clone()) {
         (_, DueDate::NoDate) => true,
         (DueDate::DayTime(task_date), DueDate::DayTime(search_date))
@@ -59,7 +65,7 @@ fn tasks_match(to_search: &Task, to_filter: &Task, compare_states: bool) -> bool
         true
     };
 
-    state_match && name_match && date_match && tags_match && priority_match
+    state_match && name_match && today_flag_match && date_match && tags_match && priority_match
 }
 
 pub fn filter_to_vec(vault_data: &VaultData, search: &Task, compare_states: bool) -> Vec<Task> {
