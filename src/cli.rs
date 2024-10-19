@@ -29,12 +29,15 @@ pub struct Cli {
 #[derive(Subcommand, Debug, Clone)]
 pub enum Commands {
     /// Open explorer view
-    #[command(alias = "test")]
+    #[command(alias = "exp")]
     Explorer,
     /// Open filter view
+    #[command(alias = "flt")]
     Filter,
     /// Generates a new configuration file from the default one
     GenerateConfig { path: Option<PathBuf> },
+    /// Write tasks to STDOUT
+    Stdout,
 }
 
 const VERSION_MESSAGE: &str = concat!(

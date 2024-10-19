@@ -39,13 +39,13 @@ impl Display for VaultData {
         ) -> std::fmt::Result {
             match file_entry {
                 VaultData::Header(_, header, entries) => {
-                    write_underline_with_indent(&format!("{depth}. {header}"), depth, f)?;
+                    write_underline_with_indent(&header.to_string(), depth, f)?;
                     for entry in entries {
                         fmt_aux(entry, f, depth + 1)?;
                     }
                 }
                 VaultData::Directory(name, entries) => {
-                    write_underline_with_indent(&format!("{depth}. {name}"), depth, f)?;
+                    write_underline_with_indent(&name.to_string(), depth, f)?;
                     for entry in entries {
                         fmt_aux(entry, f, depth + 1)?;
                     }

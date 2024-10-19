@@ -3,7 +3,7 @@ use crossterm::event::KeyEvent;
 use ratatui::prelude::Rect;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 use crate::{
     action::Action,
@@ -65,10 +65,14 @@ impl App {
             initial_state,
         })
     }
-    const fn get_initial_state(args: &Cli) -> InitialState {
+    fn get_initial_state(args: &Cli) -> InitialState {
         let tab = match args.command {
             Some(Commands::Filter) => Action::FocusFilter,
             Some(Commands::Explorer | Commands::GenerateConfig { path: _ }) | None => {
+                Action::FocusExplorer
+            }
+            _ => {
+                error!("Unhandled command: {:?}", args.command);
                 Action::FocusExplorer
             }
         };

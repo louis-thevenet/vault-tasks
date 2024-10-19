@@ -15,6 +15,7 @@ const STATE_TO_DO_EMOJI: &str = "❌";
 const STATE_DONE_EMOJI: &str = "✅";
 pub const DUE_DATE_EMOJI: &str = "📅";
 pub const PRIORITY_EMOJI: &str = "❗";
+pub const TODAY_FLAG_EMOJI: &str = "☀️";
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum State {
     Done,
@@ -110,27 +111,50 @@ impl Default for Task {
 
 impl fmt::Display for Task {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Name: \t -> {0}", self.name)?;
+        let state = self.state.to_string();
+        let title = format!("{state} {}", self.name);
+        writeln!(f, "{title}")?;
 
-        match self.due_date {
-            DueDate::NoDate => (),
-            DueDate::DayTime(date) => writeln!(f, "Due: \t -> {date}")?,
-            DueDate::Day(date) => writeln!(f, "Due: \t {date}")?,
+        let mut data_line = String::new();
+        let is_today = if self.is_today {
+            format!("{TODAY_FLAG_EMOJI} ")
+        } else {
+            String::new()
+        };
+        data_line.push_str(&is_today);
+        let due_date_str = self.due_date.to_string();
+
+        if !due_date_str.is_empty() {
+            data_line.push_str(&format!("{DUE_DATE_EMOJI} {due_date_str} "));
         }
-
-        writeln!(f, "State: \t -> {}", self.state)?;
-
         if self.priority > 0 {
-            writeln!(f, "Prio.: \t -> {}", self.priority)?;
+            data_line.push_str(&format!("{}{} ", PRIORITY_EMOJI, self.priority));
         }
-
-        if let Some(description) = &self.description {
-            writeln!(f, "Desc.:\t -> \"{description}\"")?;
+        if !data_line.is_empty() {
+            writeln!(f, "{data_line}")?;
         }
-        if let Some(tags) = &self.tags {
-            writeln!(f, "Tags: \t -> {tags:?}")?;
+        let mut tag_line = String::new();
+        if self.tags.is_some() {
+            tag_line.push_str(
+                &self
+                    .tags
+                    .clone()
+                    .unwrap()
+                    .iter()
+                    .map(|t| format!("#{t}"))
+                    .collect::<Vec<String>>()
+                    .join(" "),
+            );
         }
-        fmt::Result::Ok(())
+        if !tag_line.is_empty() {
+            writeln!(f, "{tag_line}")?;
+        }
+        if let Some(description) = self.description.clone() {
+            for l in description.lines() {
+                writeln!(f, "{l}")?;
+            }
+        }
+        Ok(())
     }
 }
 impl Task {
