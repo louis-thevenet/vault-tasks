@@ -1,7 +1,7 @@
 use std::iter::Peekable;
 
 use color_eyre::{eyre::bail, Result};
-use tracing::error;
+use tracing::{debug, error};
 use winnow::{
     ascii::{space0, space1},
     combinator::{alt, preceded, repeat},
@@ -312,7 +312,8 @@ impl<'i> ParserFileEntry<'i> {
                         } else if let Some(task) = task.subtasks.last_mut() {
                             insert_desc_task(description, task, current_level + 1, target_level)
                         } else {
-                            bail!("Failed to insert description: couldn't find parent task")
+                            debug!("Description was too indented, adding to closest task: {description}");
+                            insert_desc_task(description, task, current_level + 1, target_level)
                         }
                     }
                     insert_desc_task(desc, task, current_task_depth, target_task_depth)
