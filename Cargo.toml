@@ -46,7 +46,7 @@ winnow = "0.6.18"
 tui-widget-list = "0.12.2"
 tui-input = "0.10.1"
 edit = "0.1.5"
-tui-widgets = "0.3.0"
+tui-widgets = "0.3.1"
 
 [build-dependencies]
 anyhow = "1.0.86"
