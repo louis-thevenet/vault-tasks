@@ -11,42 +11,69 @@
     },
     "keybindings": {
         "Home": {
+            // App
             "<q>": "Quit",
             "<Ctrl-d>": "Quit",
             "<Ctrl-c>": "Quit",
             "<Ctrl-z>": "Suspend",
-            "<Ctrl-Right>":"TabRight",
-            "<Ctrl-l>":"TabRight",
-            "<Ctrl-Left>":"TabLeft",
-            "<Ctrl-h>":"TabLeft",
+
+            // Tabs
+            "<Shift-Right>":"TabRight",
+            "<Shift-l>":"TabRight",
+            "<Shift-Left>":"TabLeft",
+            "<Shift-h>":"TabLeft",
         },
         "Filter": {
+            // App
             "<q>": "Quit",
             "<Ctrl-d>": "Quit",
             "<Ctrl-c>": "Quit",
             "<Ctrl-z>": "Suspend",
 
-            "<Ctrl-Right>":"TabRight",
-            "<Ctrl-l>":"TabRight",
-            "<Ctrl-Left>":"TabLeft",
-            "<Ctrl-h>":"TabLeft",
+            // Tabs
+            "<Shift-Right>":"TabRight",
+            "<Shift-l>":"TabRight",
+            "<Shift-Left>":"TabLeft",
+            "<shift-h>":"TabLeft",
 
+            // Navigation
             "<Enter>": "Enter",
             "<s>":"Search",
             "<Esc>":"Escape",
             "<r>":"ReloadVault",
+
+            // View
+            "<Ctrl-u>": "ViewUp",
+            "<Ctrl-k>": "ViewUp",
+            "<Ctrl-Up>": "ViewUp",
+            "<PageUp>": "ViewPageUp",
+
+            "<Ctrl-d>": "ViewDown",
+            "<Ctrl-j>": "ViewDown",
+            "<Ctrl-Down>": "ViewDown",
+            "<PageDown>": "ViewPageDown",
+
+            "<Ctrl-l>": "ViewRight",
+            "<Ctrl-Right>": "ViewRight",
+
+            "<Ctrl-h>": "ViewLeft",
+            "<Ctrl-Left>": "ViewLeft",
+
         },
         "Explorer": {
+            // App
             "<q>": "Quit",
             "<Ctrl-d>": "Quit",
             "<Ctrl-c>": "Quit",
             "<Ctrl-z>": "Suspend",
 
-            "<Ctrl-Right>":"TabRight",
-            "<Ctrl-l>":"TabRight",
-            "<Ctrl-Left>":"TabLeft",
-            "<Ctrl-h>":"TabLeft",
+            // Tabs
+            "<Shift-Right>":"TabRight",
+            "<Shift-l>":"TabRight",
+            "<Shift-Left>":"TabLeft",
+            "<Shift-h>":"TabLeft",
 
+            // Files
             "<j>": "Down",
             "<Down>": "Down",
             "<Tab>": "Down",
@@ -57,14 +84,33 @@
             "<Left>": "Left",
             "<l>": "Right",
             "<Right>": "Right",
+
+            // Validation
             "<Enter>": "Enter",
             "<Backspace>": "Cancel",
 
+            // Navigation
             "<s>": "Search",
             "<Esc>":"Escape",
-
             "<o>": "Open",
             "<r>":"ReloadVault",
+
+            // View
+            "<Ctrl-u>": "ViewUp",
+            "<Ctrl-k>": "ViewUp",
+            "<Ctrl-Up>": "ViewUp",
+            "<PageUp>": "ViewPageUp",
+
+            "<Ctrl-d>": "ViewDown",
+            "<Ctrl-j>": "ViewDown",
+            "<Ctrl-Down>": "ViewDown",
+            "<PageDown>": "ViewPageDown",
+
+            "<Ctrl-l>": "ViewRight",
+            "<Ctrl-Right>": "ViewRight",
+
+            "<Ctrl-h>": "ViewLeft",
+            "<Ctrl-Left>": "ViewLeft",
         },
     },
 }

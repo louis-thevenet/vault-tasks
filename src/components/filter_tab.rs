@@ -3,6 +3,7 @@ use crossterm::event::Event;
 use ratatui::widgets::List;
 use ratatui::{prelude::*, widgets::Block};
 use tokio::sync::mpsc::UnboundedSender;
+use tui_widgets::scrollview::ScrollViewState;
 
 use super::Component;
 
@@ -25,6 +26,7 @@ pub struct FilterTab<'a> {
     matching_tags: Vec<String>,
     search_bar_widget: SearchBar<'a>,
     task_mgr: TaskManager,
+    task_list_widget_state: ScrollViewState,
 }
 
 impl<'a> FilterTab<'a> {
@@ -46,6 +48,9 @@ impl<'a> FilterTab<'a> {
 
         // Filter tasks
         self.matching_entries = filter_to_vec(&self.task_mgr.tasks, &search, has_state);
+
+        // Reset ScrollViewState
+        self.task_list_widget_state.scroll_to_top();
 
         // Filter tags
         self.matching_tags = if search.tags.is_none() {
@@ -109,6 +114,12 @@ impl<'a> Component for FilterTab<'a> {
                     self.task_mgr.reload(&self.config)?;
                     self.update_matching_entries();
                 }
+                Action::ViewUp => self.task_list_widget_state.scroll_up(),
+                Action::ViewDown => self.task_list_widget_state.scroll_down(),
+                Action::ViewPageUp => self.task_list_widget_state.scroll_page_up(),
+                Action::ViewPageDown => self.task_list_widget_state.scroll_page_down(),
+                Action::ViewRight => self.task_list_widget_state.scroll_right(),
+                Action::ViewLeft => self.task_list_widget_state.scroll_left(),
                 _ => (),
             }
         } else {
@@ -125,7 +136,7 @@ impl<'a> Component for FilterTab<'a> {
         Ok(None)
     }
 
-    fn draw(&mut self, frame: &mut Frame, _area: Rect) -> Result<()> {
+    fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         if !self.is_focused {
             return Ok(());
         }
@@ -137,7 +148,7 @@ impl<'a> Component for FilterTab<'a> {
             Constraint::Length(1),
         ]);
         let [_header_area, search_area, content_area, footer_area, _tab_footer_areaa] =
-            vertical.areas(frame.area());
+            vertical.areas(area);
 
         let [tag_area, list_area] =
             Layout::horizontal([Constraint::Length(15), Constraint::Min(0)]).areas(content_area);
@@ -185,7 +196,11 @@ impl<'a> Component for FilterTab<'a> {
 
         Widget::render(tag_list, tag_area, frame.buffer_mut());
 
-        entries_list.render(list_area, frame.buffer_mut());
+        entries_list.render(
+            list_area,
+            frame.buffer_mut(),
+            &mut self.task_list_widget_state,
+        );
         Ok(())
     }
 }

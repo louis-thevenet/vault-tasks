@@ -1,9 +1,6 @@
-use ratatui::{
-    prelude::*,
-    widgets::{Block, Borders},
-};
+use ratatui::prelude::*;
 
-use tui_widget_list::{ListBuilder, ListState, ListView};
+use tui_widgets::scrollview::{ScrollView, ScrollViewState};
 
 use crate::{config::Config, task_core::vault_data::VaultData};
 
@@ -13,41 +10,64 @@ use super::task_list_item::TaskListItem;
 pub struct TaskList {
     file_content: Vec<VaultData>,
     not_american_format: bool,
-    state: ListState,
     display_filename: bool,
 }
 
 impl TaskList {
     pub fn new(config: &Config, file_content: &[VaultData], display_filename: bool) -> Self {
         Self {
-            state: ListState::default(),
             not_american_format: !config.tasks_config.use_american_format,
             file_content: file_content.to_vec(),
             display_filename,
         }
     }
 }
-impl Widget for TaskList {
-    fn render(mut self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
-    where
+impl StatefulWidget for TaskList {
+    type State = ScrollViewState;
+    fn render(
+        self,
+        area: ratatui::prelude::Rect,
+        buf: &mut ratatui::prelude::Buffer,
+        state: &mut Self::State,
+    ) where
         Self: Sized,
     {
-        let surrounding_block = Block::default().borders(Borders::NONE);
-        let count = self.file_content.len();
+        let content = self
+            .file_content
+            .iter()
+            .map(|fc| {
+                TaskListItem::new(fc.clone(), self.not_american_format, self.display_filename)
+            })
+            .collect::<Vec<TaskListItem>>();
 
-        let builder = ListBuilder::new(move |context| {
-            let item = TaskListItem::new(
-                self.file_content[context.index].clone(),
-                self.not_american_format,
-                self.display_filename,
-            );
-            let height = item.height;
-            (item, height)
-        });
+        let mut constraints = vec![];
+        let mut height = 0;
+        for item in &content {
+            height += item.height;
+            constraints.push(Constraint::Length(item.height));
+        }
 
-        let lateral_entries_list = ListView::new(builder, count).block(surrounding_block);
-        let state = &mut self.state;
-        lateral_entries_list.render(area, buf, state);
+        // If we need the vertical scrollbar
+        // Then take into account that we need to draw it
+        //
+        // If we don't do this, the horizontal scrollbar
+        // appears for only one character
+        // It basically disables the horizontal scrollbar
+        let width = if height > area.height {
+            area.width - 1
+        } else {
+            area.width
+        };
+
+        let size = Size::new(width, height);
+        let mut scroll_view = ScrollView::new(size);
+
+        let layout = Layout::vertical(constraints).split(scroll_view.area());
+
+        for (i, item) in content.into_iter().enumerate() {
+            scroll_view.render_widget(item, layout[i]);
+        }
+        scroll_view.render(area, buf, state);
     }
 }
 
@@ -56,6 +76,7 @@ mod tests {
     use chrono::NaiveDate;
     use insta::assert_snapshot;
     use ratatui::{backend::TestBackend, Terminal};
+    use tui_widgets::scrollview::ScrollViewState;
 
     use crate::{
         config::Config,
@@ -154,7 +175,9 @@ mod tests {
         let task_list = TaskList::new(&Config::default(), &[test_vault], true);
         let mut terminal = Terminal::new(TestBackend::new(40, 40)).unwrap();
         terminal
-            .draw(|frame| frame.render_widget(task_list, frame.area()))
+            .draw(|frame| {
+                frame.render_stateful_widget(task_list, frame.area(), &mut ScrollViewState::new());
+            })
             .unwrap();
         assert_snapshot!(terminal.backend());
     }

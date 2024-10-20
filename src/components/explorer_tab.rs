@@ -8,6 +8,7 @@ use tracing::{debug, error, info};
 
 use tui_input::backend::crossterm::EventHandler;
 use tui_widget_list::{ListBuilder, ListState, ListView};
+use tui_widgets::scrollview::ScrollViewState;
 
 use super::Component;
 
@@ -32,6 +33,7 @@ pub struct ExplorerTab<'a> {
     entries_center_view: Vec<(String, String)>,
     entries_right_view: Vec<VaultData>,
     search_bar_widget: SearchBar<'a>,
+    task_list_widget_state: ScrollViewState,
 }
 
 impl<'a> ExplorerTab<'a> {
@@ -148,6 +150,7 @@ impl<'a> ExplorerTab<'a> {
             Ok(res) => res,
             Err(e) => vec![VaultData::Directory(e.to_string(), vec![])],
         };
+        self.task_list_widget_state.scroll_up();
     }
     fn build_list(
         entries_to_display: Vec<String>,
@@ -170,6 +173,7 @@ impl<'a> ExplorerTab<'a> {
 
         ListView::new(builder, item_count).block(surrouding_block)
     }
+
     fn apply_prefixes(entries: &[(String, String)]) -> Vec<String> {
         entries
             .iter()
@@ -256,6 +260,7 @@ impl<'a> Component for ExplorerTab<'a> {
         ));
         self.update_entries()?;
         self.state_center_view.selected = Some(0);
+
         Ok(())
     }
 
@@ -318,6 +323,12 @@ impl<'a> Component for ExplorerTab<'a> {
                     self.task_mgr.reload(&self.config)?;
                     self.update_entries()?;
                 }
+                Action::ViewUp => self.task_list_widget_state.scroll_up(),
+                Action::ViewDown => self.task_list_widget_state.scroll_down(),
+                Action::ViewPageUp => self.task_list_widget_state.scroll_page_up(),
+                Action::ViewPageDown => self.task_list_widget_state.scroll_page_down(),
+                Action::ViewRight => self.task_list_widget_state.scroll_right(),
+                Action::ViewLeft => self.task_list_widget_state.scroll_left(),
                 Action::Help => todo!(),
                 _ => (),
             }
@@ -424,8 +435,11 @@ impl<'a> Component for ExplorerTab<'a> {
         // If we have tasks, then render a TaskList widget
         match self.entries_right_view.first() {
             Some(VaultData::Task(_) | VaultData::Header(_, _, _)) => {
-                TaskList::new(&self.config, &self.entries_right_view, false)
-                    .render(preview_area, frame.buffer_mut());
+                TaskList::new(&self.config, &self.entries_right_view, false).render(
+                    preview_area,
+                    frame.buffer_mut(),
+                    &mut self.task_list_widget_state,
+                );
             }
             // Else render a ListView widget
             Some(VaultData::Directory(_, _)) => Self::build_list(
