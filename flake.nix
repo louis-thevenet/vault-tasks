@@ -34,6 +34,7 @@
             cargo-dist
             cargo-tarpaulin
             cargo-insta
+            cargo-machete
           ];
         };
 
