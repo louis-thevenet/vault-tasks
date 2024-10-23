@@ -20,6 +20,14 @@ use crate::widgets::search_bar::SearchBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
 
+struct ExplorerArea {
+    path: Rect,
+    search: Rect,
+    previous: Rect,
+    current: Rect,
+    preview: Rect,
+    footer: Rect,
+}
 #[derive(Default)]
 pub struct ExplorerTab<'a> {
     command_tx: Option<UnboundedSender<Action>>,
@@ -237,6 +245,38 @@ impl<'a> ExplorerTab<'a> {
         }
         Ok(())
     }
+    fn split_frame(area: Rect) -> ExplorerArea {
+        let vertical = Layout::vertical([
+            Constraint::Length(1),
+            Constraint::Min(0),
+            Constraint::Length(1),
+            Constraint::Length(1),
+        ]);
+        let [_header, inner, footer, _tab_footer] = vertical.areas(area);
+
+        let [search_path, explorer] =
+            Layout::vertical(vec![Constraint::Length(3), Constraint::Percentage(100)]).areas(inner);
+
+        let [path, search] =
+            Layout::horizontal(vec![Constraint::Percentage(70), Constraint::Percentage(30)])
+                .areas(search_path);
+
+        // Main Layout
+        let [previous, current, preview] = Layout::horizontal(vec![
+            Constraint::Percentage(10),
+            Constraint::Percentage(30),
+            Constraint::Percentage(60),
+        ])
+        .areas(explorer);
+        ExplorerArea {
+            path,
+            search,
+            previous,
+            current,
+            preview,
+            footer,
+        }
+    }
 }
 
 impl<'a> Component for ExplorerTab<'a> {
@@ -275,7 +315,6 @@ impl<'a> Component for ExplorerTab<'a> {
         if self.is_focused {
             match action {
                 Action::FocusFilter => self.is_focused = false,
-
                 Action::Enter | Action::Escape if self.search_bar_widget.is_focused => {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
                 }
@@ -348,7 +387,7 @@ impl<'a> Component for ExplorerTab<'a> {
         Ok(None)
     }
 
-    fn draw(&mut self, frame: &mut Frame, _area: Rect) -> Result<()> {
+    fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         if !self.is_focused {
             return Ok(());
         }
@@ -358,46 +397,22 @@ impl<'a> Component for ExplorerTab<'a> {
             self.state_center_view.selected = Some(0);
         }
 
-        let vertical = Layout::vertical([
-            Constraint::Length(1),
-            Constraint::Min(0),
-            Constraint::Length(1),
-            Constraint::Length(1),
-        ]);
-        let [_header_area, inner_area, footer_area, _tab_footer_area] =
-            vertical.areas(frame.area());
+        let areas = Self::split_frame(area);
 
-        Self::render_footer(footer_area, frame);
-
-        let [search_path_area, explorer_area] =
-            Layout::vertical(vec![Constraint::Length(3), Constraint::Percentage(100)])
-                .areas(inner_area);
-
-        let [path_area, search_area] =
-            Layout::horizontal(vec![Constraint::Percentage(70), Constraint::Percentage(30)])
-                .areas(search_path_area);
-
-        // Main Layout
-        let [previous_area, current_area, preview_area] = Layout::horizontal(vec![
-            Constraint::Percentage(10),
-            Constraint::Percentage(30),
-            Constraint::Percentage(60),
-        ])
-        .areas(explorer_area);
-
+        Self::render_footer(areas.footer, frame);
         // Search Bar
         if self.search_bar_widget.is_focused {
-            let width = search_area.width.max(3) - 3; // 2 for borders, 1 for cursor
+            let width = areas.search.width.max(3) - 3; // 2 for borders, 1 for cursor
             let scroll = self.search_bar_widget.input.visual_scroll(width as usize);
 
             // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
             frame.set_cursor_position((
                 // Put cursor past the end of the input text
-                search_area.x.saturating_add(
+                areas.search.x.saturating_add(
                     ((self.search_bar_widget.input.visual_cursor()).max(scroll) - scroll) as u16,
                 ) + 1,
                 // Move one line down, from the border to the input line
-                search_area.y + 1,
+                areas.search.y + 1,
             ));
         }
 
@@ -409,10 +424,10 @@ impl<'a> Component for ExplorerTab<'a> {
             }),
         ));
         self.search_bar_widget
-            .render(search_area, frame.buffer_mut());
+            .render(areas.search, frame.buffer_mut());
 
         // Current path
-        frame.render_widget(self.path_to_paragraph(), path_area);
+        frame.render_widget(self.path_to_paragraph(), areas.path);
 
         // Left Block
         let left_entries_list = Self::build_list(
@@ -420,7 +435,7 @@ impl<'a> Component for ExplorerTab<'a> {
             Block::default().borders(Borders::RIGHT),
         );
         let state = &mut self.state_left_view;
-        left_entries_list.render(previous_area, frame.buffer_mut(), state);
+        left_entries_list.render(areas.previous, frame.buffer_mut(), state);
 
         // Center Block
         let lateral_entries_list = Self::build_list(
@@ -428,15 +443,14 @@ impl<'a> Component for ExplorerTab<'a> {
             Block::default().borders(Borders::RIGHT),
         );
         let state = &mut self.state_center_view;
-        lateral_entries_list.render(current_area, frame.buffer_mut(), state);
+        lateral_entries_list.render(areas.current, frame.buffer_mut(), state);
 
         // Right Block
-
         // If we have tasks, then render a TaskList widget
         match self.entries_right_view.first() {
             Some(VaultData::Task(_) | VaultData::Header(_, _, _)) => {
                 TaskList::new(&self.config, &self.entries_right_view, false).render(
-                    preview_area,
+                    areas.preview,
                     frame.buffer_mut(),
                     &mut self.task_list_widget_state,
                 );
@@ -455,7 +469,7 @@ impl<'a> Component for ExplorerTab<'a> {
                 ),
                 Block::new(),
             )
-            .render(preview_area, frame.buffer_mut(), &mut ListState::default()),
+            .render(areas.preview, frame.buffer_mut(), &mut ListState::default()),
             None => (),
         }
 

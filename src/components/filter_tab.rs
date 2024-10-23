@@ -17,6 +17,13 @@ use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
 use tui_input::backend::crossterm::EventHandler;
 
+struct FilterTabArea {
+    search: Rect,
+    tag_list: Rect,
+    task_list: Rect,
+    footer: Rect,
+}
+
 #[derive(Default)]
 pub struct FilterTab<'a> {
     command_tx: Option<UnboundedSender<Action>>,
@@ -70,6 +77,25 @@ impl<'a> FilterTab<'a> {
                 .collect()
         };
         self.matching_tags.sort();
+    }
+    fn split_frame(area: Rect) -> FilterTabArea {
+        let vertical = Layout::vertical([
+            Constraint::Length(1),
+            Constraint::Length(3),
+            Constraint::Min(0),
+            Constraint::Length(1),
+            Constraint::Length(1),
+        ]);
+        let [_header, search, content, footer, _tab_footera] = vertical.areas(area);
+
+        let [tag_list, task_list] =
+            Layout::horizontal([Constraint::Length(15), Constraint::Min(0)]).areas(content);
+        FilterTabArea {
+            search,
+            tag_list,
+            task_list,
+            footer,
+        }
     }
 }
 impl<'a> Component for FilterTab<'a> {
@@ -140,33 +166,22 @@ impl<'a> Component for FilterTab<'a> {
         if !self.is_focused {
             return Ok(());
         }
-        let vertical = Layout::vertical([
-            Constraint::Length(1),
-            Constraint::Length(3),
-            Constraint::Min(0),
-            Constraint::Length(1),
-            Constraint::Length(1),
-        ]);
-        let [_header_area, search_area, content_area, footer_area, _tab_footer_areaa] =
-            vertical.areas(area);
 
-        let [tag_area, list_area] =
-            Layout::horizontal([Constraint::Length(15), Constraint::Min(0)]).areas(content_area);
-
-        self.render_footer(footer_area, frame);
+        let areas = Self::split_frame(area);
+        self.render_footer(areas.footer, frame);
 
         if self.search_bar_widget.is_focused {
-            let width = search_area.width.max(3) - 3; // 2 for borders, 1 for cursor
+            let width = areas.search.width.max(3) - 3; // 2 for borders, 1 for cursor
             let scroll = self.search_bar_widget.input.visual_scroll(width as usize);
 
             // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
             frame.set_cursor_position((
                 // Put cursor past the end of the input text
-                search_area.x.saturating_add(
+                areas.search.x.saturating_add(
                     ((self.search_bar_widget.input.visual_cursor()).max(scroll) - scroll) as u16,
                 ) + 1,
                 // Move one line down, from the border to the input line
-                search_area.y + 1,
+                areas.search.y + 1,
             ));
         }
 
@@ -178,7 +193,7 @@ impl<'a> Component for FilterTab<'a> {
             },
         )));
         self.search_bar_widget
-            .render(search_area, frame.buffer_mut());
+            .render(areas.search, frame.buffer_mut());
 
         let tag_list = List::new(self.matching_tags.iter().map(std::string::String::as_str))
             .block(Block::bordered().title("Found Tags"));
@@ -194,10 +209,10 @@ impl<'a> Component for FilterTab<'a> {
             true,
         );
 
-        Widget::render(tag_list, tag_area, frame.buffer_mut());
+        Widget::render(tag_list, areas.tag_list, frame.buffer_mut());
 
         entries_list.render(
-            list_area,
+            areas.task_list,
             frame.buffer_mut(),
             &mut self.task_list_widget_state,
         );
