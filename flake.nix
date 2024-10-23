@@ -9,73 +9,76 @@
   };
 
   outputs = inputs:
-    inputs.flake-parts.lib.mkFlake {inherit inputs;} {
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import inputs.systems;
       imports = [
         inputs.treefmt-nix.flakeModule
       ];
-      perSystem = {
-        config,
-        self',
-        pkgs,
-        lib,
-        system,
-        ...
-      }: let
-        cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
-        rust-toolchain = pkgs.symlinkJoin {
-          name = "rust-toolchain";
-          paths = with pkgs; [
-            rustc
-            cargo
-            cargo-watch
-            rust-analyzer
-            rustPlatform.rustcSrc
-            cargo-dist
-            cargo-tarpaulin
-            cargo-insta
-            cargo-machete
-            cargo-edit
-          ];
-        };
+      perSystem =
+        { config
+        , self'
+        , pkgs
+        , lib
+        , system
+        , ...
+        }:
+        let
+          cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+          rust-toolchain = pkgs.symlinkJoin {
+            name = "rust-toolchain";
+            paths = with pkgs; [
+              rustc
+              cargo
+              cargo-watch
+              rust-analyzer
+              rustPlatform.rustcSrc
+              cargo-dist
+              cargo-tarpaulin
+              cargo-insta
+              cargo-machete
+              cargo-edit
+            ];
+          };
 
-        buildInputs = with pkgs; [];
-        nativeBuildInputs = with pkgs; [];
-      in {
-        # Rust package
-        packages.default = pkgs.rustPlatform.buildRustPackage {
-          inherit (cargoToml.package) name version;
-          src = ./.;
-          cargoLock.lockFile = ./Cargo.lock;
+          buildInputs = with pkgs; [ ];
+          nativeBuildInputs = with pkgs; [ ];
+        in
+        {
+          # Rust package
+          packages.default = pkgs.rustPlatform.buildRustPackage {
+            inherit (cargoToml.package) name version;
+            src = ./.;
+            cargoLock.lockFile = ./Cargo.lock;
 
-          RUST_BACKTRACE = "full";
+            RUST_BACKTRACE = "full";
 
-          nativeBuildInputs = nativeBuildInputs;
-          buildInputs = buildInputs;
-          postInstall = "install -Dm444 desktop/vault-tasks.desktop -t $out/share/applications";
-        };
+            nativeBuildInputs = nativeBuildInputs;
+            buildInputs = buildInputs;
+            postInstall = "install -Dm444 desktop/vault-tasks.desktop -t $out/share/applications";
+          };
 
-        # Rust dev environment
-        devShells.default = pkgs.mkShell {
-          inputsFrom = [
-            config.treefmt.build.devShell
-          ];
-          RUST_BACKTRACE = "full";
-          RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
+          # Rust dev environment
+          devShells.default = pkgs.mkShell {
+            inputsFrom = [
+              config.treefmt.build.devShell
+            ];
+            RUST_BACKTRACE = "full";
+            RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
 
-          nativeBuildInputs = nativeBuildInputs;
-          buildInputs = buildInputs ++ [rust-toolchain pkgs.clippy];
-        };
+            nativeBuildInputs = nativeBuildInputs;
+            buildInputs = buildInputs ++ [ rust-toolchain pkgs.clippy ];
+          };
 
-        # Add your auto-formatters here.
-        # cf. https://numtide.github.io/treefmt/
-        treefmt.config = {
-          projectRootFile = "flake.nix";
-          programs = {
-            nixpkgs-fmt.enable = true;
-            rustfmt.enable = true;
+          # Add your auto-formatters here.
+          # cf. https://numtide.github.io/treefmt/
+          treefmt.config = {
+            projectRootFile = "flake.nix";
+            programs = {
+              nixpkgs-fmt.enable = true;
+              rustfmt.enable = true;
+              toml-sort.enable = true;
+            };
           };
         };
-      };
     };
 }
