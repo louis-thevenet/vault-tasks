@@ -1,0 +1,91 @@
+[keybindings.Explorer]
+# App
+"<q>" = "Quit"
+"<Ctrl-c>" = "Quit"
+"<Ctrl-z>" = "Suspend"
+# Tabs
+"<Shift-Right>" = "TabRight"
+"<Shift-l>" = "TabRight"
+"<Shift-Left>" = "TabLeft"
+"<shift-h>" = "TabLeft"
+# Navigation
+"<j>" = "Down"
+"<Down>" = "Down"
+"<Tab>" = "Down"
+"<k>" = "Up"
+"<Up>" = "Up"
+"<BackTab>" = "Up"
+"<h>" = "Left"
+"<Left>" = "Left"
+"<l>" = "Right"
+"<Right>" = "Right"
+"<Enter>" = "Enter"
+"<Backspace>" = "Cancel"
+"<s>" = "Search"
+"<Esc>" = "Escape"
+"<o>" = "Open"
+"<r>" = "ReloadVault"
+# Scrolling
+"<Ctrl-u>" = "ViewUp"
+"<Ctrl-k>" = "ViewUp"
+"<Ctrl-Up>" = "ViewUp"
+"<PageUp>" = "ViewPageUp"
+"<Ctrl-j>" = "ViewDown"
+"<Ctrl-d>" = "ViewDown"
+"<Ctrl-Down>" = "ViewDown"
+"<PageDown>" = "ViewPageDown"
+"<Ctrl-l>" = "ViewRight"
+"<Ctrl-Right>" = "ViewRight"
+"<Ctrl-h>" = "ViewLeft"
+"<Ctrl-Left>" = "ViewLeft"
+
+[keybindings.Filter]
+# App
+"<q>" = "Quit"
+"<Ctrl-c>" = "Quit"
+"<Ctrl-z>" = "Suspend"
+# Tabs
+"<Shift-Right>" = "TabRight"
+"<Shift-l>" = "TabRight"
+"<Shift-Left>" = "TabLeft"
+"<shift-h>" = "TabLeft"
+# Navigation
+"<Enter>" = "Enter"
+"<s>" = "Search"
+"<Esc>" = "Escape"
+"<r>" = "ReloadVault"
+# Scrolling
+"<Ctrl-u>" = "ViewUp"
+"<Ctrl-k>" = "ViewUp"
+"<Ctrl-Up>" = "ViewUp"
+"<PageUp>" = "ViewPageUp"
+"<Ctrl-d>" = "ViewDown"
+"<Ctrl-j>" = "ViewDown"
+"<Ctrl-Down>" = "ViewDown"
+"<PageDown>" = "ViewPageDown"
+"<Ctrl-l>" = "ViewRight"
+"<Ctrl-Right>" = "ViewRight"
+"<Ctrl-h>" = "ViewLeft"
+"<Ctrl-Left>" = "ViewLeft"
+
+[keybindings.Home]
+# App
+"<q>" = "Quit"
+"<Ctrl-d>" = "Quit"
+"<Ctrl-c>" = "Quit"
+"<Ctrl-z>" = "Suspend"
+# Tabs
+"<Shift-Right>" = "TabRight"
+"<Shift-l>" = "TabRight"
+"<Shift-Left>" = "TabLeft"
+"<Shift-h>" = "TabLeft"
+
+[tasks_config]
+use_american_format = true
+indent_length = 2
+parse_dot_files = false
+file_tags_propagation = true
+ignored = []
+# vault_path= "./test-vault"
+explorer_default_search_string = "- [ ] "
+filter_default_search_string = ""

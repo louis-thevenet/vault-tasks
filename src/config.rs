@@ -18,7 +18,7 @@ use ratatui::style::{Color, Modifier, Style};
 use serde::{de::Deserializer, Deserialize};
 use tracing::{debug, info};
 
-const CONFIG: &str = include_str!("../.config/config.json5");
+const CONFIG: &str = include_str!("../.config/config.toml");
 
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct AppConfig {
@@ -74,7 +74,7 @@ lazy_static! {
 
 impl Default for Config {
     fn default() -> Self {
-        let mut config: Self = json5::from_str(CONFIG).unwrap();
+        let mut config: Self = toml::from_str(CONFIG).unwrap();
         if cfg!(test) {
             config.tasks_config.vault_path = PathBuf::from("./test-vault");
         }
@@ -166,7 +166,7 @@ impl Config {
 
     pub fn generate_config(path: Option<PathBuf>) -> Result<()> {
         let config_dir = path.unwrap_or_else(get_config_dir);
-        let dest = config_dir.join("config.json5");
+        let dest = config_dir.join("config.toml");
         if create_dir_all(config_dir).is_err() {
             bail!("Failed to create config directory at {dest:?}".to_owned());
         }
