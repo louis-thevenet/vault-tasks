@@ -1,6 +1,7 @@
 # Study Plan: Preparing for Midterm Exam (English Literature)
 
 - [X] Gather materials (Textbooks, notes, laptop) 2024/09/29 #study
+
   - [X] Review key concepts and vocabulary (90 minutes) 2024/09/29
   - [X] Short stories by William Faulkner 2024/09/29
   - [X] Themes and symbols in the novels "The Great Gatsby" and "To Kill a Mockingbird" 2024/09/29
