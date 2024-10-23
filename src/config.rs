@@ -486,12 +486,17 @@ fn parse_color(s: &str) -> Option<Color> {
                 .parse::<u8>()
                 .unwrap_or_default();
         Some(Color::Indexed(c))
-    } else if s.contains("rgb") {
-        let red = (s.as_bytes()[3] as char).to_digit(10).unwrap_or_default() as u8;
-        let green = (s.as_bytes()[4] as char).to_digit(10).unwrap_or_default() as u8;
-        let blue = (s.as_bytes()[5] as char).to_digit(10).unwrap_or_default() as u8;
-        let c = 16 + red * 36 + green * 6 + blue;
-        Some(Color::Indexed(c))
+    } else if s
+        .split_whitespace()
+        .collect::<Vec<&str>>()
+        .first()
+        .is_some_and(|w| w.eq_ignore_ascii_case("rgb"))
+    {
+        let s = s.split_whitespace().collect::<Vec<&str>>();
+        let red = s[1].parse::<u8>().unwrap_or_default();
+        let green = s[2].parse::<u8>().unwrap_or_default();
+        let blue = s[3].parse::<u8>().unwrap_or_default();
+        Some(Color::Rgb(red, green, blue))
     } else if s == "bold black" {
         Some(Color::Indexed(8))
     } else if s == "bold red" {
@@ -571,9 +576,8 @@ mod tests {
 
     #[test]
     fn test_parse_color_rgb() {
-        let color = parse_color("rgb123");
-        let expected = 16 + 36 + 2 * 6 + 3;
-        assert_eq!(color, Some(Color::Indexed(expected)));
+        let color = parse_color("rgb 255 000 128");
+        assert_eq!(color, Some(Color::Rgb(255, 0, 128)));
     }
 
     #[test]

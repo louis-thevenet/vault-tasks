@@ -11,6 +11,7 @@ pub struct TaskList {
     file_content: Vec<VaultData>,
     not_american_format: bool,
     display_filename: bool,
+    header_style: Style,
 }
 
 impl TaskList {
@@ -19,7 +20,12 @@ impl TaskList {
             not_american_format: !config.tasks_config.use_american_format,
             file_content: file_content.to_vec(),
             display_filename,
+            header_style: Style::default(),
         }
+    }
+    pub const fn header_style(mut self, style: Style) -> Self {
+        self.header_style = style;
+        self
     }
 }
 impl StatefulWidget for TaskList {
@@ -37,6 +43,7 @@ impl StatefulWidget for TaskList {
             .iter()
             .map(|fc| {
                 TaskListItem::new(fc.clone(), self.not_american_format, self.display_filename)
+                    .header_style(self.header_style)
             })
             .collect::<Vec<TaskListItem>>();
 

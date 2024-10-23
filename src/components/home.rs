@@ -39,13 +39,19 @@ impl Home {
     }
     fn render_tabs(&self, area: Rect, buf: &mut Buffer) {
         let titles = SelectedTab::iter().map(SelectedTab::title);
-        let highlight_style = Style::default()
-            .bg(Color::Rgb(255, 153, 0))
-            .fg(Color::Rgb(28, 28, 32));
+
+        let highlight_style = *self
+            .config
+            .styles
+            .get(&crate::app::Mode::Home)
+            .unwrap()
+            .get("highlighted_tab")
+            .unwrap();
+
         let selected_tab_index = self.selected_tab as usize;
         Tabs::new(titles)
-            .highlight_style(highlight_style)
             .select(selected_tab_index)
+            .highlight_style(highlight_style)
             .padding("", "")
             .divider(" ")
             .render(area, buf);

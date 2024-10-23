@@ -163,17 +163,14 @@ impl<'a> ExplorerTab<'a> {
     fn build_list(
         entries_to_display: Vec<String>,
         surrouding_block: Block<'_>,
+        highlighted_style: Style,
     ) -> ListView<'_, Paragraph<'_>> {
         let item_count = entries_to_display.len();
 
         let builder = ListBuilder::new(move |context| {
             let mut item = Paragraph::new(entries_to_display[context.index].clone());
             if context.is_selected {
-                item = item.style(
-                    Style::default()
-                        .bg(Color::Rgb(255, 153, 0))
-                        .fg(Color::Rgb(28, 28, 32)),
-                );
+                item = item.style(highlighted_style);
             };
             let main_axis_size = 1;
             (item, main_axis_size)
@@ -417,11 +414,17 @@ impl<'a> Component for ExplorerTab<'a> {
         }
 
         self.search_bar_widget.block = Some(Block::bordered().title("Search").style(
-            Style::new().fg(if self.search_bar_widget.is_focused {
-                Color::Rgb(255, 153, 0)
+            if self.search_bar_widget.is_focused {
+                *self
+                    .config
+                    .styles
+                    .get(&crate::app::Mode::Explorer)
+                    .unwrap()
+                    .get("highlighted_searchbar")
+                    .unwrap()
             } else {
-                Color::default()
-            }),
+                Style::new()
+            },
         ));
         self.search_bar_widget
             .render(areas.search, frame.buffer_mut());
@@ -429,10 +432,18 @@ impl<'a> Component for ExplorerTab<'a> {
         // Current path
         frame.render_widget(self.path_to_paragraph(), areas.path);
 
+        let highlighted_style = *self
+            .config
+            .styles
+            .get(&crate::app::Mode::Explorer)
+            .unwrap()
+            .get("highlighted_entry")
+            .unwrap();
         // Left Block
         let left_entries_list = Self::build_list(
             Self::apply_prefixes(&self.entries_left_view),
             Block::default().borders(Borders::RIGHT),
+            highlighted_style,
         );
         let state = &mut self.state_left_view;
         left_entries_list.render(areas.previous, frame.buffer_mut(), state);
@@ -441,6 +452,7 @@ impl<'a> Component for ExplorerTab<'a> {
         let lateral_entries_list = Self::build_list(
             Self::apply_prefixes(&self.entries_center_view),
             Block::default().borders(Borders::RIGHT),
+            highlighted_style,
         );
         let state = &mut self.state_center_view;
         lateral_entries_list.render(areas.current, frame.buffer_mut(), state);
@@ -449,11 +461,21 @@ impl<'a> Component for ExplorerTab<'a> {
         // If we have tasks, then render a TaskList widget
         match self.entries_right_view.first() {
             Some(VaultData::Task(_) | VaultData::Header(_, _, _)) => {
-                TaskList::new(&self.config, &self.entries_right_view, false).render(
-                    areas.preview,
-                    frame.buffer_mut(),
-                    &mut self.task_list_widget_state,
-                );
+                TaskList::new(&self.config, &self.entries_right_view, false)
+                    .header_style(
+                        *self
+                            .config
+                            .styles
+                            .get(&crate::app::Mode::Explorer)
+                            .unwrap()
+                            .get("preview_headers")
+                            .unwrap(),
+                    )
+                    .render(
+                        areas.preview,
+                        frame.buffer_mut(),
+                        &mut self.task_list_widget_state,
+                    );
             }
             // Else render a ListView widget
             Some(VaultData::Directory(_, _)) => Self::build_list(
@@ -468,6 +490,7 @@ impl<'a> Component for ExplorerTab<'a> {
                         .unwrap_or_default(),
                 ),
                 Block::new(),
+                highlighted_style,
             )
             .render(areas.preview, frame.buffer_mut(), &mut ListState::default()),
             None => (),

@@ -80,6 +80,17 @@
 "<Shift-Left>" = "TabLeft"
 "<Shift-h>" = "TabLeft"
 
+[styles.Explorer]
+highlighted_entry = "dark grey on rgb 255 153 000"
+highlighted_searchbar = "rgb 255 153 000"
+preview_headers = "bold rgb 255 153 000"
+
+[styles.Filter]
+highlighted_searchbar = "rgb 255 153 000"
+
+[styles.Home]
+highlighted_tab = "dark grey on rgb 255 153 000"
+
 [tasks_config]
 use_american_format = true
 indent_length = 2

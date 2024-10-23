@@ -16,9 +16,14 @@ pub struct TaskListItem {
     pub height: u16,
     not_american_format: bool,
     display_filename: bool,
+    header_style: Style,
 }
 
 impl TaskListItem {
+    pub fn header_style(mut self, style: Style) -> Self {
+        self.header_style = style;
+        self
+    }
     pub fn new(item: VaultData, not_american_format: bool, display_filename: bool) -> Self {
         let height = Self::compute_height(&item);
         Self {
@@ -26,6 +31,7 @@ impl TaskListItem {
             height,
             not_american_format,
             display_filename,
+            header_style: Style::default(),
         }
     }
     fn task_to_paragraph(&self, area: Rect, task: &Task) -> (Rc<[Rect]>, Paragraph<'_>) {
@@ -140,12 +146,8 @@ impl Widget for TaskListItem {
             VaultData::Directory(name, _) => error!("TaskList widget received a directory: {name}"),
             VaultData::Header(_level, name, children) => {
                 let surrounding_block = Block::default()
-                    .borders(Borders::TOP )
-                    .title(Span::styled(name.to_string(), Style::new().bold().fg(Color::Rgb(255,153 ,0 ))))
-                    // .style(
-                    //     Style::new().fg(Color::Rgb(255, 153, 0)), // .bg(Color::Rgb(28, 28, 32)),
-                    // )
-                    ;
+                    .borders(Borders::TOP)
+                    .title(Span::styled(name.to_string(), self.header_style));
 
                 let indent = Layout::new(
                     Direction::Horizontal,
@@ -168,7 +170,8 @@ impl Widget for TaskListItem {
                         child.clone(),
                         self.not_american_format,
                         self.display_filename,
-                    );
+                    )
+                    .header_style(self.header_style);
                     sb_widget.render(layout[i], buf);
                 }
             }
@@ -178,7 +181,9 @@ impl Widget for TaskListItem {
 
                 for (i, sb) in task.subtasks.iter().enumerate() {
                     let sb_widget =
-                        Self::new(VaultData::Task(sb.clone()), self.not_american_format, false);
+                        Self::new(VaultData::Task(sb.clone()), self.not_american_format, false)
+                            .header_style(self.header_style);
+
                     sb_widget.render(layout[i + 1], buf);
                 }
             }

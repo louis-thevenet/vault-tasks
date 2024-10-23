@@ -185,13 +185,19 @@ impl<'a> Component for FilterTab<'a> {
             ));
         }
 
-        self.search_bar_widget.block = Some(Block::bordered().style(Style::new().fg(
+        self.search_bar_widget.block = Some(Block::bordered().style(
             if self.search_bar_widget.is_focused {
-                Color::Rgb(255, 153, 0)
+                *self
+                    .config
+                    .styles
+                    .get(&crate::app::Mode::Filter)
+                    .unwrap()
+                    .get("highlighted_searchbar")
+                    .unwrap()
             } else {
-                Color::default()
+                Style::new()
             },
-        )));
+        ));
         self.search_bar_widget
             .render(areas.search, frame.buffer_mut());
 
