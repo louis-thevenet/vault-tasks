@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.3.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.2.0...v0.3.0) (2024-10-23)
+
+
+### Features
+
+* add search bar to vault explorer ([#16](https://github.com/louis-thevenet/vault-tasks/issues/16)) ([e2a66ba](https://github.com/louis-thevenet/vault-tasks/commit/e2a66ba4d1c1d73943f34175c8df16cd54de1a80))
+* add special Today tag ([38751d2](https://github.com/louis-thevenet/vault-tasks/commit/38751d24fa8d9af00f6c96378764a9593d438f89))
+* **cli:** add stdout command and improve stdout vault output ([c5f604a](https://github.com/louis-thevenet/vault-tasks/commit/c5f604ad073eefba7ca2936fe0015ee6321212ac))
+* **cli:** open single markdown files ([cf73c40](https://github.com/louis-thevenet/vault-tasks/commit/cf73c4068723e69c9d3f8be26d70712f083daf8c))
+* **config:** make default vault and config optional ([70231c8](https://github.com/louis-thevenet/vault-tasks/commit/70231c8dc54254a0071a5650aa0726ed738228ed))
+* configurable color scheme ([541c91e](https://github.com/louis-thevenet/vault-tasks/commit/541c91ed28d20f70bbd53df43b587598d0a9e7cd))
+* **core:** add config option to propagate file tags to all contained tasks ([762bf6c](https://github.com/louis-thevenet/vault-tasks/commit/762bf6c5fbc225e3fd86557e6dc40e3da2fd7a3f))
+* **tui:** add reload action ([784ac47](https://github.com/louis-thevenet/vault-tasks/commit/784ac47ca57f0c86f01b4c20996ddfcee5de32ce))
+* **tui:** add scrolling to lists ([37a672f](https://github.com/louis-thevenet/vault-tasks/commit/37a672fa78e1595cf66258cac24e7ac80379eb15))
+* **tui:** display origin file in task widget ([#17](https://github.com/louis-thevenet/vault-tasks/issues/17)) ([72dd287](https://github.com/louis-thevenet/vault-tasks/commit/72dd28740f56b5b044b5e0c87f169739525b7311))
+* **tui:** improve error reporting ([0d7ce2f](https://github.com/louis-thevenet/vault-tasks/commit/0d7ce2fff8b3e08a2efa0a5db823d3af4c1434cb))
+* **tui:** open selected entry in default editor ([#18](https://github.com/louis-thevenet/vault-tasks/issues/18)) ([4cc4177](https://github.com/louis-thevenet/vault-tasks/commit/4cc417721c0356ded734bd7c2fdb1526969a12d7))
+* use TOML as default format for config ([3e25a6c](https://github.com/louis-thevenet/vault-tasks/commit/3e25a6ced8302ac460406072e2be8f9c6d694373))
+
+
+### Bug Fixes
+
+* **cli:** make vault_path a named argument (prevents from running commands) ([691aaa7](https://github.com/louis-thevenet/vault-tasks/commit/691aaa7913e1b097ff6edcc27718efdc9d460112))
+* **core:** Bad parent for nested tasks ([db92820](https://github.com/louis-thevenet/vault-tasks/commit/db928207acd9ddd9f97116ec75ca7130c2509311))
+* **core:** empty directories being added to vault ([5d49b40](https://github.com/louis-thevenet/vault-tasks/commit/5d49b40f05f6b4fbe0e00b26eff3df04b7d662cb))
+* **core:** nested task incorrectly displayed in Display implementation of VaultData ([807e7ff](https://github.com/louis-thevenet/vault-tasks/commit/807e7ff1b5500eb817fa9724b1191d78b745531e))
+* **core:** task indenting no longer gets deleted ([49e2402](https://github.com/louis-thevenet/vault-tasks/commit/49e24025dbd253c2e377531f36320d2a74cf5d68))
+* **explorer:** make file name bold in path instead of showing in preview ([cb693d0](https://github.com/louis-thevenet/vault-tasks/commit/cb693d07d70821cd1fa9d762f6bb2fe611316784))
+* **filter_tab:** tags list filter no longer case sensitive ([a4f308a](https://github.com/louis-thevenet/vault-tasks/commit/a4f308a420bb81e1cd89460b3521b56e7f2e8250))
+* **parser:** make parser less strict on extra indented descriptions by adding them to closest parent ([86b30b4](https://github.com/louis-thevenet/vault-tasks/commit/86b30b40dc47bda9fbb5f801f6be3f1194a4d531))
+* **tui:** wrong height for subtasks ([fc1374d](https://github.com/louis-thevenet/vault-tasks/commit/fc1374d4314090a2c0d81c2391b1d488c642ff4a))
+
 ## [0.2.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.1.0...v0.2.0) (2024-09-29)
 
 
