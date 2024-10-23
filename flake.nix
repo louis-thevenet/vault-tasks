@@ -35,6 +35,7 @@
             cargo-tarpaulin
             cargo-insta
             cargo-machete
+            cargo-edit
           ];
         };
 
