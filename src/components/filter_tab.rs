@@ -125,16 +125,33 @@ impl<'a> Component for FilterTab<'a> {
         vec![Action::Enter, Action::Cancel, Action::Escape]
     }
     fn update(&mut self, _tui: Option<&mut Tui>, action: Action) -> Result<Option<Action>> {
-        if self.is_focused {
+        if !self.is_focused {
+            match action {
+                Action::ReloadVault => {
+                    self.task_mgr.reload(&self.config)?;
+                    self.update_matching_entries();
+                }
+                Action::FocusExplorer => self.is_focused = false,
+                Action::FocusFilter => self.is_focused = true,
+                _ => (),
+            }
+        } else if self.search_bar_widget.is_focused {
+            match action {
+                Action::Enter | Action::Escape => {
+                    self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
+                }
+                Action::Key(key) => {
+                    self.search_bar_widget.input.handle_event(&Event::Key(key));
+                    self.update_matching_entries();
+                }
+                _ => (),
+            }
+        } else {
             match action {
                 Action::FocusExplorer => self.is_focused = false,
                 Action::FocusFilter => self.is_focused = true,
                 Action::Enter | Action::Search | Action::Cancel | Action::Escape => {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
-                }
-                Action::Key(key) if self.search_bar_widget.is_focused => {
-                    self.search_bar_widget.input.handle_event(&Event::Key(key));
-                    self.update_matching_entries();
                 }
                 Action::ReloadVault => {
                     self.task_mgr.reload(&self.config)?;
@@ -148,17 +165,8 @@ impl<'a> Component for FilterTab<'a> {
                 Action::ViewLeft => self.task_list_widget_state.scroll_left(),
                 _ => (),
             }
-        } else {
-            match action {
-                Action::ReloadVault => {
-                    self.task_mgr.reload(&self.config)?;
-                    self.update_matching_entries();
-                }
-                Action::FocusExplorer => self.is_focused = false,
-                Action::FocusFilter => self.is_focused = true,
-                _ => (),
-            }
         }
+
         Ok(None)
     }
 

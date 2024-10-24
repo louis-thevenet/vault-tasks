@@ -51,8 +51,8 @@ impl TaskManager {
         let mut tags = HashSet::new();
         Self::collect_tags(&tasks, &mut tags);
 
-        debug!("\n{}", tasks);
-        debug!("\n{:#?}", tags);
+        // debug!("\n{}", tasks);
+        // debug!("\n{:#?}", tags);
 
         self.tasks = tasks;
         self.tags = tags;
