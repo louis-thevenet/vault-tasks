@@ -19,6 +19,27 @@ pub struct HelpMenu<'a> {
 }
 
 impl<'a> HelpMenu<'a> {
+    fn get_keys_for_action(config: &Config, app_mode: Mode, action: &Action) -> String {
+        config
+            .keybindings
+            .get(&app_mode)
+            .unwrap()
+            .iter()
+            .filter_map(|(k, v)| {
+                if *v == *action {
+                    let key = k.first().unwrap();
+                    Some(if key.modifiers == KeyModifiers::NONE {
+                        format!("<{}>", key.code)
+                    } else {
+                        format!("<{}-{}>", key.modifiers, key.code)
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<String>>()
+            .join(" | ")
+    }
     pub fn new(app_mode: Mode, config: &Config) -> Self {
         let mut action_set = HashSet::<Action>::new();
         for kb in config.keybindings.get(&app_mode).unwrap().values() {
@@ -36,50 +57,20 @@ impl<'a> HelpMenu<'a> {
             .height(header_height);
 
         let rows = action_vec.iter().map(|action| {
-            let keys = config
-                .keybindings
-                .get(&app_mode)
-                .unwrap()
-                .iter()
-                .filter_map(|(k, v)| {
-                    if *v == **action {
-                        let key = k.first().unwrap();
-                        Some(if key.modifiers == KeyModifiers::NONE {
-                            format!("<{}>", key.code)
-                        } else {
-                            format!("<{}-{}>", key.modifiers, key.code)
-                        })
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<String>>()
-                .join(" | ");
-            let action = action.to_string();
-            [action, keys].into_iter().map(Cell::from).collect::<Row>()
+            [
+                action.to_string(),
+                Self::get_keys_for_action(config, app_mode, action),
+            ]
+            .into_iter()
+            .map(Cell::from)
+            .collect::<Row>()
         });
 
         let lenghts = action_set.iter().map(|action| {
-            let keys = config
-                .keybindings
-                .get(&app_mode)
-                .unwrap()
-                .iter()
-                .filter_map(|(k, v)| {
-                    if *v == *action {
-                        let key = k.first().unwrap();
-                        Some(if key.modifiers == KeyModifiers::NONE {
-                            format!("<{}>", key.code)
-                        } else {
-                            format!("<{}-{}>", key.modifiers, key.code)
-                        })
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<String>>()
-                .join(" | ");
-            (action.to_string().len(), keys.len())
+            (
+                action.to_string().len() as u16,
+                Self::get_keys_for_action(config, app_mode, action).len() as u16,
+            )
         });
 
         let longuest = (
@@ -87,8 +78,8 @@ impl<'a> HelpMenu<'a> {
                 .clone()
                 .max_by(|a, b| a.0.cmp(&b.0))
                 .unwrap_or_default()
-                .0 as u16,
-            lenghts.max_by(|a, b| a.1.cmp(&b.1)).unwrap_or_default().1 as u16,
+                .0,
+            lenghts.max_by(|a, b| a.1.cmp(&b.1)).unwrap_or_default().1,
         );
 
         let block = Block::bordered().title("Help");
@@ -96,7 +87,6 @@ impl<'a> HelpMenu<'a> {
         let table = Table::new(
             rows,
             [
-                // + 1 is for padding.
                 Constraint::Length(longuest.0),
                 Constraint::Length(longuest.1),
             ],
@@ -109,8 +99,12 @@ impl<'a> HelpMenu<'a> {
             state: ScrollViewState::new(),
             content: table,
             content_size: Size::new(
-                longuest.0 + longuest.1 + column_spacing + 2, // +2 for block
-                action_vec.len() as u16 + header_height + 2,  // +2 for block
+                longuest
+                    .0
+                    .saturating_add(longuest.1)
+                    .saturating_add(column_spacing)
+                    + 2, // +2 for block
+                (action_vec.len() as u16).saturating_add(header_height) + 2, // +2 for block
             ),
         }
     }
