@@ -47,9 +47,9 @@ impl<'a> FilterTab<'a> {
     }
     pub fn render_footer(&self, area: Rect, frame: &mut Frame) {
         if self.search_bar_widget.is_focused {
-            Line::raw("Press Enter to stop searching")
+            Line::raw("Press <enter | esc> to stop searching")
         } else {
-            Line::raw("Press Enter to start searching")
+            Line::raw("Press <enter | esc> to start searching")
         }
         .centered()
         .render(area, frame.buffer_mut());

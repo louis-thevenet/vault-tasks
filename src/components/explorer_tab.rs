@@ -190,7 +190,7 @@ impl<'a> ExplorerTab<'a> {
             .collect()
     }
     pub fn render_footer(area: Rect, frame: &mut Frame) {
-        Line::raw("Press hjkl|◄▼▲▶ to move")
+        Line::raw("Press hjkl|◄▼▲▶ to move | o to open in editor | s to filter")
             .centered()
             .render(area, frame.buffer_mut());
     }

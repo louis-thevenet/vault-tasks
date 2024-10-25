@@ -21,4 +21,4 @@ expression: terminal.backend()
 "                                                                                "
 "                                                                                "
 "                                                                                "
-"                    Ctrl+◄► to change tab | Press q to quit                     "
+"              Shift+<hl|◄►> to change tab | q to quit | ? for Help              "

@@ -58,7 +58,7 @@ impl Home {
     }
 
     pub fn render_footer(area: Rect, frame: &mut Frame) {
-        Line::raw("Ctrl+◄► to change tab | Press q to quit")
+        Line::raw("Shift+<hl|◄►> to change tab | q to quit | ? for Help")
             .centered()
             .render(area, frame.buffer_mut());
     }

@@ -82,7 +82,9 @@ impl<'a> HelpMenu<'a> {
             lenghts.max_by(|a, b| a.1.cmp(&b.1)).unwrap_or_default().1,
         );
 
-        let block = Block::bordered().title("Help");
+        let block = Block::bordered()
+            .title("Help")
+            .title_bottom(Line::from("Esc to close").right_aligned());
         let column_spacing = 4;
         let table = Table::new(
             rows,
