@@ -1,30 +1,25 @@
 use std::collections::HashSet;
 
-use color_eyre::owo_colors::OwoColorize;
 use crossterm::event::KeyModifiers;
 use layout::Flex;
 use ratatui::{
     prelude::*,
-    widgets::{
-        Block, Borders, Cell, Clear, List, Row, ScrollDirection, Scrollbar, ScrollbarOrientation,
-        ScrollbarState, Table, TableState,
-    },
+    widgets::{Block, Cell, Clear, Row, Table},
 };
+use tracing::debug;
 use tui_scrollview::{ScrollView, ScrollViewState};
 
 use crate::{action::Action, app::Mode, config::Config};
 
 #[derive(Default, Clone)]
 pub struct HelpMenu<'a> {
-    app_mode: Mode,
-    config: Config,
     content: Table<'a>,
     content_size: Size,
     pub state: ScrollViewState,
 }
 
 impl<'a> HelpMenu<'a> {
-    pub fn new(app_mode: Mode, config: Config) -> Self {
+    pub fn new(app_mode: Mode, config: &Config) -> Self {
         let mut action_set = HashSet::<Action>::new();
         for kb in config.keybindings.get(&app_mode).unwrap().values() {
             action_set.insert(kb.clone());
@@ -111,8 +106,6 @@ impl<'a> HelpMenu<'a> {
         .block(block);
 
         Self {
-            app_mode,
-            config,
             state: ScrollViewState::new(),
             content: table,
             content_size: Size::new(
@@ -142,6 +135,7 @@ impl<'a> StatefulWidget for HelpMenu<'a> {
         let [area] = horizontal.areas(area);
 
         let mut scroll_view = ScrollView::new(self.content_size);
+        debug!("{}", self.content_size);
         Widget::render(Clear, area, buf);
         scroll_view.render_widget(self.content, scroll_view.area());
         scroll_view.render(area, buf, state);

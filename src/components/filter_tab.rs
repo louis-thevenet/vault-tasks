@@ -3,15 +3,18 @@ use crossterm::event::Event;
 use ratatui::widgets::List;
 use ratatui::{prelude::*, widgets::Block};
 use tokio::sync::mpsc::UnboundedSender;
+use tracing::debug;
 use tui_scrollview::ScrollViewState;
 
 use super::Component;
 
+use crate::app::Mode;
 use crate::task_core::filter::{filter_to_vec, parse_search_input};
 use crate::task_core::task::Task;
 use crate::task_core::vault_data::VaultData;
 use crate::task_core::TaskManager;
 use crate::tui::Tui;
+use crate::widgets::help_menu::HelpMenu;
 use crate::widgets::search_bar::SearchBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
@@ -34,6 +37,8 @@ pub struct FilterTab<'a> {
     search_bar_widget: SearchBar<'a>,
     task_mgr: TaskManager,
     task_list_widget_state: ScrollViewState,
+    show_help: bool,
+    help_menu_wigdet: HelpMenu<'a>,
 }
 
 impl<'a> FilterTab<'a> {
@@ -114,12 +119,13 @@ impl<'a> Component for FilterTab<'a> {
                 .filter_default_search_string
                 .clone(),
         );
+        self.help_menu_wigdet = HelpMenu::new(Mode::Filter, &self.config);
         self.update_matching_entries();
         Ok(())
     }
 
     fn editing_mode(&self) -> bool {
-        self.is_focused && self.search_bar_widget.is_focused
+        self.is_focused && (self.search_bar_widget.is_focused || self.show_help)
     }
     fn escape_editing_mode(&self) -> Vec<Action> {
         vec![Action::Enter, Action::Cancel, Action::Escape]
@@ -146,6 +152,15 @@ impl<'a> Component for FilterTab<'a> {
                 }
                 _ => (),
             }
+        } else if self.show_help {
+            match action {
+                Action::ViewUp | Action::Up => self.help_menu_wigdet.scroll_up(),
+                Action::ViewDown | Action::Down => self.help_menu_wigdet.scroll_down(),
+                Action::Help | Action::Escape | Action::Enter => {
+                    self.show_help = !self.show_help;
+                }
+                _ => (),
+            }
         } else {
             match action {
                 Action::FocusExplorer => self.is_focused = false,
@@ -153,6 +168,7 @@ impl<'a> Component for FilterTab<'a> {
                 Action::Enter | Action::Search | Action::Cancel | Action::Escape => {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
                 }
+                Action::Help => self.show_help = !self.show_help,
                 Action::ReloadVault => {
                     self.task_mgr.reload(&self.config)?;
                     self.update_matching_entries();
@@ -231,6 +247,14 @@ impl<'a> Component for FilterTab<'a> {
             frame.buffer_mut(),
             &mut self.task_list_widget_state,
         );
+        if self.show_help {
+            debug!("showing help");
+            self.help_menu_wigdet.clone().render(
+                area,
+                frame.buffer_mut(),
+                &mut self.help_menu_wigdet.state,
+            );
+        }
         Ok(())
     }
 }

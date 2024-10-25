@@ -6,7 +6,7 @@ use vault_data::VaultData;
 
 use crate::config::Config;
 use filter::filter;
-use tracing::{debug, error};
+use tracing::error;
 use vault_parser::VaultParser;
 
 pub mod filter;

@@ -2,7 +2,7 @@ use color_eyre::eyre::bail;
 use color_eyre::Result;
 use crossterm::event::Event;
 use ratatui::prelude::*;
-use ratatui::widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarState};
+use ratatui::widgets::{Block, Borders, Paragraph};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error, info};
 
@@ -289,7 +289,7 @@ impl<'a> Component for ExplorerTab<'a> {
     fn register_config_handler(&mut self, config: Config) -> Result<()> {
         self.task_mgr = TaskManager::load_from_config(&config)?;
         self.config = config;
-        self.help_menu_wigdet = HelpMenu::new(Mode::Explorer, self.config.clone());
+        self.help_menu_wigdet = HelpMenu::new(Mode::Explorer, &self.config);
         self.search_bar_widget.input = self.search_bar_widget.input.clone().with_value(
             self.config
                 .tasks_config
@@ -310,7 +310,7 @@ impl<'a> Component for ExplorerTab<'a> {
         vec![Action::Enter, Action::Escape]
     }
     fn editing_mode(&self) -> bool {
-        self.is_focused && self.search_bar_widget.is_focused
+        self.is_focused && (self.search_bar_widget.is_focused || self.show_help)
     }
 
     fn update(&mut self, tui: Option<&mut Tui>, action: Action) -> Result<Option<Action>> {
@@ -367,7 +367,6 @@ impl<'a> Component for ExplorerTab<'a> {
                 Action::Help | Action::Escape | Action::Enter => {
                     self.show_help = !self.show_help;
                 }
-                // scrolling here
                 _ => (),
             }
         } else {
@@ -419,9 +418,7 @@ impl<'a> Component for ExplorerTab<'a> {
             self.update_entries()?;
             self.state_center_view.selected = Some(0);
         }
-
         let areas = Self::split_frame(area);
-
         Self::render_footer(areas.footer, frame);
         // Search Bar
         if self.search_bar_widget.is_focused {
