@@ -99,9 +99,34 @@ This is what you will see in the preview of this `README.md` in `vault-tasks`:
 Or when filtering for `@today` tasks:
 ![](./examples/readme_example_vault_tasks_filter_screenshot.png)
 
-### Navigating `vault-tasks`
+### Default Key Map
 
-A keybindings menu should come with v0.4.0.
+Check the key map within the ap with `?`
+
+#### Navigation
+
+| Key         | Alternate Key     | Action               |
+| ----------- | ----------------- | -------------------- |
+| `k`         | `↑`, `shift-tab`  | Previous entry       |
+| `j`         | `↓`, `tab`        | Next entry           |
+| `h`         | `←`, `back_space` | Leave current entry  |
+| `l`         | `→`,`enter`       | Enter next entry     |
+| `shift-h`   | `shift-←`         | Previous tab         |
+| `shift-l`   | `shift-→`         | Next tab             |
+| `ctrl-k`    | `ctrl-↓`          | Scroll up            |
+| `ctrl-j`    | `ctrl-↑`          | Scroll down          |
+| `q`         | `ctrl-c`          | Quit the application |
+| `page_down` |                   | Scroll one page down |
+| `page_up`   |                   | Scroll one page up   |
+
+#### Commands
+
+| Key | Action                                         |
+| --- | ---------------------------------------------- |
+| `s` | Focus search bar (`enter` or `esc` to unfocus) |
+| `?` | Open keybindings menu for the current tab      |
+| `o` | Open selection in default editor               |
+| `r` | Reload vault                                   |
 
 ## Configuration
 
