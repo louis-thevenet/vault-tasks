@@ -148,7 +148,7 @@ impl App {
             // Look for components in editing mode
             for component in &self.components {
                 // Is it in editing mode and is the action in the escape list ?
-                if component.editing_mode() && !component.escape_editing_mode().contains(action) {
+                if component.blocking_mode() && !component.escape_blocking_mode().contains(action) {
                     info!("Action was sent as raw key");
                     action_tx.send(Action::Key(key))?;
                     return Ok(());
@@ -157,7 +157,7 @@ impl App {
             action_tx.send(action.clone())?;
         } else {
             // If there is a component in editing mode, send the raw key
-            if self.components.iter().any(|c| c.editing_mode()) {
+            if self.components.iter().any(|c| c.blocking_mode()) {
                 info!("Got raw key: {key:?}");
                 action_tx.send(Action::Key(key))?;
                 return Ok(());

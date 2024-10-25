@@ -306,10 +306,10 @@ impl<'a> Component for ExplorerTab<'a> {
         Ok(())
     }
 
-    fn escape_editing_mode(&self) -> Vec<Action> {
+    fn escape_blocking_mode(&self) -> Vec<Action> {
         vec![Action::Enter, Action::Escape]
     }
-    fn editing_mode(&self) -> bool {
+    fn blocking_mode(&self) -> bool {
         self.is_focused && (self.search_bar_widget.is_focused || self.show_help)
     }
 

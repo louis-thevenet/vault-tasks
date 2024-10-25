@@ -124,10 +124,10 @@ impl<'a> Component for FilterTab<'a> {
         Ok(())
     }
 
-    fn editing_mode(&self) -> bool {
+    fn blocking_mode(&self) -> bool {
         self.is_focused && (self.search_bar_widget.is_focused || self.show_help)
     }
-    fn escape_editing_mode(&self) -> Vec<Action> {
+    fn escape_blocking_mode(&self) -> Vec<Action> {
         vec![Action::Enter, Action::Cancel, Action::Escape]
     }
     fn update(&mut self, _tui: Option<&mut Tui>, action: Action) -> Result<Option<Action>> {
