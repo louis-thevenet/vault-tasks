@@ -1,6 +1,5 @@
 use ratatui::prelude::*;
-
-use tui_widgets::scrollview::{ScrollView, ScrollViewState};
+use tui_scrollview::{ScrollView, ScrollViewState};
 
 use crate::{config::Config, task_core::vault_data::VaultData};
 
@@ -83,7 +82,7 @@ mod tests {
     use chrono::NaiveDate;
     use insta::assert_snapshot;
     use ratatui::{backend::TestBackend, Terminal};
-    use tui_widgets::scrollview::ScrollViewState;
+    use tui_scrollview::ScrollViewState;
 
     use crate::{
         config::Config,

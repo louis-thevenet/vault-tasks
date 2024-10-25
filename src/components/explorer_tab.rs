@@ -7,15 +7,17 @@ use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error, info};
 
 use tui_input::backend::crossterm::EventHandler;
+use tui_scrollview::ScrollViewState;
 use tui_widget_list::{ListBuilder, ListState, ListView};
-use tui_widgets::scrollview::ScrollViewState;
 
 use super::Component;
 
+use crate::app::Mode;
 use crate::task_core::filter::parse_search_input;
 use crate::task_core::vault_data::VaultData;
 use crate::task_core::{TaskManager, WARNING_EMOJI};
 use crate::tui::Tui;
+use crate::widgets::help_menu::HelpMenu;
 use crate::widgets::search_bar::SearchBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
@@ -42,6 +44,8 @@ pub struct ExplorerTab<'a> {
     entries_right_view: Vec<VaultData>,
     search_bar_widget: SearchBar<'a>,
     task_list_widget_state: ScrollViewState,
+    show_help: bool,
+    help_menu_wigdet: HelpMenu<'a>,
 }
 
 impl<'a> ExplorerTab<'a> {
@@ -285,6 +289,7 @@ impl<'a> Component for ExplorerTab<'a> {
     fn register_config_handler(&mut self, config: Config) -> Result<()> {
         self.task_mgr = TaskManager::load_from_config(&config)?;
         self.config = config;
+        self.help_menu_wigdet = HelpMenu::new(Mode::Explorer, &self.config);
         self.search_bar_widget.input = self.search_bar_widget.input.clone().with_value(
             self.config
                 .tasks_config
@@ -301,21 +306,31 @@ impl<'a> Component for ExplorerTab<'a> {
         Ok(())
     }
 
-    fn escape_editing_mode(&self) -> Vec<Action> {
+    fn escape_blocking_mode(&self) -> Vec<Action> {
         vec![Action::Enter, Action::Escape]
     }
-    fn editing_mode(&self) -> bool {
-        self.is_focused && self.search_bar_widget.is_focused
+    fn blocking_mode(&self) -> bool {
+        self.is_focused && (self.search_bar_widget.is_focused || self.show_help)
     }
 
     fn update(&mut self, tui: Option<&mut Tui>, action: Action) -> Result<Option<Action>> {
-        if self.is_focused {
+        if !self.is_focused {
             match action {
-                Action::FocusFilter => self.is_focused = false,
-                Action::Enter | Action::Escape if self.search_bar_widget.is_focused => {
-                    self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
+                Action::FocusExplorer => {
+                    self.is_focused = true;
                 }
-                Action::Search => {
+                Action::ReloadVault => {
+                    self.task_mgr.reload(&self.config)?;
+                    self.update_entries()?;
+                }
+                _ => (),
+            }
+            return Ok(None);
+        }
+
+        if self.search_bar_widget.is_focused {
+            match action {
+                Action::Enter | Action::Escape => {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
                 }
                 Action::Key(key_event) if self.search_bar_widget.is_focused => {
@@ -343,7 +358,26 @@ impl<'a> Component for ExplorerTab<'a> {
                     }
                     self.update_preview();
                 }
-
+                _ => (),
+            }
+        } else if self.show_help {
+            match action {
+                Action::ViewUp | Action::Up => self.help_menu_wigdet.scroll_up(),
+                Action::ViewDown | Action::Down => self.help_menu_wigdet.scroll_down(),
+                Action::Help | Action::Escape | Action::Enter => {
+                    self.show_help = !self.show_help;
+                }
+                _ => (),
+            }
+        } else {
+            match action {
+                // Change tab
+                Action::FocusFilter => self.is_focused = false,
+                // Search bar
+                Action::Search => {
+                    self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
+                }
+                // Navigation
                 Action::Up => {
                     self.state_center_view.previous();
                     self.update_preview();
@@ -354,25 +388,16 @@ impl<'a> Component for ExplorerTab<'a> {
                 }
                 Action::Right | Action::Enter => self.enter_selected_entry()?,
                 Action::Cancel | Action::Left | Action::Escape => self.leave_selected_entry()?,
-                Action::Open => self.open_current_file(tui)?,
-                Action::ReloadVault => {
-                    self.task_mgr.reload(&self.config)?;
-                    self.update_entries()?;
-                }
+                // Preview
                 Action::ViewUp => self.task_list_widget_state.scroll_up(),
                 Action::ViewDown => self.task_list_widget_state.scroll_down(),
                 Action::ViewPageUp => self.task_list_widget_state.scroll_page_up(),
                 Action::ViewPageDown => self.task_list_widget_state.scroll_page_down(),
                 Action::ViewRight => self.task_list_widget_state.scroll_right(),
                 Action::ViewLeft => self.task_list_widget_state.scroll_left(),
-                Action::Help => todo!(),
-                _ => (),
-            }
-        } else {
-            match action {
-                Action::FocusExplorer => {
-                    self.is_focused = true;
-                }
+                // Commands
+                Action::Help => self.show_help = !self.show_help,
+                Action::Open => self.open_current_file(tui)?,
                 Action::ReloadVault => {
                     self.task_mgr.reload(&self.config)?;
                     self.update_entries()?;
@@ -393,9 +418,7 @@ impl<'a> Component for ExplorerTab<'a> {
             self.update_entries()?;
             self.state_center_view.selected = Some(0);
         }
-
         let areas = Self::split_frame(area);
-
         Self::render_footer(areas.footer, frame);
         // Search Bar
         if self.search_bar_widget.is_focused {
@@ -427,6 +450,7 @@ impl<'a> Component for ExplorerTab<'a> {
             },
         ));
         self.search_bar_widget
+            .clone()
             .render(areas.search, frame.buffer_mut());
 
         // Current path
@@ -494,6 +518,14 @@ impl<'a> Component for ExplorerTab<'a> {
             )
             .render(areas.preview, frame.buffer_mut(), &mut ListState::default()),
             None => (),
+        }
+
+        if self.show_help {
+            self.help_menu_wigdet.clone().render(
+                area,
+                frame.buffer_mut(),
+                &mut self.help_menu_wigdet.state,
+            );
         }
 
         Ok(())

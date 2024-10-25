@@ -129,11 +129,14 @@ pub trait Component {
     ///
     /// * `Result<()>` - An Ok result or an error.
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
-    /// Returns zero or more `Action` that should never be sent as `Action::RawKeyEvent` even if `Self::is_editing` returns `true`.
+    /// Returns zero or more `Action` that should never be sent as `Action::RawKeyEvent` even if `Self::blocking_mode` returns `true`.
+    ///
+    /// A better way to do this would be to have a type `BlockingMode` and return a map (mode:actions).
+    /// `Self::blocking_mode` returning a `BlockingMode`
     ///
     /// # Returns
     /// * `Vec<Action>` - A list of `Action` that should never be sent as `Action::RawKeyEvent`.
-    fn escape_editing_mode(&self) -> Vec<Action> {
+    fn escape_blocking_mode(&self) -> Vec<Action> {
         vec![]
     }
     /// Whether the app should send Actions or `Action::Key`
@@ -141,7 +144,7 @@ pub trait Component {
     /// # Returns
     ///
     /// * `bool` - Whether the component is in editing mode or not.
-    fn editing_mode(&self) -> bool {
+    fn blocking_mode(&self) -> bool {
         false
     }
 }

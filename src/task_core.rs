@@ -6,7 +6,7 @@ use vault_data::VaultData;
 
 use crate::config::Config;
 use filter::filter;
-use tracing::{debug, error};
+use tracing::error;
 use vault_parser::VaultParser;
 
 pub mod filter;
@@ -51,8 +51,8 @@ impl TaskManager {
         let mut tags = HashSet::new();
         Self::collect_tags(&tasks, &mut tags);
 
-        debug!("\n{}", tasks);
-        debug!("\n{:#?}", tags);
+        // debug!("\n{}", tasks);
+        // debug!("\n{:#?}", tags);
 
         self.tasks = tasks;
         self.tags = tags;
