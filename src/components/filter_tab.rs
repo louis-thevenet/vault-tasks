@@ -3,7 +3,7 @@ use crossterm::event::Event;
 use ratatui::widgets::List;
 use ratatui::{prelude::*, widgets::Block};
 use tokio::sync::mpsc::UnboundedSender;
-use tui_widgets::scrollview::ScrollViewState;
+use tui_scrollview::ScrollViewState;
 
 use super::Component;
 
@@ -207,6 +207,7 @@ impl<'a> Component for FilterTab<'a> {
             },
         ));
         self.search_bar_widget
+            .clone()
             .render(areas.search, frame.buffer_mut());
 
         let tag_list = List::new(self.matching_tags.iter().map(std::string::String::as_str))

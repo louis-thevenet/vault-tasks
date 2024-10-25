@@ -10,7 +10,7 @@ use ratatui::{
         ScrollbarState, Table, TableState,
     },
 };
-use tui_widgets::scrollview::{ScrollView, ScrollViewState};
+use tui_scrollview::{ScrollView, ScrollViewState};
 
 use crate::{action::Action, app::Mode, config::Config};
 

@@ -2,7 +2,7 @@ use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::Style,
-    widgets::{Block, Paragraph, Widget, WidgetRef},
+    widgets::{Block, Paragraph, Widget},
 };
 use tui_input::Input;
 
@@ -13,8 +13,8 @@ pub struct SearchBar<'a> {
     pub block: Option<Block<'a>>,
 }
 
-impl<'a> WidgetRef for SearchBar<'a> {
-    fn render_ref(&self, area: Rect, buf: &mut Buffer) {
+impl<'a> Widget for SearchBar<'a> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let width = area.width.max(3) - 3; // 2 for borders, 1 for cursor
         let scroll = self.input.visual_scroll(width as usize);
         let res = Paragraph::new(self.input.value())
@@ -51,7 +51,7 @@ mod tests {
         };
         let mut terminal = Terminal::new(TestBackend::new(80, 20)).unwrap();
         terminal
-            .draw(|frame| frame.render_widget(&bar, frame.area()))
+            .draw(|frame| frame.render_widget(bar, frame.area()))
             .unwrap();
         assert_snapshot!(terminal.backend());
     }
@@ -79,7 +79,7 @@ mod tests {
                 ])
                 .areas(inner);
 
-                frame.render_widget(&bar, inner);
+                frame.render_widget(bar, inner);
             })
             .unwrap();
         assert_snapshot!(terminal.backend());

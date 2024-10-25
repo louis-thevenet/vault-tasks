@@ -37,7 +37,7 @@ winnow = "0.6.18"
 tui-widget-list = "0.12.2"
 tui-input = "0.10.1"
 edit = "0.1.5"
-tui-widgets = "0.3.1"
+tui-scrollview="=0.4.1"
 toml = "0.8.19"
 
 [dev-dependencies]

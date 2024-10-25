@@ -7,8 +7,8 @@ use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error, info};
 
 use tui_input::backend::crossterm::EventHandler;
+use tui_scrollview::ScrollViewState;
 use tui_widget_list::{ListBuilder, ListState, ListView};
-use tui_widgets::scrollview::ScrollViewState;
 
 use super::Component;
 
@@ -453,6 +453,7 @@ impl<'a> Component for ExplorerTab<'a> {
             },
         ));
         self.search_bar_widget
+            .clone()
             .render(areas.search, frame.buffer_mut());
 
         // Current path
