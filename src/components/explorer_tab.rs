@@ -18,7 +18,6 @@ use crate::task_core::vault_data::VaultData;
 use crate::task_core::{TaskManager, WARNING_EMOJI};
 use crate::tui::Tui;
 use crate::widgets::help_menu::HelpMenu;
-use crate::widgets::search_bar::SearchBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
 
@@ -42,7 +41,7 @@ pub struct ExplorerTab<'a> {
     state_center_view: ListState,
     entries_center_view: Vec<(String, String)>,
     entries_right_view: Vec<VaultData>,
-    search_bar_widget: SearchBar<'a>,
+    search_bar_widget: InputBar<'a>,
     task_list_widget_state: ScrollViewState,
     show_help: bool,
     help_menu_wigdet: HelpMenu<'a>,

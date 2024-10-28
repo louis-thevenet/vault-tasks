@@ -15,7 +15,7 @@ use crate::task_core::vault_data::VaultData;
 use crate::task_core::TaskManager;
 use crate::tui::Tui;
 use crate::widgets::help_menu::HelpMenu;
-use crate::widgets::search_bar::SearchBar;
+use crate::widgets::input_bar::InputBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
 use tui_input::backend::crossterm::EventHandler;
@@ -34,7 +34,7 @@ pub struct FilterTab<'a> {
     is_focused: bool,
     matching_entries: Vec<Task>,
     matching_tags: Vec<String>,
-    search_bar_widget: SearchBar<'a>,
+    search_bar_widget: InputBar<'a>,
     task_mgr: TaskManager,
     task_list_widget_state: ScrollViewState,
     show_help: bool,

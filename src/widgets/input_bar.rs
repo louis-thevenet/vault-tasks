@@ -7,13 +7,13 @@ use ratatui::{
 use tui_input::Input;
 
 #[derive(Default, Clone)]
-pub struct SearchBar<'a> {
+pub struct InputBar<'a> {
     pub input: Input,
     pub is_focused: bool,
     pub block: Option<Block<'a>>,
 }
 
-impl<'a> Widget for SearchBar<'a> {
+impl<'a> Widget for InputBar<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let width = area.width.max(3) - 3; // 2 for borders, 1 for cursor
         let scroll = self.input.visual_scroll(width as usize);
@@ -40,11 +40,11 @@ mod tests {
     };
     use tui_input::Input;
 
-    use crate::widgets::search_bar::SearchBar;
+    use crate::widgets::input_bar::InputBar;
 
     #[test]
     fn test_render_search_bar() {
-        let bar = SearchBar {
+        let bar = InputBar {
             input: Input::new("input".to_owned()),
             is_focused: true,
             block: Some(Block::bordered().title_top("test")),
@@ -58,7 +58,7 @@ mod tests {
     #[test]
     fn test_render_search_bar_line() {
         let input = Input::new("initial".to_owned());
-        let bar = SearchBar {
+        let bar = InputBar {
             input,
             is_focused: true,
             block: Some(Block::bordered().title_top("test")),
