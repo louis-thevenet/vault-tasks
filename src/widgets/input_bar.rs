@@ -2,7 +2,7 @@ use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::Style,
-    widgets::{Block, Paragraph, Widget},
+    widgets::{Block, Clear, Paragraph, Widget},
 };
 use tui_input::Input;
 
@@ -21,6 +21,7 @@ impl<'a> Widget for InputBar<'a> {
             .style(Style::reset())
             .scroll((0, scroll as u16));
 
+        Clear.render(area, buf);
         if let Some(block) = &self.block {
             res.block(block.clone())
         } else {
