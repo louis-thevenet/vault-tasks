@@ -122,7 +122,7 @@ impl TaskListItem {
                         0
                     });
                 }
-                if task.due_date != DueDate::NoDate || task.priority > 0 {
+                if task.due_date != DueDate::NoDate || task.priority > 0 || task.is_today {
                     count += 1;
                 }
                 if task.tags.is_some() {
