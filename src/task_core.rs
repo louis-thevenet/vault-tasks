@@ -208,14 +208,17 @@ impl TaskManager {
 
     /// Follows the `selected_header_path` to retrieve the correct `VaultData`.
     /// Returns a vector of `VaultData` with the items to display in TUI, preserving the recursive nature.
+    /// task_preview_offset: add offset to return a task instead of onne of its subtasks
     pub fn get_vault_data_from_path(
         &self,
         selected_header_path: &[String],
+        task_preview_offset: usize,
     ) -> Result<Vec<VaultData>> {
         fn aux(
             file_entry: VaultData,
             selected_header_path: &[String],
             path_index: usize,
+            task_preview_offset: usize,
         ) -> Result<Vec<VaultData>> {
             if path_index == selected_header_path.len() {
                 Ok(vec![file_entry])
@@ -225,9 +228,12 @@ impl TaskManager {
                         if name == selected_header_path[path_index] {
                             let mut res = vec![];
                             for child in children {
-                                if let Ok(mut found) =
-                                    aux(child, selected_header_path, path_index + 1)
-                                {
+                                if let Ok(mut found) = aux(
+                                    child,
+                                    selected_header_path,
+                                    path_index + 1,
+                                    task_preview_offset,
+                                ) {
                                     res.append(&mut found);
                                 }
                             }
@@ -240,8 +246,7 @@ impl TaskManager {
                         if task.name == selected_header_path[path_index] {
                             let mut res = vec![];
 
-                            // Returns early the task to allow previewing its attributes + children
-                            if path_index + 1 == selected_header_path.len() {
+                            if path_index + task_preview_offset == selected_header_path.len() {
                                 res.push(VaultData::Task(task));
                             } else {
                                 for child in task.subtasks {
@@ -249,6 +254,7 @@ impl TaskManager {
                                         VaultData::Task(child),
                                         selected_header_path,
                                         path_index + 1,
+                                        task_preview_offset,
                                     ) {
                                         res.append(&mut found);
                                     }
@@ -271,7 +277,7 @@ impl TaskManager {
         match filtered_tasks {
             Some(VaultData::Directory(_, entries)) => {
                 for entry in entries {
-                    if let Ok(res) = aux(entry, selected_header_path, 0) {
+                    if let Ok(res) = aux(entry, selected_header_path, 0, task_preview_offset) {
                         return Ok(res);
                     }
                 }
@@ -546,7 +552,7 @@ mod tests {
         };
 
         let path = vec![String::from("Test"), String::from("1"), String::from("2")];
-        let res = task_mgr.get_vault_data_from_path(&path).unwrap();
+        let res = task_mgr.get_vault_data_from_path(&path, 0).unwrap();
         assert_eq!(vec![expected_header], res);
 
         let path = vec![
@@ -555,7 +561,7 @@ mod tests {
             String::from("2"),
             String::from("3"),
         ];
-        let res = task_mgr.get_vault_data_from_path(&path).unwrap();
+        let res = task_mgr.get_vault_data_from_path(&path, 0).unwrap();
         assert_eq!(expected_tasks, res);
     }
 }
