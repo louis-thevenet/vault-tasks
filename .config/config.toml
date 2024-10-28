@@ -25,6 +25,7 @@
 "<s>" = "Search"
 "<Esc>" = "Escape"
 "<o>" = "Open"
+"<e>" = "EditTask"
 "<r>" = "ReloadVault"
 # Scrolling
 "<Ctrl-u>" = "ViewUp"

@@ -36,6 +36,7 @@ pub enum Action {
     TabRight,
     TabLeft,
     Open,
+    EditTask,
     FocusExplorer,
     FocusFilter,
 }

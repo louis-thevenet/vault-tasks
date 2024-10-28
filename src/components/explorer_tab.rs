@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use color_eyre::eyre::bail;
 use color_eyre::Result;
 use crossterm::event::Event;
@@ -8,6 +10,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error, info};
 
 use tui_input::backend::crossterm::EventHandler;
+use tui_input::Input;
 use tui_scrollview::ScrollViewState;
 use tui_widget_list::{ListBuilder, ListState, ListView};
 
@@ -15,6 +18,7 @@ use super::Component;
 
 use crate::app::Mode;
 use crate::task_core::filter::parse_search_input;
+use crate::task_core::parser::task::parse_task;
 use crate::task_core::vault_data::VaultData;
 use crate::task_core::{TaskManager, WARNING_EMOJI};
 use crate::tui::Tui;
@@ -160,7 +164,8 @@ impl<'a> ExplorerTab<'a> {
             return;
         };
 
-        self.entries_right_view = match self.task_mgr.get_vault_data_from_path(&path_to_preview) {
+        self.entries_right_view = match self.task_mgr.get_vault_data_from_path(&path_to_preview, 1)
+        {
             Ok(res) => res,
             Err(e) => vec![VaultData::Directory(e.to_string(), vec![])],
         };
@@ -216,10 +221,7 @@ impl<'a> ExplorerTab<'a> {
         )
     }
 
-    fn open_current_file(&self, tui_opt: Option<&mut Tui>) -> Result<()> {
-        let Some(tui) = tui_opt else {
-            bail!("Could not open current entry, Tui was None")
-        };
+    fn get_current_path_to_file(&self) -> PathBuf {
         let mut path = self.config.tasks_config.vault_path.clone();
         for e in &self
             .get_preview_path()
@@ -233,7 +235,13 @@ impl<'a> ExplorerTab<'a> {
             }
             path.push(e);
         }
-
+        path
+    }
+    fn open_current_file(&self, tui_opt: Option<&mut Tui>) -> Result<()> {
+        let Some(tui) = tui_opt else {
+            bail!("Could not open current entry, Tui was None")
+        };
+        let path = self.get_current_path_to_file();
         info!("Opening {:?} in default editor.", path);
         if let Some(tx) = &self.command_tx {
             tui.exit()?;
@@ -351,7 +359,7 @@ impl<'a> ExplorerTab<'a> {
     }
     fn render_edit_bar(&mut self, frame: &mut Frame, area: Rect) {
         let vertical = Layout::vertical([Constraint::Length(3)]).flex(Flex::Center);
-        let horizontal = Layout::horizontal([Constraint::Percentage(25)]).flex(Flex::Center);
+        let horizontal = Layout::horizontal([Constraint::Percentage(75)]).flex(Flex::Center);
         let [area] = vertical.areas(area);
         let [area] = horizontal.areas(area);
 
@@ -419,6 +427,7 @@ impl<'a> Component for ExplorerTab<'a> {
                 || self.edit_task_bar.is_focused)
     }
 
+    #[allow(clippy::too_many_lines)]
     fn update(&mut self, tui: Option<&mut Tui>, action: Action) -> Result<Option<Action>> {
         if !self.is_focused {
             match action {
@@ -435,11 +444,45 @@ impl<'a> Component for ExplorerTab<'a> {
         }
         if self.edit_task_bar.is_focused {
             match action {
-                Action::Enter | Action::Escape => {
+                Action::Enter => {
+                    // We're already sure it exists since we entered the task editing mode
+                    if let VaultData::Task(task) = self
+                        .task_mgr
+                        .get_vault_data_from_path(&self.current_path, 0)
+                        .unwrap()[self.state_center_view.selected.unwrap_or_default()]
+                    .clone()
+                    {
+                        // Get input
+                        let mut input = self.edit_task_bar.input.value();
+                        // Parse it
+                        let Ok(mut parsed_task) = parse_task(
+                            &mut input,
+                            self.get_current_path_to_file()
+                                .to_str()
+                                .unwrap()
+                                .to_string(),
+                            &self.config,
+                        ) else {
+                            // Don't accept invalid input
+                            return Ok(None);
+                        };
+                        // Write changes
+                        parsed_task.line_number = task.line_number;
+                        parsed_task
+                            .fix_task_attributes(&self.config, &self.get_current_path_to_file())?;
+                        // Quit editing mode
+                        self.edit_task_bar.is_focused = !self.edit_task_bar.is_focused;
+                        // Reload vault
+                        return Ok(Some(Action::ReloadVault));
+                    }
+                }
+                Action::Escape => {
+                    // Cancel editing
+                    self.edit_task_bar.input.reset();
                     self.edit_task_bar.is_focused = !self.edit_task_bar.is_focused;
                 }
                 Action::Key(key_event) => {
-                    self.search_bar_widget
+                    self.edit_task_bar
                         .input
                         .handle_event(&Event::Key(key_event));
                 }
@@ -494,7 +537,26 @@ impl<'a> Component for ExplorerTab<'a> {
                 Action::Search => {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
                 }
-                Action::EditTask => self.edit_task_bar.is_focused = !self.edit_task_bar.is_focused,
+                Action::EditTask => {
+                    let entries = self
+                        .task_mgr
+                        .get_vault_data_from_path(&self.current_path, 0)?;
+                    if entries.len() <= self.state_center_view.selected.unwrap_or_default() {
+                        error!("Cannot edit: Index of selected entry > list of entries");
+                        return Ok(None);
+                    }
+                    let entry =
+                        entries[self.state_center_view.selected.unwrap_or_default()].clone();
+                    debug!("{entry:#?}");
+                    if let VaultData::Task(task) = entry {
+                        self.edit_task_bar.input =
+                            Input::new(task.get_fixed_attributes(&self.config, 0));
+                        self.edit_task_bar.is_focused = !self.edit_task_bar.is_focused;
+                    } else {
+                        info!("Only tasks can be edited");
+                        return Ok(None);
+                    }
+                }
 
                 // Navigation
                 Action::Up => {

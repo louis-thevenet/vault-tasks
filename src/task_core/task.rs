@@ -158,7 +158,7 @@ impl fmt::Display for Task {
     }
 }
 impl Task {
-    fn get_fixed_attributes(&self, config: &Config, indent_length: usize) -> String {
+    pub fn get_fixed_attributes(&self, config: &Config, indent_length: usize) -> String {
         let indent = " ".repeat(indent_length);
 
         let state_str = match self.state {
