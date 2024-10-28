@@ -12,7 +12,7 @@ I made this tool because I wanted to integrate my task system directly inside my
 
 Markdown tasks are very easy to integrate with knowledge and projects.
 
-I also spend most of my writing time in the terminal (Helix) and do not rely on heavy extrernal software.
+I also spend most of my writing time in the terminal (Helix) and do not rely on heavy external software.
 
 ## Features
 
