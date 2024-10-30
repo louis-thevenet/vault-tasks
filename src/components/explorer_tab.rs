@@ -431,7 +431,7 @@ impl<'a> Component for ExplorerTab<'a> {
     fn update(&mut self, tui: Option<&mut Tui>, action: Action) -> Result<Option<Action>> {
         if !self.is_focused {
             match action {
-                Action::FocusExplorer => {
+                Action::Focus(Mode::Explorer) => {
                     self.is_focused = true;
                 }
                 Action::ReloadVault => {
@@ -532,7 +532,7 @@ impl<'a> Component for ExplorerTab<'a> {
         } else {
             match action {
                 // Change tab
-                Action::FocusFilter => self.is_focused = false,
+                Action::Focus(mode) if mode != Mode::Explorer => self.is_focused = false,
                 // Search bar
                 Action::Search => {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;

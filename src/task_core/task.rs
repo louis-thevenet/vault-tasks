@@ -347,7 +347,7 @@ mod tests_tasks {
 }
 #[cfg(test)]
 mod tests_due_date {
-    use chrono::{Days, TimeDelta};
+    use chrono::TimeDelta;
 
     use crate::task_core::task::DueDate;
 

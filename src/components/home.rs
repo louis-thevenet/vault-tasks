@@ -1,5 +1,5 @@
 use super::Component;
-use crate::{action::Action, config::Config, tui::Tui};
+use crate::{action::Action, app::Mode, config::Config, tui::Tui};
 use color_eyre::Result;
 use ratatui::{prelude::*, widgets::Tabs};
 use strum::{Display, EnumIter, FromRepr, IntoEnumIterator};
@@ -21,10 +21,10 @@ impl Home {
     fn send_new_focused_tab_command(&self) {
         if let Some(tx) = &self.command_tx {
             if let Err(e) = tx.send(match self.selected_tab {
-                SelectedTab::Explorer => Action::FocusExplorer,
-                SelectedTab::Filter => Action::FocusFilter,
+                SelectedTab::Explorer => Action::Focus(Mode::Explorer),
+                SelectedTab::Filter => Action::Focus(Mode::Filter),
             }) {
-                error!("Error while changing sending new focused tab information: {e}");
+                error!("Could not focus selected tab: {e}");
             }
         }
     }
@@ -79,8 +79,8 @@ impl Component for Home {
         match action {
             Action::TabRight => self.next_tab(),
             Action::TabLeft => self.previous_tab(),
-            Action::FocusExplorer => self.selected_tab = SelectedTab::Explorer,
-            Action::FocusFilter => self.selected_tab = SelectedTab::Filter,
+            Action::Focus(Mode::Explorer) => self.selected_tab = SelectedTab::Explorer,
+            Action::Focus(Mode::Filter) => self.selected_tab = SelectedTab::Filter,
             _ => (),
         }
         Ok(None)

@@ -2,6 +2,8 @@ use crossterm::event::KeyEvent;
 use serde::{Deserialize, Serialize};
 use strum::Display;
 
+use crate::app::Mode;
+
 #[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize, Hash)]
 pub enum Action {
     Tick,
@@ -37,8 +39,7 @@ pub enum Action {
     TabLeft,
     Open,
     EditTask,
-    FocusExplorer,
-    FocusFilter,
+    Focus(Mode),
 }
 impl PartialOrd for Action {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {

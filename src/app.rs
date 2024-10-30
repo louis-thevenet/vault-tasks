@@ -67,13 +67,13 @@ impl App {
     }
     fn get_initial_state(args: &Cli) -> InitialState {
         let tab = match args.command {
-            Some(Commands::Filter) => Action::FocusFilter,
+            Some(Commands::Filter) => Action::Focus(Mode::Filter),
             Some(Commands::Explorer | Commands::GenerateConfig { path: _ }) | None => {
-                Action::FocusExplorer
+                Action::Focus(Mode::Explorer)
             }
             _ => {
                 error!("Unhandled command: {:?}", args.command);
-                Action::FocusExplorer
+                Action::Focus(Mode::Explorer)
             }
         };
         InitialState { tab }
@@ -182,8 +182,7 @@ impl App {
                 debug!("Action: {action:?}");
             }
             match action {
-                Action::FocusExplorer => self.mode = Mode::Explorer,
-                Action::FocusFilter => self.mode = Mode::Filter,
+                Action::Focus(mode) => self.mode = mode,
                 Action::Tick => {
                     self.last_tick_key_events.drain(..);
                 }
