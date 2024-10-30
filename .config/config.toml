@@ -96,6 +96,7 @@ highlighted_tab = "dark grey on rgb 255 153 000"
 
 [tasks_config]
 use_american_format = true
+show_relative_due_dates = true
 indent_length = 2
 parse_dot_files = false
 file_tags_propagation = true

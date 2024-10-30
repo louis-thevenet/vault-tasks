@@ -9,6 +9,7 @@ use super::task_list_item::TaskListItem;
 pub struct TaskList {
     file_content: Vec<VaultData>,
     not_american_format: bool,
+    show_relative_due_dates: bool,
     display_filename: bool,
     header_style: Style,
 }
@@ -20,6 +21,7 @@ impl TaskList {
             file_content: file_content.to_vec(),
             display_filename,
             header_style: Style::default(),
+            show_relative_due_dates: config.tasks_config.show_relative_due_dates,
         }
     }
     pub const fn header_style(mut self, style: Style) -> Self {
@@ -41,8 +43,13 @@ impl StatefulWidget for TaskList {
             .file_content
             .iter()
             .map(|fc| {
-                TaskListItem::new(fc.clone(), self.not_american_format, self.display_filename)
-                    .header_style(self.header_style)
+                TaskListItem::new(
+                    fc.clone(),
+                    self.not_american_format,
+                    self.display_filename,
+                    self.show_relative_due_dates,
+                )
+                .header_style(self.header_style)
             })
             .collect::<Vec<TaskListItem>>();
 
@@ -178,7 +185,13 @@ mod tests {
                 ),
             ],
         );
-        let task_list = TaskList::new(&Config::default(), &[test_vault], true);
+
+        let mut config = Config::default();
+
+        // We don't want tests to be time dependent
+        config.tasks_config.show_relative_due_dates = false;
+
+        let task_list = TaskList::new(&config, &[test_vault], true);
         let mut terminal = Terminal::new(TestBackend::new(40, 40)).unwrap();
         terminal
             .draw(|frame| {

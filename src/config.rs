@@ -41,6 +41,8 @@ pub struct TasksConfig {
     #[serde(default)]
     pub use_american_format: bool,
     #[serde(default)]
+    pub show_relative_due_dates: bool,
+    #[serde(default)]
     pub vault_path: PathBuf,
     #[serde(default)]
     pub explorer_default_search_string: String,

@@ -15,6 +15,7 @@ pub struct TaskListItem {
     item: VaultData,
     pub height: u16,
     not_american_format: bool,
+    show_relative_due_dates: bool,
     display_filename: bool,
     header_style: Style,
 }
@@ -24,7 +25,12 @@ impl TaskListItem {
         self.header_style = style;
         self
     }
-    pub fn new(item: VaultData, not_american_format: bool, display_filename: bool) -> Self {
+    pub fn new(
+        item: VaultData,
+        not_american_format: bool,
+        display_filename: bool,
+        show_relative_due_dates: bool,
+    ) -> Self {
         let height = Self::compute_height(&item);
         Self {
             item,
@@ -32,6 +38,7 @@ impl TaskListItem {
             not_american_format,
             display_filename,
             header_style: Style::default(),
+            show_relative_due_dates,
         }
     }
     fn task_to_paragraph(&self, area: Rect, task: &Task) -> (Rc<[Rect]>, Paragraph<'_>) {
@@ -47,23 +54,30 @@ impl TaskListItem {
                     Line::from("")
                 });
 
-        let mut data_line = String::new();
-        let is_today = if task.is_today {
-            format!("{TODAY_FLAG_EMOJI} ")
-        } else {
-            String::new()
-        };
-        data_line.push_str(&is_today);
+        let mut data_line = vec![];
+
+        if task.is_today {
+            data_line.push(Span::raw(format!("{TODAY_FLAG_EMOJI} ")));
+        }
+
         let due_date_str = task.due_date.to_display_format(self.not_american_format);
 
         if !due_date_str.is_empty() {
-            data_line.push_str(&format!("{due_date_str} "));
+            data_line.push(Span::from(format!("{due_date_str} ")));
+            if self.show_relative_due_dates {
+                if let Some(due_date_relative) = task.due_date.get_relative_str() {
+                    data_line.push(Span::styled(
+                        format!("({due_date_relative}) "),
+                        Style::new().dim(),
+                    ));
+                }
+            }
         }
         if task.priority > 0 {
-            data_line.push_str(&format!("{}{} ", PRIORITY_EMOJI, task.priority));
+            data_line.push(Span::raw(format!("{}{} ", PRIORITY_EMOJI, task.priority)));
         }
         if !data_line.is_empty() {
-            lines.push(Line::from(Span::styled(data_line, Style::default())));
+            lines.push(Line::from(data_line));
         }
         let mut tag_line = String::new();
         if task.tags.is_some() {
@@ -170,6 +184,7 @@ impl Widget for TaskListItem {
                         child.clone(),
                         self.not_american_format,
                         self.display_filename,
+                        self.show_relative_due_dates,
                     )
                     .header_style(self.header_style);
                     sb_widget.render(layout[i], buf);
@@ -180,9 +195,13 @@ impl Widget for TaskListItem {
                 par.render(area, buf);
 
                 for (i, sb) in task.subtasks.iter().enumerate() {
-                    let sb_widget =
-                        Self::new(VaultData::Task(sb.clone()), self.not_american_format, false)
-                            .header_style(self.header_style);
+                    let sb_widget = Self::new(
+                        VaultData::Task(sb.clone()),
+                        self.not_american_format,
+                        false,
+                        self.show_relative_due_dates,
+                    )
+                    .header_style(self.header_style);
 
                     sb_widget.render(layout[i + 1], buf);
                 }

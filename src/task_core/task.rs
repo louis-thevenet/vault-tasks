@@ -2,12 +2,13 @@ use chrono::{NaiveDate, NaiveDateTime};
 use color_eyre::{eyre::bail, Result};
 use core::fmt;
 use std::{
+    cmp::Ordering,
     fmt::Display,
     fs::{read_to_string, File},
     io::Write,
     path::PathBuf,
 };
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 use crate::config::Config;
 
@@ -75,6 +76,50 @@ impl DueDate {
             Self::DayTime(date) => date.format(format_datetime).to_string(),
             Self::NoDate => String::new(),
         }
+    }
+
+    pub fn get_relative_str(&self) -> Option<String> {
+        let now = chrono::Local::now();
+        let time_delta = match self {
+            Self::NoDate => return None,
+            Self::Day(date) => now.date_naive().signed_duration_since(*date),
+            Self::DayTime(date_time) => {
+                now.date_naive().signed_duration_since(date_time.date())
+                    + now.time().signed_duration_since(date_time.time())
+            }
+        };
+
+        let (prefix, suffix) = match time_delta.num_seconds().cmp(&0) {
+            Ordering::Less => (String::from("in "), String::new()),
+            Ordering::Equal => (String::new(), String::new()),
+            Ordering::Greater => (String::new(), String::from(" ago")),
+        };
+
+        let time_delta_abs = time_delta.abs();
+
+        if time_delta_abs.is_zero() {
+            return Some(String::from("today"));
+        }
+        if time_delta.num_seconds() < 0 && time_delta_abs.num_days() == 1 {
+            return Some(String::from("tomorrow"));
+        }
+        if time_delta.num_seconds() > 0 && time_delta_abs.num_days() == 1 {
+            return Some(String::from("yesterday"));
+        }
+
+        let res = if 4 * 12 * 2 <= time_delta_abs.num_weeks() {
+            format!("{} years", time_delta_abs.num_weeks() / (12 * 4))
+        } else if 5 <= time_delta_abs.num_weeks() {
+            format!("{} months", time_delta_abs.num_weeks() / 4)
+        } else if 2 <= time_delta_abs.num_weeks() {
+            format!("{} weeks", time_delta_abs.num_weeks())
+        } else if 2 <= time_delta_abs.num_days() {
+            format!("{} days", time_delta_abs.num_days())
+        } else {
+            error!("invalid time delta: {:?}", time_delta);
+            String::new()
+        };
+        Some(format!("{}{}{}", prefix, res, suffix))
     }
 }
 
@@ -237,8 +282,9 @@ impl Task {
 }
 
 #[cfg(test)]
-mod tests {
+mod tests_tasks {
     use chrono::NaiveDate;
+    use pretty_assertions::assert_eq;
 
     use crate::{
         config::Config,
@@ -297,5 +343,34 @@ mod tests {
 
         let res = task.get_fixed_attributes(&config, 0);
         assert_eq!(res, "- [X] Test Task with Today tag p2 #tag3 @today");
+    }
+}
+#[cfg(test)]
+mod tests_due_date {
+    use chrono::{Days, TimeDelta};
+
+    use crate::task_core::task::DueDate;
+
+    #[test]
+    fn test_relative_date() {
+        let now = chrono::Local::now();
+
+        let tests = vec![
+            (-1, "yesterday"),
+            (0, "today"),
+            (1, "tomorrow"),
+            (7, "in 7 days"),
+            (17, "in 2 weeks"),
+            (65, "in 2 months"),
+            (800, "in 2 years"),
+        ];
+        for (days, res) in tests {
+            let due_date = DueDate::Day(
+                now.checked_add_signed(TimeDelta::days(days))
+                    .unwrap()
+                    .date_naive(),
+            );
+            assert_eq!(due_date.get_relative_str(), Some(String::from(res)));
+        }
     }
 }
