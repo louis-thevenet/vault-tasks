@@ -208,7 +208,7 @@ impl TaskManager {
 
     /// Follows the `selected_header_path` to retrieve the correct `VaultData`.
     /// Returns a vector of `VaultData` with the items to display in TUI, preserving the recursive nature.
-    /// task_preview_offset: add offset to return a task instead of onne of its subtasks
+    /// `task_preview_offset`: add offset to return a task instead of onne of its subtasks
     pub fn get_vault_data_from_path(
         &self,
         selected_header_path: &[String],

@@ -119,7 +119,7 @@ impl DueDate {
             error!("invalid time delta: {:?}", time_delta);
             String::new()
         };
-        Some(format!("{}{}{}", prefix, res, suffix))
+        Some(format!("{prefix}{res}{suffix}"))
     }
 }
 
