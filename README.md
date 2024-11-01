@@ -1,4 +1,4 @@
-# vault-tasks
+# Vault-tasks
 
 `vault-tasks` is a TUI Markdown task manager.
 
@@ -94,10 +94,10 @@ See `vault-tasks --help` for basic usage.
 
 This is what you will see in the preview of this `README.md` in `vault-tasks`:
 
-![](./examples/readme_example_vault_tasks_explorer_screenshot.png)
+![](./examples/demo_explorer.png)
 
 Or when filtering for `@today` tasks:
-![](./examples/readme_example_vault_tasks_filter_screenshot.png)
+![](./examples/demo_filter.png)
 
 ### Default Key Map
 

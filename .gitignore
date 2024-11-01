@@ -22,3 +22,5 @@ target/
 .data/*.log
 
 tarpaulin-report.html
+
+out.gif
