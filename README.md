@@ -24,14 +24,12 @@ I also spend most of my writing time in the terminal (Helix) and do not rely on 
   - priority
 - Navigate vault
 - Search through tasks
-- Open in default editor
+- Edit tasks or open in default editor
 
 ## Planned Features
 
 - A Pomodoro (or flowtime) tab
 - A Timeline tab with a calendar and a chronological view. (I'd also like to be able to import calendar files)
-- Manipulation of tasks (mark done, delete, ...) without the need to open editor
-- Keybindings menu
 
 ## Installation
 
