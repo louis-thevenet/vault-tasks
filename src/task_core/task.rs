@@ -8,7 +8,7 @@ use std::{
     io::Write,
     path::PathBuf,
 };
-use tracing::{debug, error, info};
+use tracing::{debug, info};
 
 use crate::config::Config;
 
@@ -116,8 +116,7 @@ impl DueDate {
         } else if 2 <= time_delta_abs.num_days() {
             format!("{} days", time_delta_abs.num_days())
         } else {
-            error!("invalid time delta: {:?}", time_delta);
-            String::new()
+            format!("{} hours", time_delta_abs.num_hours())
         };
         Some(format!("{prefix}{res}{suffix}"))
     }
