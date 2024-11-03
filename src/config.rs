@@ -48,6 +48,8 @@ pub struct TasksConfig {
     pub explorer_default_search_string: String,
     #[serde(default)]
     pub filter_default_search_string: String,
+    #[serde(default)]
+    pub task_state_marker: char,
 }
 
 #[derive(Clone, Debug, Deserialize)]

@@ -207,8 +207,8 @@ impl Task {
         let indent = " ".repeat(indent_length);
 
         let state_str = match self.state {
-            State::Done => "X",
-            State::ToDo => " ",
+            State::Done => config.tasks_config.task_state_marker,
+            State::ToDo => ' ',
         };
 
         let priority = if self.priority > 0 {
@@ -324,7 +324,7 @@ mod tests_tasks {
         };
 
         let res = task.get_fixed_attributes(&config, 0);
-        assert_eq!(res, "- [X] Test Task with No Date p2 #tag3");
+        assert_eq!(res, "- [x] Test Task with No Date p2 #tag3");
     }
     #[test]
     fn test_fix_attributes_with_today_tag() {
@@ -342,7 +342,7 @@ mod tests_tasks {
         };
 
         let res = task.get_fixed_attributes(&config, 0);
-        assert_eq!(res, "- [X] Test Task with Today tag p2 #tag3 @today");
+        assert_eq!(res, "- [x] Test Task with Today tag p2 #tag3 @today");
     }
 }
 #[cfg(test)]

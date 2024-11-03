@@ -104,3 +104,5 @@ ignored = []
 # vault_path= "./test-vault"
 explorer_default_search_string = "- [ ] "
 filter_default_search_string = ""
+task_state_marker = 'x'
+
