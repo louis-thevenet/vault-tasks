@@ -20,6 +20,7 @@ use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
 use tui_input::backend::crossterm::EventHandler;
 
+/// Struct that helps with drawing the component
 struct FilterTabArea {
     search: Rect,
     tag_list: Rect,
@@ -32,11 +33,15 @@ pub struct FilterTab<'a> {
     command_tx: Option<UnboundedSender<Action>>,
     config: Config,
     is_focused: bool,
-    matching_entries: Vec<Task>,
+    /// Tasks that match the current input in the filter bar
+    matching_tasks: Vec<Task>,
+    /// Tags that match the current input in the filter bar
     matching_tags: Vec<String>,
-    search_bar_widget: InputBar<'a>,
+    /// Input bar used to apply a filter
+    input_bar_widget: InputBar<'a>,
     task_mgr: TaskManager,
     task_list_widget_state: ScrollViewState,
+    /// Whether the help panel is open or not
     show_help: bool,
     help_menu_wigdet: HelpMenu<'a>,
 }
@@ -45,30 +50,21 @@ impl<'a> FilterTab<'a> {
     pub fn new() -> Self {
         Self::default()
     }
-    pub fn render_footer(&self, area: Rect, frame: &mut Frame) {
-        if self.search_bar_widget.is_focused {
-            Line::raw("Press <enter | esc> to stop searching")
-        } else {
-            Line::raw("Press <enter | esc> to start searching")
-        }
-        .centered()
-        .render(area, frame.buffer_mut());
-    }
+    /// Updates tasks and tags with the current filter string
     fn update_matching_entries(&mut self) {
-        let (search, has_state) =
-            parse_search_input(self.search_bar_widget.input.value(), &self.config);
+        let filter = parse_search_input(self.input_bar_widget.input.value(), &self.config);
 
         // Filter tasks
-        self.matching_entries = filter_to_vec(&self.task_mgr.tasks, &search, has_state);
+        self.matching_tasks = filter_to_vec(&self.task_mgr.tasks, &filter);
 
         // Reset ScrollViewState
         self.task_list_widget_state.scroll_to_top();
 
         // Filter tags
-        self.matching_tags = if search.tags.is_none() {
+        self.matching_tags = if filter.task.tags.is_none() {
             self.task_mgr.tags.iter().cloned().collect::<Vec<String>>()
         } else {
-            let search_tags = search.tags.unwrap_or_default();
+            let search_tags = filter.task.tags.unwrap_or_default();
             self.task_mgr
                 .tags
                 .iter()
@@ -102,6 +98,15 @@ impl<'a> FilterTab<'a> {
             footer,
         }
     }
+    pub fn render_footer(&self, area: Rect, frame: &mut Frame) {
+        if self.input_bar_widget.is_focused {
+            Line::raw("Press <enter | esc> to stop searching")
+        } else {
+            Line::raw("Press <enter | esc> to start searching")
+        }
+        .centered()
+        .render(area, frame.buffer_mut());
+    }
 }
 impl<'a> Component for FilterTab<'a> {
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
@@ -112,8 +117,8 @@ impl<'a> Component for FilterTab<'a> {
     fn register_config_handler(&mut self, config: Config) -> Result<()> {
         self.task_mgr = TaskManager::load_from_config(&config)?;
         self.config = config;
-        self.search_bar_widget.is_focused = true; // Start with search bar focused
-        self.search_bar_widget.input = self.search_bar_widget.input.clone().with_value(
+        self.input_bar_widget.is_focused = true; // Start with search bar focused
+        self.input_bar_widget.input = self.input_bar_widget.input.clone().with_value(
             self.config
                 .tasks_config
                 .filter_default_search_string
@@ -125,7 +130,7 @@ impl<'a> Component for FilterTab<'a> {
     }
 
     fn blocking_mode(&self) -> bool {
-        self.is_focused && (self.search_bar_widget.is_focused || self.show_help)
+        self.is_focused && (self.input_bar_widget.is_focused || self.show_help)
     }
     fn escape_blocking_mode(&self) -> Vec<Action> {
         vec![Action::Enter, Action::Cancel, Action::Escape]
@@ -141,13 +146,13 @@ impl<'a> Component for FilterTab<'a> {
                 Action::Focus(mode) if mode != Mode::Filter => self.is_focused = false,
                 _ => (),
             }
-        } else if self.search_bar_widget.is_focused {
+        } else if self.input_bar_widget.is_focused {
             match action {
                 Action::Enter | Action::Escape => {
-                    self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
+                    self.input_bar_widget.is_focused = !self.input_bar_widget.is_focused;
                 }
                 Action::Key(key) => {
-                    self.search_bar_widget.input.handle_event(&Event::Key(key));
+                    self.input_bar_widget.input.handle_event(&Event::Key(key));
                     self.update_matching_entries();
                 }
                 _ => (),
@@ -166,7 +171,7 @@ impl<'a> Component for FilterTab<'a> {
                 Action::Focus(mode) if mode != Mode::Filter => self.is_focused = false,
                 Action::Focus(Mode::Filter) => self.is_focused = true,
                 Action::Enter | Action::Search | Action::Cancel | Action::Escape => {
-                    self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
+                    self.input_bar_widget.is_focused = !self.input_bar_widget.is_focused;
                 }
                 Action::Help => self.show_help = !self.show_help,
                 Action::ReloadVault => {
@@ -194,23 +199,23 @@ impl<'a> Component for FilterTab<'a> {
         let areas = Self::split_frame(area);
         self.render_footer(areas.footer, frame);
 
-        if self.search_bar_widget.is_focused {
+        if self.input_bar_widget.is_focused {
             let width = areas.search.width.max(3) - 3; // 2 for borders, 1 for cursor
-            let scroll = self.search_bar_widget.input.visual_scroll(width as usize);
+            let scroll = self.input_bar_widget.input.visual_scroll(width as usize);
 
             // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
             frame.set_cursor_position((
                 // Put cursor past the end of the input text
                 areas.search.x.saturating_add(
-                    ((self.search_bar_widget.input.visual_cursor()).max(scroll) - scroll) as u16,
+                    ((self.input_bar_widget.input.visual_cursor()).max(scroll) - scroll) as u16,
                 ) + 1,
                 // Move one line down, from the border to the input line
                 areas.search.y + 1,
             ));
         }
 
-        self.search_bar_widget.block = Some(Block::bordered().style(
-            if self.search_bar_widget.is_focused {
+        self.input_bar_widget.block = Some(Block::bordered().style(
+            if self.input_bar_widget.is_focused {
                 *self
                     .config
                     .styles
@@ -222,7 +227,7 @@ impl<'a> Component for FilterTab<'a> {
                 Style::new()
             },
         ));
-        self.search_bar_widget
+        self.input_bar_widget
             .clone()
             .render(areas.search, frame.buffer_mut());
 
@@ -232,7 +237,7 @@ impl<'a> Component for FilterTab<'a> {
         let entries_list = TaskList::new(
             &self.config,
             &self
-                .matching_entries
+                .matching_tasks
                 .clone()
                 .iter()
                 .map(|t| VaultData::Task(t.clone()))
