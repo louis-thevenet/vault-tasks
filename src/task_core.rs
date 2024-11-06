@@ -57,7 +57,7 @@ impl TaskManager {
         self.tags = tags;
         Ok(())
     }
-    fn collect_tags(tasks: &VaultData, tags: &mut HashSet<String>) {
+    pub fn collect_tags(tasks: &VaultData, tags: &mut HashSet<String>) {
         match tasks {
             VaultData::Directory(_, children) | VaultData::Header(_, _, children) => {
                 children.iter().for_each(|c| Self::collect_tags(c, tags));

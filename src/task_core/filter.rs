@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::{config::Config, task_core::task::DueDate};
 
 use super::{
@@ -95,7 +97,16 @@ fn filter_task(task: &Task, filter: &Filter) -> bool {
 
     state_match && name_match && today_flag_match && date_match && tags_match && priority_match
 }
-
+pub fn filter_tags(tags: &HashSet<String>, filter: &Filter) -> Vec<String> {
+    if filter.task.tags.is_none() {
+        tags.iter().cloned().collect::<Vec<String>>()
+    } else {
+        tags.iter() // we know it's a Some(tags)
+            .filter(|&tag| filter.task.tags.clone().unwrap().contains(tag))
+            .cloned()
+            .collect::<Vec<String>>()
+    }
+}
 pub fn filter_to_vec(vault_data: &VaultData, filter: &Filter) -> Vec<Task> {
     fn aux(vault_data: &VaultData, task_filter: &Filter, res: &mut Vec<Task>) {
         match vault_data {

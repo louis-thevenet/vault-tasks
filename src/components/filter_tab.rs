@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use color_eyre::Result;
 use crossterm::event::Event;
 use ratatui::widgets::List;
@@ -9,7 +11,7 @@ use tui_scrollview::ScrollViewState;
 use super::Component;
 
 use crate::app::Mode;
-use crate::task_core::filter::{filter_to_vec, parse_search_input};
+use crate::task_core::filter::{self, filter_tags, filter_to_vec, parse_search_input};
 use crate::task_core::task::Task;
 use crate::task_core::vault_data::VaultData;
 use crate::task_core::TaskManager;
@@ -52,32 +54,43 @@ impl<'a> FilterTab<'a> {
     }
     /// Updates tasks and tags with the current filter string
     fn update_matching_entries(&mut self) {
-        let filter = parse_search_input(self.input_bar_widget.input.value(), &self.config);
+        let filter_task = parse_search_input(self.input_bar_widget.input.value(), &self.config);
 
         // Filter tasks
-        self.matching_tasks = filter_to_vec(&self.task_mgr.tasks, &filter);
+        self.matching_tasks = filter_to_vec(&self.task_mgr.tasks, &filter_task);
 
         // Reset ScrollViewState
         self.task_list_widget_state.scroll_to_top();
 
         // Filter tags
-        self.matching_tags = if filter.task.tags.is_none() {
-            self.task_mgr.tags.iter().cloned().collect::<Vec<String>>()
-        } else {
-            let search_tags = filter.task.tags.unwrap_or_default();
-            self.task_mgr
-                .tags
-                .iter()
-                .filter(|t| {
-                    search_tags
-                        .clone()
-                        .iter()
-                        .any(|t2| t.to_lowercase().contains(&t2.to_lowercase()))
-                })
-                .cloned()
-                .collect()
-        };
-        self.matching_tags.sort();
+        // self.matching_tags = if filter.task.tags.is_none() {
+        //     self.task_mgr.tags.iter().cloned().collect::<Vec<String>>()
+        // } else {
+        //     let search_tags = filter.task.tags.unwrap_or_default();
+        //     self.task_mgr
+        //         .tags
+        //         .iter()
+        //         .filter(|t| {
+        //             search_tags
+        //                 .clone()
+        //                 .iter()
+        //                 .any(|t2| t.to_lowercase().contains(&t2.to_lowercase()))
+        //         })
+        //         .cloned()
+        //         .collect()
+        // };
+
+        if !self.matching_tasks.is_empty() {
+            // We know that the vault will not be empty here
+
+            let mut tags = HashSet::new();
+            TaskManager::collect_tags(
+                &filter::filter(&self.task_mgr.tasks, &filter_task).unwrap(),
+                &mut tags,
+            );
+            self.matching_tags = tags.iter().cloned().collect::<Vec<String>>();
+            self.matching_tags.sort();
+        }
     }
     fn split_frame(area: Rect) -> FilterTabArea {
         let vertical = Layout::vertical([
