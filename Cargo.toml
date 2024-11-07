@@ -39,6 +39,8 @@ tui-input = "0.11.0"
 edit = "0.1.5"
 tui-scrollview="=0.5.0"
 toml = "0.8.19"
+lexical-sort = "0.3.1"
+strum_macros = "0.26.4"
 
 [dev-dependencies]
 insta = {version = "1.40.0", features = ["yaml"]}

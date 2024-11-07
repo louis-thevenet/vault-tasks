@@ -33,6 +33,7 @@ pub enum Action {
     ViewLeft,
     ViewRight,
     // Menus
+    SwitchSortingMode,
     Escape,
     Search,
     TabRight,

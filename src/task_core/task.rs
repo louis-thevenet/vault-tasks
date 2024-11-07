@@ -17,10 +17,13 @@ const STATE_DONE_EMOJI: &str = "✅";
 pub const DUE_DATE_EMOJI: &str = "📅";
 pub const PRIORITY_EMOJI: &str = "❗";
 pub const TODAY_FLAG_EMOJI: &str = "☀️";
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+
+/// A task's state
+/// Ordering is `Todo < Done`
+#[derive(Debug, Hash, Eq, PartialEq, Clone, PartialOrd, Ord)]
 pub enum State {
-    Done,
     ToDo,
+    Done,
 }
 impl Display for State {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

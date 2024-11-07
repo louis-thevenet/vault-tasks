@@ -55,6 +55,7 @@
 # Navigation
 "<Enter>" = "Enter"
 "<s>" = "Search"
+"<Shift-s>" = "SwitchSortingMode"
 "<Esc>" = "Escape"
 "<r>" = "ReloadVault"
 # Scrolling
