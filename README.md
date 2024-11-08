@@ -23,7 +23,7 @@ I also spend most of my writing time in the terminal (Helix) and do not rely on 
   - descriptions
   - priority
 - Navigate vault
-- Search through tasks
+- Search through tasks (sort and filter)
 - Edit tasks or open in default editor
 
 ## Planned Features
@@ -119,12 +119,14 @@ Check the key map within the ap with `?`
 
 #### Commands
 
-| Key | Action                                         |
-| --- | ---------------------------------------------- |
-| `s` | Focus search bar (`enter` or `esc` to unfocus) |
-| `?` | Open keybindings menu for the current tab      |
-| `o` | Open selection in default editor               |
-| `r` | Reload vault                                   |
+| Key       | Action                                         |
+| --------- | ---------------------------------------------- |
+| `s`       | Focus search bar (`enter` or `esc` to unfocus) |
+| `Shift-s` | Change Sorting mode in Filter tab              |
+| `?`       | Open keybindings menu for the current tab      |
+| `o`       | Open selection in default editor               |
+| `e`       | Quickly edit selection in Explorer tab         |
+| `r`       | Reload vault                                   |
 
 ## Configuration
 
