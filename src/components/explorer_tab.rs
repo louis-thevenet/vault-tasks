@@ -27,6 +27,7 @@ use crate::widgets::input_bar::InputBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
 
+/// Struct that helps with drawing the component
 struct ExplorerArea {
     path: Rect,
     search: Rect,

@@ -1,16 +1,16 @@
 use color_eyre::{eyre::bail, Result};
-use task::Task;
 
 use std::{cmp::Ordering, collections::HashSet, fmt::Display, path::PathBuf};
 use vault_data::VaultData;
 
 use crate::config::Config;
-use filter::filter;
+use filter::{filter, Filter};
 use tracing::error;
 use vault_parser::VaultParser;
 
 pub mod filter;
 pub mod parser;
+pub mod sorter;
 pub mod task;
 pub mod vault_data;
 mod vault_parser;
@@ -22,7 +22,7 @@ pub const WARNING_EMOJI: &str = "⚠️";
 pub struct TaskManager {
     pub tasks: VaultData,
     pub tags: HashSet<String>,
-    pub current_filter: Option<(Task, bool)>,
+    pub current_filter: Option<Filter>,
 }
 impl Default for TaskManager {
     fn default() -> Self {
@@ -58,7 +58,7 @@ impl TaskManager {
         self.tags = tags;
         Ok(())
     }
-    fn collect_tags(tasks: &VaultData, tags: &mut HashSet<String>) {
+    pub fn collect_tags(tasks: &VaultData, tags: &mut HashSet<String>) {
         match tasks {
             VaultData::Directory(_, children) | VaultData::Header(_, _, children) => {
                 children.iter().for_each(|c| Self::collect_tags(c, tags));
@@ -169,8 +169,8 @@ impl TaskManager {
             }
         }
 
-        let filtered_tasks = if let Some((task, has_state)) = &self.current_filter {
-            filter(&self.tasks, task, *has_state)
+        let filtered_tasks = if let Some(task_filter) = &self.current_filter {
+            filter(&self.tasks, task_filter)
         } else {
             Some(self.tasks.clone())
         };
@@ -269,8 +269,8 @@ impl TaskManager {
             }
         }
 
-        let filtered_tasks = if let Some((task, has_state)) = &self.current_filter {
-            filter(&self.tasks, task, *has_state)
+        let filtered_tasks = if let Some(task_filter) = &self.current_filter {
+            filter(&self.tasks, task_filter)
         } else {
             Some(self.tasks.clone())
         };
@@ -322,8 +322,8 @@ impl TaskManager {
             }
         }
 
-        let filtered_tasks = if let Some((task, has_state)) = &self.current_filter {
-            filter(&self.tasks, task, *has_state)
+        let filtered_tasks = if let Some(task_filter) = &self.current_filter {
+            filter(&self.tasks, task_filter)
         } else {
             return false;
         };
