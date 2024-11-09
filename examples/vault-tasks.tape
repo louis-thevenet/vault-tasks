@@ -8,12 +8,13 @@ Output ./vault-tasks.webm
 # Output ./frames/
 
 Set Shell zsh
+Set Theme "Builtin Solarized Light"
 Set TypingSpeed 100ms
 Set FontSize 22
 Set Width 1300
 Set Height 650
 
-Type "vault-tasks -v ../test-vault"
+Type "vault-tasks -c ../.config/ -v ../test-vault"
 
 Sleep 500ms
 
@@ -71,7 +72,7 @@ Enter
 Type ";"
 Sleep 1s
 Type "rx"
-Enter
+Sleep 600ms
 Type ":wq"
 Enter
 

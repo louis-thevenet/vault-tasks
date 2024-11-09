@@ -1,9 +1,8 @@
 Set Shell zsh
-Set TypingSpeed 100ms
 Set FontSize 22
 Set Width 1300
 Set Height 900
-Set Theme ayu_light 
+Set Theme "Gruvbox Light"
 
 Type "vault-tasks -c ../.config/ -v ../README.md"
 Enter
