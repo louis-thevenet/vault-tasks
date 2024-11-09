@@ -33,6 +33,12 @@ I also spend most of my writing time in the terminal (Helix) and do not rely on 
 
 ## Installation
 
+### Cargo
+
+```
+cargo install vault-tasks
+```
+
 ### Nix
 
 It will be added to nixpkgs when I have time to make a nix module. For now, add the repo to your inputs:
