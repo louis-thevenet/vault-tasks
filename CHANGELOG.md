@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.4.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.3.0...v0.4.0) (2024-11-09)
+
+
+### Features
+
+* add config option for task state marker (default is 'x' to comply with prettier) ([f9341cd](https://github.com/louis-thevenet/vault-tasks/commit/f9341cd3fa17049d0542e1049c0f42d83c3e9103))
+* **tui:** add config option to show time delta between due date and today's date ([f99a40f](https://github.com/louis-thevenet/vault-tasks/commit/f99a40fa02268f6ab01af45ea5753a0702374db2))
+* **tui:** add help menu ([#20](https://github.com/louis-thevenet/vault-tasks/issues/20)) ([0cd64f4](https://github.com/louis-thevenet/vault-tasks/commit/0cd64f440555b5e7b60a8e93d050f99c1c8bcacf))
+* **tui:** add sorting by due dates or titles to Filter tab ([#22](https://github.com/louis-thevenet/vault-tasks/issues/22)) ([43f2ca5](https://github.com/louis-thevenet/vault-tasks/commit/43f2ca567e76ab0c9d3fe2b54ac85c4ea3b1a9d1))
+* **tui:** edit task from vault-task ([#21](https://github.com/louis-thevenet/vault-tasks/issues/21)) ([7df637a](https://github.com/louis-thevenet/vault-tasks/commit/7df637a025838fc04d24aa6b234a46cea553678c))
+* **tui:** improve footers ([a0df9fc](https://github.com/louis-thevenet/vault-tasks/commit/a0df9fc81c5a372f8b2c79b140a6fca1cfc37cb1))
+* **tui:** style relative date (dim) ([f99a40f](https://github.com/louis-thevenet/vault-tasks/commit/f99a40fa02268f6ab01af45ea5753a0702374db2))
+
+
+### Bug Fixes
+
+* **core/filter:** return too early when a task did not match the filter, preventing its children from being filtered ([a10dbdc](https://github.com/louis-thevenet/vault-tasks/commit/a10dbdcb6317bf5d05ec3691f65b00db67eaf227))
+* **tui:** add hours when time delta &lt; 1 day in relative due date ([b8cbba3](https://github.com/louis-thevenet/vault-tasks/commit/b8cbba393c4d004c5e4dd5e4251aa6587ff6bef7))
+* **tui:** today tag not taken into account in task widget height ([881f62e](https://github.com/louis-thevenet/vault-tasks/commit/881f62e953708988e5f8f3560e690598c293c6df))
+
 ## [0.3.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.2.0...v0.3.0) (2024-10-23)
 
 
