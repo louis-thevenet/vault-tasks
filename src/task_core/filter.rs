@@ -104,14 +104,13 @@ pub fn filter_to_vec(vault_data: &VaultData, filter: &Filter) -> Vec<Task> {
                 }
             }
             VaultData::Task(task) => {
-                if !filter_task(task, task_filter) {
-                    return;
-                }
-
-                res.push(task.clone());
                 task.subtasks
                     .iter()
                     .for_each(|t| aux(&VaultData::Task(t.clone()), task_filter, res));
+
+                if filter_task(task, task_filter) {
+                    res.push(task.clone());
+                }
             }
         }
     }
