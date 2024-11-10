@@ -1,0 +1,24 @@
+---
+source: vault-tasks-tui/src/components/home.rs
+expression: terminal.backend()
+---
+"  Explorer     Filter                                                           "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"              Shift+<hl|◄►> to change tab | q to quit | ? for Help              "

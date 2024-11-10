@@ -1,0 +1,108 @@
+[keybindings.Explorer]
+# App
+"<q>" = "Quit"
+"<Ctrl-c>" = "Quit"
+"<Ctrl-z>" = "Suspend"
+"<?>" = "Help"
+# Tabs
+"<Shift-Right>" = "TabRight"
+"<Shift-l>" = "TabRight"
+"<Shift-Left>" = "TabLeft"
+"<shift-h>" = "TabLeft"
+# Navigation
+"<j>" = "Down"
+"<Down>" = "Down"
+"<Tab>" = "Down"
+"<k>" = "Up"
+"<Up>" = "Up"
+"<BackTab>" = "Up"
+"<h>" = "Left"
+"<Left>" = "Left"
+"<l>" = "Right"
+"<Right>" = "Right"
+"<Enter>" = "Enter"
+"<Backspace>" = "Cancel"
+"<s>" = "Search"
+"<Esc>" = "Escape"
+"<o>" = "Open"
+"<e>" = "EditTask"
+"<r>" = "ReloadVault"
+# Scrolling
+"<Ctrl-u>" = "ViewUp"
+"<Ctrl-k>" = "ViewUp"
+"<Ctrl-Up>" = "ViewUp"
+"<PageUp>" = "ViewPageUp"
+"<Ctrl-j>" = "ViewDown"
+"<Ctrl-d>" = "ViewDown"
+"<Ctrl-Down>" = "ViewDown"
+"<PageDown>" = "ViewPageDown"
+"<Ctrl-l>" = "ViewRight"
+"<Ctrl-Right>" = "ViewRight"
+"<Ctrl-h>" = "ViewLeft"
+"<Ctrl-Left>" = "ViewLeft"
+
+[keybindings.Filter]
+# App
+"<q>" = "Quit"
+"<Ctrl-c>" = "Quit"
+"<Ctrl-z>" = "Suspend"
+"<?>" = "Help"
+# Tabs
+"<Shift-Right>" = "TabRight"
+"<Shift-l>" = "TabRight"
+"<Shift-Left>" = "TabLeft"
+"<shift-h>" = "TabLeft"
+# Navigation
+"<Enter>" = "Enter"
+"<s>" = "Search"
+"<Shift-s>" = "SwitchSortingMode"
+"<Esc>" = "Escape"
+"<r>" = "ReloadVault"
+# Scrolling
+"<Ctrl-u>" = "ViewUp"
+"<Ctrl-k>" = "ViewUp"
+"<Ctrl-Up>" = "ViewUp"
+"<PageUp>" = "ViewPageUp"
+"<Ctrl-d>" = "ViewDown"
+"<Ctrl-j>" = "ViewDown"
+"<Ctrl-Down>" = "ViewDown"
+"<PageDown>" = "ViewPageDown"
+"<Ctrl-l>" = "ViewRight"
+"<Ctrl-Right>" = "ViewRight"
+"<Ctrl-h>" = "ViewLeft"
+"<Ctrl-Left>" = "ViewLeft"
+
+[keybindings.Home]
+# App
+"<q>" = "Quit"
+"<Ctrl-d>" = "Quit"
+"<Ctrl-c>" = "Quit"
+"<Ctrl-z>" = "Suspend"
+# Tabs
+"<Shift-Right>" = "TabRight"
+"<Shift-l>" = "TabRight"
+"<Shift-Left>" = "TabLeft"
+"<Shift-h>" = "TabLeft"
+
+[styles.Explorer]
+highlighted_entry = "dark grey on rgb 255 153 000"
+highlighted_searchbar = "rgb 255 153 000"
+preview_headers = "bold rgb 255 153 000"
+
+[styles.Filter]
+highlighted_searchbar = "rgb 255 153 000"
+
+[styles.Home]
+highlighted_tab = "dark grey on rgb 255 153 000"
+
+[tasks_config]
+use_american_format = true
+show_relative_due_dates = true
+indent_length = 2
+parse_dot_files = false
+file_tags_propagation = true
+ignored = []
+# vault_path= "./test-vault"
+explorer_default_search_string = "- [ ] "
+filter_default_search_string = ""
+task_state_marker = 'x'

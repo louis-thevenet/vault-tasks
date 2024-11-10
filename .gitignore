@@ -19,7 +19,7 @@ target/
 # Nix
 .direnv/
 
-.data/*.log
+**/.data/*.log
 
 tarpaulin-report.html
 
