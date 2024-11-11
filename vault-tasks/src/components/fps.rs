@@ -15,6 +15,7 @@ use crate::{action::Action, tui::Tui};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FpsCounter {
+    enabled: bool,
     last_tick_update: Instant,
     tick_count: u32,
     ticks_per_second: f64,
@@ -39,6 +40,7 @@ impl FpsCounter {
             last_frame_update: Instant::now(),
             frame_count: 0,
             frames_per_second: 0.0,
+            enabled: false,
         }
     }
 
@@ -69,23 +71,33 @@ impl FpsCounter {
 
 impl Component for FpsCounter {
     fn update(&mut self, _tui: Option<&mut Tui>, action: Action) -> Result<Option<Action>> {
-        match action {
-            Action::Tick => self.app_tick()?,
-            Action::Render => self.render_tick()?,
-            _ => {}
-        };
+        if self.enabled {
+            match action {
+                Action::Tick => self.app_tick()?,
+                Action::Render => self.render_tick()?,
+                _ => {}
+            };
+        }
         Ok(None)
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let [top, _] = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(area);
-        let message = format!(
-            "{:.2} ticks/sec, {:.2} FPS",
-            self.ticks_per_second, self.frames_per_second
-        );
-        let span = Span::styled(message, Style::new().dim());
-        let paragraph = Paragraph::new(span).right_aligned();
-        frame.render_widget(paragraph, top);
+        if self.enabled {
+            let [top, _] =
+                Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(area);
+            let message = format!(
+                "{:.2} ticks/sec, {:.2} FPS",
+                self.ticks_per_second, self.frames_per_second
+            );
+            let span = Span::styled(message, Style::new().dim());
+            let paragraph = Paragraph::new(span).right_aligned();
+            frame.render_widget(paragraph, top);
+        }
+        Ok(())
+    }
+
+    fn register_config_handler(&mut self, config: crate::config::Config) -> Result<()> {
+        self.enabled = config.config.show_fps;
         Ok(())
     }
 }

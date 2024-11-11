@@ -27,6 +27,8 @@ pub struct AppConfig {
     pub config_dir: PathBuf,
     #[serde(default)]
     pub data_dir: PathBuf,
+    #[serde(default)]
+    pub show_fps: bool,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -114,8 +116,10 @@ impl Config {
         }
 
         if let Some(path) = &args.vault_path {
-            cfg.tasks_config.vault_path = path.clone();
+            cfg.tasks_config.vault_path.clone_from(path);
         }
+
+        cfg.config.show_fps = args.show_fps;
 
         cfg.check_config()?;
         debug!("{cfg:#?}");
