@@ -8,22 +8,24 @@
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
-  outputs = inputs:
+  outputs =
+    inputs:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import inputs.systems;
       imports = [
         inputs.treefmt-nix.flakeModule
       ];
       perSystem =
-        { config
-        , self'
-        , pkgs
-        , lib
-        , system
-        , ...
+        {
+          config,
+          self',
+          pkgs,
+          lib,
+          system,
+          ...
         }:
         let
-          cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+          cargoToml = builtins.fromTOML (builtins.readFile ./vault-tasks/Cargo.toml);
           rust-toolchain = pkgs.symlinkJoin {
             name = "rust-toolchain";
             paths = with pkgs; [
@@ -66,7 +68,10 @@
             RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
 
             nativeBuildInputs = nativeBuildInputs;
-            buildInputs = buildInputs ++ [ rust-toolchain pkgs.clippy ];
+            buildInputs = buildInputs ++ [
+              rust-toolchain
+              pkgs.clippy
+            ];
           };
 
           # Add your auto-formatters here.
