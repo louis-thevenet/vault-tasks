@@ -59,12 +59,21 @@ impl Default for TaskManager {
 }
 impl TaskManager {
     /// Loads a vault from a `Config` and returns a `TaskManager`.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the vault can't be loaded.
     pub fn load_from_config(config: &TasksConfig) -> Result<Self> {
         let mut res = Self::default();
         res.reload(config)?;
         Ok(res)
     }
 
+    /// Reloads the `VaultData` from file system.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the vault can't be parsed, or if tasks can't be fixed (relative dates are replaced by fixed dates for example).
     pub fn reload(&mut self, config: &TasksConfig) -> Result<()> {
         let vault_parser = VaultParser::new(config.clone());
         let tasks = vault_parser.scan_vault()?;
@@ -75,13 +84,12 @@ impl TaskManager {
         let mut tags = HashSet::new();
         Self::collect_tags(&tasks, &mut tags);
 
-        // debug!("\n{}", tasks);
-        // debug!("\n{:#?}", tags);
-
         self.tasks = tasks;
         self.tags = tags;
         Ok(())
     }
+
+    /// Explores the vault and fills a `&mut HashSet<String>` with every tags found.
     pub fn collect_tags(tasks: &VaultData, tags: &mut HashSet<String>) {
         match tasks {
             VaultData::Directory(_, children) | VaultData::Header(_, _, children) => {
@@ -131,9 +139,10 @@ impl TaskManager {
     }
 
     /// Follows the `selected_header_path` to retrieve the correct `VaultData`.
-    /// Then returns a vector of prefixes and a vector of corresponding names from headers or directories to be displayed in TUI.
-    /// The method only returns items that are on the same level as the target `VaultData`.
-    /// Fails when a task is found or if no corresponding entry is found.
+    /// Then returns a vector of prefixes and a vector of corresponding names from items on the same layer.
+    ///
+    /// # Errors
+    /// Will return an error if the vault is empty or the first layer is not a `VaultData::Directory`
     pub fn get_explorer_entries(
         &self,
         selected_header_path: &[String],
@@ -232,7 +241,12 @@ impl TaskManager {
 
     /// Follows the `selected_header_path` to retrieve the correct `VaultData`.
     /// Returns a vector of `VaultData` with the items to display in TUI, preserving the recursive nature.
-    /// `task_preview_offset`: add offset to return a task instead of onne of its subtasks
+    /// `task_preview_offset`: add offset to return a task instead of one of its subtasks
+    ///
+    /// # Errors
+    /// Will return an error if
+    /// - vault is empty or the first layer is not a `VaultData::Directory`
+    /// - the path can't be resolved in the vault data
     pub fn get_vault_data_from_path(
         &self,
         selected_header_path: &[String],
@@ -316,6 +330,8 @@ impl TaskManager {
         }
     }
 
+    /// Whether the path resolves to something that can be entered or not.
+    /// Directories, Headers and Tasks with subtasks can be entered.
     pub fn can_enter(&self, selected_header_path: &[String]) -> bool {
         fn aux(file_entry: VaultData, selected_header_path: &[String], path_index: usize) -> bool {
             if path_index == selected_header_path.len() {
