@@ -48,10 +48,13 @@ fn parse_token(input: &mut &str, config: &TasksConfig) -> PResult<Token> {
     .parse_next(input)
 }
 
-/// Parses a `Task` from an input string. An optional description can be added.
+/// Parses a `Task` from an input string. Filename must be specified to be added to the task.
+///
+/// # Errors
+///
+/// Will return an error if the task can't be parsed.
 #[allow(clippy::module_name_repetitions)]
 pub fn parse_task(input: &mut &str, filename: String, config: &TasksConfig) -> PResult<Task> {
-    // `split_whitespace()` will break the "- [ ]" pattern
     let task_state = match parse_task_state(input)? {
         Token::State(state) => Ok(state),
         _ => fail(input),

@@ -63,15 +63,15 @@ impl DueDate {
         }
     }
     pub fn to_string_format(&self, not_american_format: bool) -> String {
-        let format_date = if !not_american_format {
-            "%Y/%m/%d"
-        } else {
+        let format_date = if not_american_format {
             "%d/%m/%Y"
-        };
-        let format_datetime = if !not_american_format {
-            "%Y/%m/%d %T"
         } else {
+            "%Y/%m/%d"
+        };
+        let format_datetime = if not_american_format {
             "%d/%m/%Y %T"
+        } else {
+            "%Y/%m/%d %T"
         };
 
         match self {
