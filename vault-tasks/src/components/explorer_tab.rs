@@ -26,7 +26,11 @@ use crate::{action::Action, config::Config};
 use vault_tasks_core::filter::parse_search_input;
 use vault_tasks_core::parser::task::parse_task;
 use vault_tasks_core::vault_data::VaultData;
-use vault_tasks_core::{TaskManager, DIRECTORY_EMOJI, FILE_EMOJI, WARNING_EMOJI};
+use vault_tasks_core::TaskManager;
+
+pub const FILE_EMOJI: &str = "📄";
+pub const DIRECTORY_EMOJI: &str = "📁";
+pub const WARNING_EMOJI: &str = "⚠️";
 
 /// Struct that helps with drawing the component
 struct ExplorerArea {

@@ -15,10 +15,6 @@ pub mod task;
 pub mod vault_data;
 mod vault_parser;
 
-pub const FILE_EMOJI: &str = "📄";
-pub const DIRECTORY_EMOJI: &str = "📁";
-pub const WARNING_EMOJI: &str = "⚠️";
-
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct TasksConfig {
     #[serde(default)]

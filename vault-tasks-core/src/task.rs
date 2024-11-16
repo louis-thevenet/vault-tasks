@@ -14,7 +14,7 @@ use crate::TasksConfig;
 
 const STATE_TO_DO_EMOJI: &str = "❌";
 const STATE_DONE_EMOJI: &str = "✅";
-pub const DUE_DATE_EMOJI: &str = "📅";
+const DUE_DATE_EMOJI: &str = "📅";
 pub const PRIORITY_EMOJI: &str = "❗";
 pub const TODAY_FLAG_EMOJI: &str = "☀️";
 
@@ -172,7 +172,10 @@ impl fmt::Display for Task {
         let due_date_str = self.due_date.to_string();
 
         if !due_date_str.is_empty() {
-            data_line.push_str(&format!("{DUE_DATE_EMOJI} {due_date_str} "));
+            data_line.push_str(&format!(
+                "{DUE_DATE_EMOJI} {due_date_str} ({})",
+                self.due_date.get_relative_str().unwrap_or_default()
+            ));
         }
         if self.priority > 0 {
             data_line.push_str(&format!("{}{} ", PRIORITY_EMOJI, self.priority));
