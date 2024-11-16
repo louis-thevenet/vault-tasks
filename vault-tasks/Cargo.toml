@@ -7,7 +7,7 @@ anyhow = "1.0.91"
 vergen-gix = {version = "1.0.2", features = ["build", "cargo"]}
 
 [dependencies]
-vault-tasks-core = {path = "../vault-tasks-core", version = "0.4.0"}
+vault-tasks-core = {path = "../vault-tasks-core", version = "0.5.0"}
 better-panic = "0.3.0"
 clap = {version = "4.5.20", features = [
   "derive",
@@ -53,7 +53,7 @@ description = "TUI Markdown Task Manager"
 build = "build.rs"
 categories = ["command-line-utilities", "visualization"]
 keywords = ["markdown", "task-manager", "productivity", "tui", "obsidian"]
-version = "0.4.0"
+version = "0.5.0"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
