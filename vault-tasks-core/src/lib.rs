@@ -1,7 +1,7 @@
 use color_eyre::{eyre::bail, Result};
 use serde::Deserialize;
 
-use std::{cmp::Ordering, collections::HashSet, fmt::Display, path::PathBuf};
+use std::{collections::HashSet, fmt::Display, path::PathBuf};
 use vault_data::VaultData;
 
 use filter::{filter, Filter};
@@ -105,6 +105,28 @@ impl TaskManager {
             }
         }
     }
+    /// Follows a path and returns every `VaultData` that are on the target layer, discarding every children.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the path can't be resolved.
+    pub fn get_path_layer_entries(&self, path: &[String]) -> Result<Vec<VaultData>> {
+        Ok(self
+            .get_explorer_entries(path)?
+            .iter()
+            .map(|vd| match vd {
+                VaultData::Directory(name, _) => VaultData::Directory(name.clone(), vec![]),
+                VaultData::Header(level, name, _) => {
+                    VaultData::Header(*level, name.clone(), vec![])
+                }
+                VaultData::Task(t) => {
+                    let mut t = t.clone();
+                    t.subtasks = vec![];
+                    VaultData::Task(t)
+                }
+            })
+            .collect::<Vec<VaultData>>())
+    }
 
     /// Recursively calls `Task.fix_task_attributes` on every task from the vault.
     fn rewrite_vault_tasks(config: &TasksConfig, tasks: &VaultData) -> Result<()> {
@@ -139,42 +161,18 @@ impl TaskManager {
     }
 
     /// Follows the `selected_header_path` to retrieve the correct `VaultData`.
-    /// Then returns a vector of prefixes and a vector of corresponding names from items on the same layer.
+    /// Then returns every `VaultData` objects on the same layer.
     ///
     /// # Errors
     /// Will return an error if the vault is empty or the first layer is not a `VaultData::Directory`
-    pub fn get_explorer_entries(
-        &self,
-        selected_header_path: &[String],
-    ) -> Result<Vec<(String, String)>> {
+    pub fn get_explorer_entries(&self, selected_header_path: &[String]) -> Result<Vec<VaultData>> {
         fn aux(
             file_entry: Vec<VaultData>,
             selected_header_path: &[String],
             path_index: usize,
-        ) -> Result<Vec<(String, String)>> {
+        ) -> Result<Vec<VaultData>> {
             if path_index == selected_header_path.len() {
-                let mut res = vec![];
-                for entry in file_entry {
-                    match entry {
-                        VaultData::Directory(name, _) => {
-                            res.push((
-                                if name.contains(".md") {
-                                    FILE_EMOJI.to_owned()
-                                } else {
-                                    DIRECTORY_EMOJI.to_owned()
-                                },
-                                name.clone(),
-                            ));
-                        }
-                        VaultData::Header(level, name, _) => {
-                            res.push(("#".repeat(level).clone(), name));
-                        }
-                        VaultData::Task(task) => {
-                            res.push((task.state.to_string(), task.name));
-                        }
-                    }
-                }
-                Ok(res)
+                Ok(file_entry)
             } else {
                 for entry in file_entry {
                     match entry {
@@ -209,28 +207,7 @@ impl TaskManager {
         };
 
         match filtered_tasks {
-            Some(VaultData::Directory(_, entries)) => {
-                let mut res = aux(entries, selected_header_path, 0)?;
-
-                if let Some(entry) = res.first() {
-                    if entry.0 == DIRECTORY_EMOJI || entry.0 == FILE_EMOJI {
-                        res.sort_by(|a, b| {
-                            if a.0 == DIRECTORY_EMOJI {
-                                if b.0 == DIRECTORY_EMOJI {
-                                    a.1.cmp(&b.1)
-                                } else {
-                                    Ordering::Less
-                                }
-                            } else if b.0 == DIRECTORY_EMOJI {
-                                Ordering::Greater
-                            } else {
-                                a.1.cmp(&b.1)
-                            }
-                        });
-                    }
-                }
-                Ok(res)
-            }
+            Some(VaultData::Directory(_, entries)) => aux(entries, selected_header_path, 0),
             None => bail!("Empty Vault"),
             _ => {
                 error!("First layer of VaultData was not a Directory");
@@ -389,140 +366,6 @@ mod tests {
     use super::TaskManager;
 
     use crate::{task::Task, vault_data::VaultData};
-
-    #[test]
-    fn test_get_entries() {
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![VaultData::Header(
-                0,
-                "Test".to_string(),
-                vec![
-                    VaultData::Header(
-                        1,
-                        "1".to_string(),
-                        vec![VaultData::Header(
-                            2,
-                            "2".to_string(),
-                            vec![VaultData::Header(
-                                3,
-                                "3".to_string(),
-                                vec![VaultData::Task(Task {
-                                    name: "test".to_string(),
-                                    line_number: 8,
-                                    description: Some("test\ndesc".to_string()),
-                                    ..Default::default()
-                                })],
-                            )],
-                        )],
-                    ),
-                    VaultData::Header(
-                        1,
-                        "1.2".to_string(),
-                        vec![
-                            VaultData::Header(3, "3".to_string(), vec![]),
-                            VaultData::Header(
-                                2,
-                                "4".to_string(),
-                                vec![VaultData::Task(Task {
-                                    name: "test".to_string(),
-                                    line_number: 8,
-                                    description: Some("test\ndesc".to_string()),
-                                    ..Default::default()
-                                })],
-                            ),
-                        ],
-                    ),
-                ],
-            )],
-        );
-
-        let task_mgr = TaskManager {
-            tasks: input,
-            tags: HashSet::new(),
-            ..Default::default()
-        };
-
-        let path = vec![String::from("Test"), String::from("1"), String::from("2")];
-        let expected = vec![(String::from("###"), String::from("3"))];
-        let res = task_mgr.get_explorer_entries(&path);
-        assert_eq!(expected, res.unwrap());
-
-        let path = vec![String::from("Test"), String::from("1")];
-        let expected = vec![(String::from("##"), String::from("2"))];
-        let res = task_mgr.get_explorer_entries(&path);
-        assert_eq!(expected, res.unwrap());
-    }
-    #[test]
-    fn test_get_entries_err() {
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![VaultData::Header(
-                0,
-                "Test".to_string(),
-                vec![
-                    VaultData::Header(
-                        1,
-                        "1".to_string(),
-                        vec![VaultData::Header(
-                            2,
-                            "2".to_string(),
-                            vec![VaultData::Header(
-                                3,
-                                "3".to_string(),
-                                vec![VaultData::Task(Task {
-                                    name: "test".to_string(),
-                                    line_number: 8,
-                                    description: Some("test\ndesc".to_string()),
-                                    ..Default::default()
-                                })],
-                            )],
-                        )],
-                    ),
-                    VaultData::Header(
-                        1,
-                        "1.2".to_string(),
-                        vec![
-                            VaultData::Header(3, "3".to_string(), vec![]),
-                            VaultData::Header(
-                                2,
-                                "4".to_string(),
-                                vec![VaultData::Task(Task {
-                                    name: "test".to_string(),
-                                    line_number: 8,
-                                    description: Some("test\ndesc".to_string()),
-                                    ..Default::default()
-                                })],
-                            ),
-                        ],
-                    ),
-                ],
-            )],
-        );
-
-        let task_mgr = TaskManager {
-            tasks: input,
-            tags: HashSet::new(),
-            ..Default::default()
-        };
-
-        let path = vec![
-            String::from("Testaaa"),
-            String::from("1"),
-            String::from("2"),
-        ];
-        let res = task_mgr.get_explorer_entries(&path);
-        assert!(res.is_err());
-
-        let path = vec![
-            String::from("Test"),
-            String::from("1"),
-            String::from("2"),
-            String::from("3"),
-        ];
-        let res = task_mgr.get_explorer_entries(&path);
-        assert_eq!(res.unwrap(), vec![("❌".to_owned(), "test".to_owned())]);
-    }
 
     #[test]
     fn test_get_vault_data() {
