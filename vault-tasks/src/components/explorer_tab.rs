@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::path::PathBuf;
 
 use color_eyre::eyre::bail;
@@ -25,7 +26,7 @@ use crate::{action::Action, config::Config};
 use vault_tasks_core::filter::parse_search_input;
 use vault_tasks_core::parser::task::parse_task;
 use vault_tasks_core::vault_data::VaultData;
-use vault_tasks_core::{TaskManager, WARNING_EMOJI};
+use vault_tasks_core::{TaskManager, DIRECTORY_EMOJI, FILE_EMOJI, WARNING_EMOJI};
 
 /// Struct that helps with drawing the component
 struct ExplorerArea {
@@ -113,6 +114,48 @@ impl<'a> ExplorerTab<'a> {
             ));
         }
     }
+
+    fn vault_data_to_prefix_name(vd: &VaultData) -> (String, String) {
+        match vd {
+            VaultData::Directory(name, _) => (
+                if name.contains(".md") {
+                    FILE_EMOJI.to_owned()
+                } else {
+                    DIRECTORY_EMOJI.to_owned()
+                },
+                name.clone(),
+            ),
+            VaultData::Header(level, name, _) => ("#".repeat(*level).clone(), name.clone()),
+            VaultData::Task(task) => (task.state.to_string(), task.name.clone()),
+        }
+    }
+
+    fn vault_data_to_entry_list(vd: &[VaultData]) -> Vec<(String, String)> {
+        let mut res = vd
+            .iter()
+            .map(Self::vault_data_to_prefix_name)
+            .collect::<Vec<(String, String)>>();
+
+        if let Some(entry) = res.first() {
+            if entry.0 == DIRECTORY_EMOJI || entry.0 == FILE_EMOJI {
+                res.sort_by(|a, b| {
+                    if a.0 == DIRECTORY_EMOJI {
+                        if b.0 == DIRECTORY_EMOJI {
+                            a.1.cmp(&b.1)
+                        } else {
+                            Ordering::Less
+                        }
+                    } else if b.0 == DIRECTORY_EMOJI {
+                        Ordering::Greater
+                    } else {
+                        a.1.cmp(&b.1)
+                    }
+                });
+            }
+        }
+        res
+    }
+
     /// Updates left and center entries.
     fn update_entries(&mut self) -> Result<()> {
         debug!("Updating entries");
@@ -123,14 +166,14 @@ impl<'a> ExplorerTab<'a> {
         } else {
             self.entries_left_view = match self
                 .task_mgr
-                .get_explorer_entries(&self.current_path[0..self.current_path.len() - 1])
+                .get_path_layer_entries(&self.current_path[0..self.current_path.len() - 1])
             {
-                Ok(res) => res,
+                Ok(res) => Self::vault_data_to_entry_list(&res),
                 Err(e) => vec![(String::from(WARNING_EMOJI), (e.to_string()))],
             };
         }
-        self.entries_center_view = match self.task_mgr.get_explorer_entries(&self.current_path) {
-            Ok(res) => res,
+        self.entries_center_view = match self.task_mgr.get_path_layer_entries(&self.current_path) {
+            Ok(res) => Self::vault_data_to_entry_list(&res),
             Err(e) => {
                 self.leave_selected_entry()?;
                 vec![(String::from(WARNING_EMOJI), e.to_string())]
@@ -341,16 +384,16 @@ impl<'a> ExplorerTab<'a> {
             }
             // Else render a ListView widget
             Some(VaultData::Directory(_, _)) => Self::build_list(
-                Self::apply_prefixes(
+                Self::apply_prefixes(&Self::vault_data_to_entry_list(
                     &self
                         .task_mgr
-                        .get_explorer_entries(
+                        .get_path_layer_entries(
                             &self
                                 .get_preview_path()
                                 .unwrap_or_else(|_| self.current_path.clone()),
                         )
                         .unwrap_or_default(),
-                ),
+                )),
                 Block::new(),
                 highlighted_style,
             )
