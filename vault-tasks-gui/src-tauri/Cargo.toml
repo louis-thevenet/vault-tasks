@@ -1,0 +1,25 @@
+[build-dependencies]
+tauri-build = {version = "2", features = [] }
+
+[dependencies]
+tauri = {version = "2", features = [] }
+tauri-plugin-shell = "2"
+serde = {version = "1", features = ["derive"] }
+serde_json = "1"
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "vault_tasks_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[package]
+name = "vault-tasks-gui"
+description = "Markdown Task Manager"
+keywords = ["markdown", "task-manager", "productivity", "gui", "obsidian"]
+version = "0.4.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true

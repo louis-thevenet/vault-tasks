@@ -12,9 +12,7 @@ lto = "thin"
 resolver = "2"
 members = [
   "vault-tasks-core",
-  "vault-tasks"
-]
-default-members = [
+  "vault-tasks-gui/src-tauri",
   "vault-tasks"
 ]
 
