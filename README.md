@@ -134,6 +134,51 @@ Check the key map within the ap with `?`
 | `e`       | Quickly edit selection in Explorer tab         |
 | `r`       | Reload vault                                   |
 
+### Modes
+
+You can start already focused on a tab by using one of the CLI commands:
+
+```bash
+vault-tasks explorer # is the default
+# Or
+vault-tasks filter
+```
+
+You can also output the content of a vault in standard output using
+
+```bash
+vault-tasks stdout
+```
+
+Example output:
+
+```
+vault-tasks -v ./README.md stdout
+
+./README.md
+‾‾‾‾‾‾‾‾‾‾‾
+	README.md
+	‾‾‾‾‾‾‾‾‾
+		Vault-tasks
+		‾‾‾‾‾‾‾‾‾‾‾
+			Usage
+			‾‾‾‾‾
+				Writing tasks
+				‾‾‾‾‾‾‾‾‾‾‾‾‾
+					❌ An example task
+					📅 2024-11-17 (tomorrow)❗1
+					#tag
+					A description
+					of this task
+
+						✅ A subtask
+						☀️ 📅 2024-11-16 (today)
+
+
+						❌ Another subtask
+						☀️ 📅 2024-10-23 (3 weeks ago)
+```
+
 ## Configuration
 
 The [`config.toml`](./.config/config.toml) contains the default configuration which can be generated using `vault-tasks generate-config`.
