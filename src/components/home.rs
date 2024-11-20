@@ -23,6 +23,7 @@ impl Home {
             if let Err(e) = tx.send(match self.selected_tab {
                 SelectedTab::Explorer => Action::Focus(Mode::Explorer),
                 SelectedTab::Filter => Action::Focus(Mode::Filter),
+                SelectedTab::TimeManagement => Action::Focus(Mode::TimeManagement),
             }) {
                 error!("Could not focus selected tab: {e}");
             }
@@ -104,6 +105,8 @@ enum SelectedTab {
     Explorer,
     #[strum(to_string = "Filter")]
     Filter,
+    #[strum(to_string = "Time Management")]
+    TimeManagement,
 }
 
 impl SelectedTab {

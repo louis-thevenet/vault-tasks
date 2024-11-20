@@ -9,7 +9,8 @@ use crate::{
     action::Action,
     cli::{Cli, Commands},
     components::{
-        explorer_tab::ExplorerTab, filter_tab::FilterTab, fps::FpsCounter, home::Home, Component,
+        explorer_tab::ExplorerTab, filter_tab::FilterTab, fps::FpsCounter, home::Home,
+        time_management_tab::TimeManagementTab, Component,
     },
     config::Config,
     tui::{Event, Tui},
@@ -39,6 +40,7 @@ pub enum Mode {
     Home,
     Explorer,
     Filter,
+    TimeManagement,
 }
 
 impl App {
@@ -54,6 +56,7 @@ impl App {
                 Box::<FpsCounter>::default(),
                 Box::new(ExplorerTab::new()),
                 Box::new(FilterTab::new()),
+                Box::new(TimeManagementTab::new()),
             ],
             should_quit: false,
             should_suspend: false,
