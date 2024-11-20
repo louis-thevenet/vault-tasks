@@ -10,7 +10,8 @@
 "<Shift-l>" = "TabRight"
 "<Shift-Left>" = "TabLeft"
 "<shift-h>" = "TabLeft"
-
+# Navigation
+"<Enter>"= "Enter"
 
 [keybindings.Explorer]
 # App

@@ -1,20 +1,32 @@
+use std::time::Duration;
+
+use chrono::TimeDelta;
 use color_eyre::Result;
 use ratatui::prelude::*;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::debug;
+use vault_tasks_time_management::time_management_technique::TimeManagementTechnique;
+use vault_tasks_time_management::TimeManagementEngine;
 
 use super::Component;
 
 use crate::app::Mode;
 use crate::tui::Tui;
 use crate::widgets::help_menu::HelpMenu;
+use crate::widgets::timer::{TimerState, TimerWidget};
 use crate::{action::Action, config::Config};
 
+/// Struct that helps with drawing the component
+struct TimeManagementTabArea {
+    content: Rect,
+    footer: Rect,
+}
 #[derive(Default)]
 pub struct TimeManagementTab<'a> {
     command_tx: Option<UnboundedSender<Action>>,
     config: Config,
     is_focused: bool,
+    timer_state: TimerState,
     /// Whether the help panel is open or not
     show_help: bool,
     help_menu_wigdet: HelpMenu<'a>,
@@ -22,6 +34,45 @@ pub struct TimeManagementTab<'a> {
 impl<'a> TimeManagementTab<'a> {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    fn split_frame(area: Rect) -> TimeManagementTabArea {
+        let vertical = Layout::vertical([
+            Constraint::Length(1),
+            Constraint::Min(0),
+            Constraint::Length(1),
+            Constraint::Length(1),
+        ]);
+        let [_header, content, footer, _tab_footera] = vertical.areas(area);
+
+        TimeManagementTabArea { content, footer }
+    }
+
+    // fn render_sorting_modes(&self, area: Rect, buf: &mut Buffer) {
+    //     let titles = TimeManagementTechnique::iter()
+    //         .map(|arg0: TimeManagementTechnique| TimeManagementTechnique::to_string(&arg0));
+
+    //     let highlight_style = *self
+    //         .config
+    //         .styles
+    //         .get(&crate::app::Mode::Home)
+    //         .unwrap()
+    //         .get("highlighted_tab")
+    //         .unwrap();
+
+    //     let selected_tab_index = self.sorting_mode as usize;
+    //     Tabs::new(titles)
+    //         .select(selected_tab_index)
+    //         .highlight_style(highlight_style)
+    //         .padding("", "")
+    //         .divider(" ")
+    //         .block(Block::bordered().title("Sort By"))
+    //         .render(area, buf);
+    // }
+    fn render_footer(&self, area: Rect, frame: &mut Frame) {
+        Line::raw("Footer Place Holder")
+            .centered()
+            .render(area, frame.buffer_mut());
     }
 }
 impl<'a> Component for TimeManagementTab<'a> {
@@ -54,6 +105,17 @@ impl<'a> Component for TimeManagementTab<'a> {
             }
         } else {
             match action {
+                Action::Enter => {
+                    self.timer_state = TimerState::ClockDown {
+                        stop_at: chrono::Local::now()
+                            .checked_add_signed(
+                                TimeDelta::from_std(Duration::from_secs(15)).unwrap(),
+                            )
+                            .unwrap()
+                            .time(),
+                    }
+                }
+
                 Action::Focus(mode) if mode != Mode::TimeManagement => self.is_focused = false,
                 Action::Focus(Mode::TimeManagement) => self.is_focused = true,
 
@@ -75,9 +137,10 @@ impl<'a> Component for TimeManagementTab<'a> {
         if !self.is_focused {
             return Ok(());
         }
-        let _ = frame;
-        let _ = area;
 
+        let areas = Self::split_frame(area);
+        self.render_footer(areas.footer, frame);
+        TimerWidget {}.render(areas.content, frame.buffer_mut(), &mut self.timer_state);
         if self.show_help {
             debug!("showing help");
             self.help_menu_wigdet.clone().render(

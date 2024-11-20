@@ -3010,6 +3010,7 @@ dependencies = [
  "tui-scrollview",
  "tui-widget-list",
  "vault-tasks-core",
+ "vault-tasks-time-management",
  "vergen-gix",
 ]
 
@@ -3028,6 +3029,16 @@ dependencies = [
  "strum_macros",
  "tracing",
  "winnow",
+]
+
+[[package]]
+name = "vault-tasks-time-management"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05b72782001c8e2ebbd746b3a1297eea3590ef4bab57df3c496a37f29bf37daa"
+dependencies = [
+ "anyhow",
+ "color-eyre",
 ]
 
 [[package]]
