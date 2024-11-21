@@ -1,12 +1,15 @@
-use std::default;
-
-use chrono::{NaiveDateTime, NaiveTime};
-use ratatui::widgets::{Paragraph, StatefulWidget, Widget};
+use chrono::{NaiveTime, TimeDelta};
+use ratatui::{
+    layout::{Constraint, Flex, Layout, Rect},
+    widgets::{Block, Gauge, StatefulWidget, Widget},
+};
+use tracing::debug;
 pub struct TimerWidget;
 
 #[derive(Default)]
 pub enum TimerState {
     ClockDown {
+        started_at: NaiveTime,
         stop_at: NaiveTime,
     },
     ClockUp {
@@ -16,9 +19,20 @@ pub enum TimerState {
     NotInitialized,
 }
 
+impl TimerWidget {
+    fn format_time_delta(td: TimeDelta) -> String {
+        let mut res = String::new();
+        if td.num_hours() > 0 {
+            res.push_str(&format!("{:02}", td.num_hours()));
+        }
+        res.push_str(&format!("{:02}:{:02}", td.num_minutes(), td.num_seconds()));
+        res
+    }
+}
+
 impl StatefulWidget for TimerWidget {
     type State = TimerState;
-
+    #[allow(clippy::cast_precision_loss)]
     fn render(
         self,
         area: ratatui::prelude::Rect,
@@ -26,22 +40,46 @@ impl StatefulWidget for TimerWidget {
         state: &mut Self::State,
     ) {
         let now = chrono::Local::now().time();
-        match state {
+        let text = match state {
             TimerState::ClockUp { started_at } => {
                 let current = now - *started_at;
-                Paragraph::new(format!("{current:?}"))
-                    .centered()
-                    .render(area, buf);
+                Self::format_time_delta(current)
             }
-            TimerState::ClockDown { stop_at } => {
+            TimerState::ClockDown {
+                stop_at,
+                started_at: _,
+            } => {
                 let remaining = *stop_at - now;
-                Paragraph::new(format!("{remaining:?}"))
-                    .centered()
-                    .render(area, buf);
+                Self::format_time_delta(remaining)
             }
-            TimerState::NotInitialized => Paragraph::new(format!("Not initialized"))
-                .centered()
-                .render(area, buf),
-        }
+            TimerState::NotInitialized => "Not initialized".to_string(),
+        };
+
+        // Create a centered box
+        let [area] = Layout::horizontal([Constraint::Length(2 + 4 * (text.len()) as u16)]) // +2 for the block
+            .flex(Flex::Center)
+            .areas(area);
+        let [area] = Layout::vertical([Constraint::Length(2 + 3)])
+            .flex(Flex::Center)
+            .areas(area);
+
+        let ratio = match state {
+            TimerState::ClockDown {
+                stop_at,
+                started_at,
+            } => {
+                let num = (now - *started_at).abs().to_std().unwrap().as_nanos() as f64;
+                let den = (*stop_at - *started_at).abs().to_std().unwrap().as_nanos() as f64;
+                1.0_f64.min(num / den)
+            }
+            TimerState::ClockUp { started_at: _ } => 1.0,
+            TimerState::NotInitialized => 1.0,
+        };
+        debug!("{ratio}");
+        Gauge::default()
+            .block(Block::bordered())
+            .ratio(ratio)
+            .label(text)
+            .render(area, buf);
     }
 }

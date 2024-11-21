@@ -113,6 +113,7 @@ impl<'a> Component for TimeManagementTab<'a> {
                             )
                             .unwrap()
                             .time(),
+                        started_at: chrono::Local::now().time(),
                     }
                 }
 
