@@ -1,4 +1,6 @@
 use chrono::{NaiveTime, TimeDelta};
+use clap::builder::Str;
+use color_eyre::eyre::Result;
 use ratatui::{
     layout::{Constraint, Flex, Layout, Rect},
     widgets::{Block, Gauge, StatefulWidget, Widget},
@@ -18,7 +20,18 @@ pub enum TimerState {
     #[default]
     NotInitialized,
 }
-
+impl TimerState {
+    /// Returns true if the current time finished
+    pub fn tick(&self) -> bool {
+        match self {
+            TimerState::ClockDown {
+                started_at: _,
+                stop_at,
+            } => chrono::Local::now().time() > *stop_at,
+            TimerState::ClockUp { started_at: _ } | TimerState::NotInitialized => false,
+        }
+    }
+}
 impl TimerWidget {
     fn format_time_delta(td: TimeDelta) -> String {
         let mut res = String::new();
@@ -72,10 +85,8 @@ impl StatefulWidget for TimerWidget {
                 let den = (*stop_at - *started_at).abs().to_std().unwrap().as_nanos() as f64;
                 1.0_f64.min(num / den)
             }
-            TimerState::ClockUp { started_at: _ } => 1.0,
-            TimerState::NotInitialized => 1.0,
+            TimerState::ClockUp { started_at: _ } | TimerState::NotInitialized => 1.0,
         };
-        debug!("{ratio}");
         Gauge::default()
             .block(Block::bordered())
             .ratio(ratio)

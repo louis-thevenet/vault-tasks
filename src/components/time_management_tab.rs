@@ -88,6 +88,11 @@ impl<'a> Component for TimeManagementTab<'a> {
     }
 
     fn update(&mut self, tui: Option<&mut Tui>, action: Action) -> Result<Option<Action>> {
+        // We always perform this action
+        if matches!(action, Action::Tick) {
+            debug!("{}", self.timer_state.tick());
+        }
+
         if !self.is_focused {
             match action {
                 Action::Focus(Mode::TimeManagement) => self.is_focused = true,
@@ -127,13 +132,6 @@ impl<'a> Component for TimeManagementTab<'a> {
         Ok(None)
     }
 
-    fn escape_blocking_mode(&self) -> Vec<Action> {
-        std::vec![]
-    }
-
-    fn blocking_mode(&self) -> bool {
-        false
-    }
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         if !self.is_focused {
             return Ok(());
