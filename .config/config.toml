@@ -11,8 +11,18 @@
 "<Shift-Left>" = "TabLeft"
 "<shift-h>" = "TabLeft"
 # Navigation
-"<Enter>"= "Enter"
-
+"<Enter>"= "NextSegment"
+"<Space>"="Pause"
+"<Tab>"="NextTechnique"
+"<BackTab>"="PreviousTechnique"
+"<j>" = "Down"
+"<Down>" = "Down"
+"<k>" = "Up"
+"<Up>" = "Up"
+"<h>" = "Left"
+"<Left>" = "Left"
+"<l>" = "Right"
+"<Right>" = "Right"
 [keybindings.Explorer]
 # App
 "<q>" = "Quit"

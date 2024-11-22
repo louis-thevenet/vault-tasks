@@ -19,6 +19,10 @@ pub enum Action {
     Key(KeyEvent),
     ReloadVault,
     // Movements
+    PreviousTechnique,
+    NextTechnique,
+    NextSegment,
+    Pause,
     Up,
     Down,
     Left,
