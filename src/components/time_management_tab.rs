@@ -1,11 +1,12 @@
 use color_eyre::eyre::bail;
 use color_eyre::Result;
+use notify_rust::Notification;
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, List, ListItem, ListState};
 use strum::{EnumIter, FromRepr, IntoEnumIterator};
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::debug;
-use vault_tasks_time_management::TimeManagementEngine;
+use tracing::{debug, error};
+use vault_tasks_time_management::{State, TimeManagementEngine};
 
 use super::Component;
 
@@ -81,16 +82,29 @@ impl<'a> TimeManagementTab<'a> {
             footer,
         }
     }
-    fn time_technique_switch(&mut self) -> Result<()> {
+    fn time_technique_switch(&mut self, notify: bool) -> Result<()> {
         let time_spent = match self.timer_state.get_time_spent() {
             Ok(d) => d,
             Err(e) => bail!("{e}"),
         };
-        self.timer_state = TimerState::new(self.timer_engine.switch(time_spent));
+        let (to_spend, notification_body) = match self.timer_engine.switch(time_spent) {
+            State::Focus(d) => (d, "Time to focus!"),
+            State::Break(d) => (d, "Time for a break!"),
+        };
+        self.timer_state = TimerState::new(to_spend);
+        if notify
+            && Notification::new()
+                .summary("VaultTasks")
+                .body(notification_body)
+                .show()
+                .is_err()
+        {
+            error!("Failed to send notification"); // Don't crash for this
+        }
         Ok(())
     }
     fn render_footer(area: Rect, frame: &mut Frame) {
-        Line::raw("Press hjkl|◄▼▲▶ to change settings | Tab|Shift-Tab to cycle through techniques")
+        Line::raw("Press hjkl|◄▼▲▶ to change settings | Tab|Shift+Tab to cycle through techniques")
             .centered()
             .render(area, frame.buffer_mut());
     }
@@ -112,7 +126,7 @@ impl<'a> Component for TimeManagementTab<'a> {
         let _ = tui;
         // We always perform this action
         if matches!(action, Action::Tick) && self.timer_state.tick() {
-            self.time_technique_switch()?;
+            self.time_technique_switch(true);
         }
 
         if !self.is_focused {
@@ -134,7 +148,7 @@ impl<'a> Component for TimeManagementTab<'a> {
             match action {
                 Action::PreviousTechnique => self.time_techniques_list_state.select_previous(),
                 Action::NextTechnique => self.time_techniques_list_state.select_next(),
-                Action::NextSegment => self.time_technique_switch()?,
+                Action::NextSegment => self.time_technique_switch(false)?,
                 Action::Pause => self.timer_state = self.timer_state.clone().pause(),
 
                 Action::Focus(mode) if mode != Mode::TimeManagement => self.is_focused = false,
