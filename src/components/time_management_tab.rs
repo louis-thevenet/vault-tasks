@@ -6,6 +6,9 @@ use ratatui::widgets::{Block, Borders, List, ListItem, ListState};
 use strum::{EnumIter, FromRepr, IntoEnumIterator};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error};
+use vault_tasks_time_management::flow_time::FlowTime;
+use vault_tasks_time_management::pomodoro::Pomodoro;
+use vault_tasks_time_management::time_management_technique::TimeManagementTechnique;
 use vault_tasks_time_management::{State, TimeManagementEngine};
 
 use super::Component;
@@ -108,6 +111,25 @@ impl<'a> TimeManagementTab<'a> {
             .centered()
             .render(area, frame.buffer_mut());
     }
+
+    fn update_time_manegement_engine(&mut self) {
+        let technique: Box<dyn TimeManagementTechnique> = if let Some(i) =
+            self.time_techniques_list_state.selected()
+        {
+            match TimerTechniquesAvailable::from_repr(i) {
+                Some(TimerTechniquesAvailable::Pomodoro) => Box::new(Pomodoro::classic_pomodoro()),
+                Some(TimerTechniquesAvailable::FlowTime) => Box::new(FlowTime::new(5).unwrap()),
+                None => {
+                    error!("No corresponding technique found, yet an update was triggered");
+                    return;
+                }
+            }
+        } else {
+            error!("No technique selected, yet an update was triggered");
+            return;
+        };
+        self.timer_engine = TimeManagementEngine::new(technique);
+    }
 }
 impl<'a> Component for TimeManagementTab<'a> {
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
@@ -146,8 +168,16 @@ impl<'a> Component for TimeManagementTab<'a> {
             }
         } else {
             match action {
-                Action::PreviousTechnique => self.time_techniques_list_state.select_previous(),
-                Action::NextTechnique => self.time_techniques_list_state.select_next(),
+                Action::PreviousTechnique => {
+                    self.time_techniques_list_state.select_previous();
+                    self.update_time_manegement_engine();
+                }
+                Action::NextTechnique => {
+                    self.time_techniques_list_state.select_next();
+
+                    self.update_time_manegement_engine();
+                }
+
                 Action::NextSegment => self.time_technique_switch(false)?,
                 Action::Pause => self.timer_state = self.timer_state.clone().pause(),
 
