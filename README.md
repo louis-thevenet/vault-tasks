@@ -25,10 +25,10 @@ I also spend most of my writing time in the terminal (Helix) and do not rely on 
 - Navigate vault
 - Search through tasks (sort and filter)
 - Edit tasks or open in default editor
+- Time Management tab (Pomodoro & Flowtime)
 
 ## Planned Features
 
-- A Pomodoro (or flowtime) tab
 - A Timeline tab with a calendar and a chronological view. (I'd also like to be able to import calendar files)
 
 ## Installation
@@ -105,34 +105,68 @@ Or when filtering for `@today` tasks:
 
 ### Default Key Map
 
-Check the key map within the ap with `?`
+Check the key map within the app with `?`
 
-#### Navigation
+#### General
 
-| Key         | Alternate Key     | Action               |
-| ----------- | ----------------- | -------------------- |
-| `k`         | `↑`, `shift-tab`  | Previous entry       |
-| `j`         | `↓`, `tab`        | Next entry           |
-| `h`         | `←`, `back_space` | Leave current entry  |
-| `l`         | `→`,`enter`       | Enter next entry     |
-| `shift-h`   | `shift-←`         | Previous tab         |
-| `shift-l`   | `shift-→`         | Next tab             |
-| `ctrl-k`    | `ctrl-↓`          | Scroll up            |
-| `ctrl-j`    | `ctrl-↑`          | Scroll down          |
-| `q`         | `ctrl-c`          | Quit the application |
-| `page_down` |                   | Scroll one page down |
-| `page_up`   |                   | Scroll one page up   |
+| Key         | Alternate Key | Action                                    |
+| ----------- | ------------- | ----------------------------------------- |
+| `shift-h`   | `shift-←`     | Previous tab                              |
+| `shift-l`   | `shift-→`     | Next tab                                  |
+| `ctrl-k`    | `ctrl-↓`      | Scroll up                                 |
+| `ctrl-j`    | `ctrl-↑`      | Scroll down                               |
+| `page_down` |               | Scroll one page down                      |
+| `page_up`   |               | Scroll one page up                        |
+| `q`         | `ctrl-c`      | Quit the application                      |
+| `?`         |               | Open keybindings menu for the current tab |
 
-#### Commands
+#### Explorer Tab
 
-| Key       | Action                                         |
-| --------- | ---------------------------------------------- |
-| `s`       | Focus search bar (`enter` or `esc` to unfocus) |
-| `Shift-s` | Change Sorting mode in Filter tab              |
-| `?`       | Open keybindings menu for the current tab      |
-| `o`       | Open selection in default editor               |
-| `e`       | Quickly edit selection in Explorer tab         |
-| `r`       | Reload vault                                   |
+##### Navigation
+
+| Key | Alternate Key     | Action              |
+| --- | ----------------- | ------------------- |
+| `k` | `↑`, `shift-tab`  | Previous entry      |
+| `j` | `↓`, `tab`        | Next entry          |
+| `h` | `←`, `back_space` | Leave current entry |
+| `l` | `→`,`enter`       | Enter next entry    |
+
+##### Commands
+
+| Key | Action                                         |
+| --- | ---------------------------------------------- |
+| `s` | Focus search bar (`enter` or `esc` to unfocus) |
+| `o` | Open selection in default editor               |
+| `e` | Quickly edit selection                         |
+| `r` | Reload vault                                   |
+
+#### Filter Tab
+
+##### Commands
+
+| Key       | Action                   |
+| --------- | ------------------------ |
+| `enter`   | Focus/Unfocus search bar |
+| `Shift-s` | Change sorting mode      |
+
+#### Time Management Tab
+
+##### Navigation
+
+| Key | Alternate Key | Action           |
+| --- | ------------- | ---------------- |
+| `k` | `↑`           | Previous setting |
+| `j` | `↓`           | Next setting     |
+
+##### Commands
+
+| Key         | Action                             |
+| ----------- | ---------------------------------- |
+| `space`     | Next segment (skip current)        |
+| `p`         | Pause timer                        |
+| `e`         | Edit setting                       |
+| `shift-tab` | Previous time management technique |
+| `tab`       | Next time management technique     |
 
 ### Modes
 
@@ -142,6 +176,7 @@ You can start already focused on a tab by using one of the CLI commands:
 vault-tasks explorer # is the default
 # Or
 vault-tasks filter
+vault-tasks time
 ```
 
 You can also output the content of a vault in standard output using
