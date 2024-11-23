@@ -71,6 +71,7 @@ impl App {
     fn get_initial_state(args: &Cli) -> InitialState {
         let tab = match args.command {
             Some(Commands::Filter) => Action::Focus(Mode::Filter),
+            Some(Commands::TimeManagement) => Action::Focus(Mode::TimeManagement),
             Some(Commands::Explorer | Commands::GenerateConfig { path: _ }) | None => {
                 Action::Focus(Mode::Explorer)
             }
