@@ -130,9 +130,9 @@ impl<'a> FilterTab<'a> {
     }
     pub fn render_footer(&self, area: Rect, frame: &mut Frame) {
         if self.input_bar_widget.is_focused {
-            Line::raw("Press <enter | esc> to stop searching")
+            Line::raw("Stop Searching: <enter|esc>")
         } else {
-            Line::raw("Press <enter | esc> to start searching | <S> to switch sorting modes")
+            Line::raw("Search: <s|enter|esc> | Cycle sorting modes: Shift-s")
         }
         .centered()
         .render(area, frame.buffer_mut());

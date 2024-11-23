@@ -23,6 +23,7 @@ impl Home {
             if let Err(e) = tx.send(match self.selected_tab {
                 SelectedTab::Explorer => Action::Focus(Mode::Explorer),
                 SelectedTab::Filter => Action::Focus(Mode::Filter),
+                SelectedTab::TimeManagement => Action::Focus(Mode::TimeManagement),
             }) {
                 error!("Could not focus selected tab: {e}");
             }
@@ -58,7 +59,7 @@ impl Home {
     }
 
     pub fn render_footer(area: Rect, frame: &mut Frame) {
-        Line::raw("Shift+<hl|◄►> to change tab | q to quit | ? for Help")
+        Line::raw("Change tab: Shift+<hl|◄►> | Quit: q | Help: ?")
             .centered()
             .render(area, frame.buffer_mut());
     }
@@ -104,6 +105,8 @@ enum SelectedTab {
     Explorer,
     #[strum(to_string = "Filter")]
     Filter,
+    #[strum(to_string = "Time Management")]
+    TimeManagement,
 }
 
 impl SelectedTab {

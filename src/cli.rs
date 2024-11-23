@@ -34,6 +34,9 @@ pub enum Commands {
     /// Open filter view
     #[command(alias = "flt")]
     Filter,
+    /// Open Time Management view
+    #[command(alias = "time")]
+    TimeManagement,
     /// Generates a new configuration file from the default one
     GenerateConfig { path: Option<PathBuf> },
     /// Write tasks to STDOUT
