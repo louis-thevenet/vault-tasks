@@ -105,5 +105,13 @@ Ctrl+J
 
 Sleep 4s
 
+
+# TIme Management tab
+Shift+L
+Sleep 1s
+Space
+Space
+Sleep 15s
+
 # Stop vault-tasks
 Ctrl+c
