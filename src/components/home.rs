@@ -82,6 +82,7 @@ impl Component for Home {
             Action::TabLeft => self.previous_tab(),
             Action::Focus(Mode::Explorer) => self.selected_tab = SelectedTab::Explorer,
             Action::Focus(Mode::Filter) => self.selected_tab = SelectedTab::Filter,
+            Action::Focus(Mode::TimeManagement) => self.selected_tab = SelectedTab::TimeManagement,
             _ => (),
         }
         Ok(None)
