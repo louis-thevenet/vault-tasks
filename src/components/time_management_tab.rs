@@ -1,8 +1,6 @@
 use std::collections::HashMap;
-use std::fmt::Display;
 use std::time::Duration;
 
-use chrono::NaiveTime;
 use color_eyre::eyre::bail;
 use color_eyre::Result;
 use crossterm::event::Event;
@@ -10,7 +8,10 @@ use layout::Flex;
 use notify_rust::Notification;
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Cell, List, ListItem, ListState, Row, Table, TableState};
-use strum::{EnumIter, FromRepr, IntoEnumIterator};
+use settings::{
+    TimeTechniquesSettingsEntry, TimeTechniquesSettingsValue, TimerTechniquesAvailable,
+};
+use strum::IntoEnumIterator;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error};
 use tui_input::backend::crossterm::EventHandler;
@@ -29,6 +30,7 @@ use crate::widgets::input_bar::InputBar;
 use crate::widgets::timer::{TimerState, TimerWidget};
 use crate::{action::Action, config::Config};
 
+mod settings;
 /// Struct that helps with drawing the component
 struct TimeManagementTabArea {
     clock: Rect,
@@ -37,64 +39,6 @@ struct TimeManagementTabArea {
     footer: Rect,
 }
 
-#[derive(Default, Clone, Copy, FromRepr, EnumIter, strum_macros::Display, PartialEq, Eq, Hash)]
-enum TimerTechniquesAvailable {
-    #[default]
-    #[strum(to_string = "Pomodoro")]
-    Pomodoro,
-    #[strum(to_string = "Flowtime")]
-    FlowTime,
-}
-
-#[derive(Clone)]
-enum TimeTechniquesSettingsValue {
-    // String(String),
-    Duration(Duration),
-    Int(u32),
-}
-impl Display for TimeTechniquesSettingsValue {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                // TimeTechniquesSettingsValue::String(s) => s.clone(),
-                TimeTechniquesSettingsValue::Duration(duration) => TimerWidget::format_time_delta(
-                    chrono::Duration::from_std(*duration).unwrap_or_default(),
-                ),
-                TimeTechniquesSettingsValue::Int(n) => n.to_string(),
-            }
-        )
-    }
-}
-struct TimeTechniquesSettingsEntry {
-    name: String,
-    value: TimeTechniquesSettingsValue,
-    hint: String,
-}
-impl TimeTechniquesSettingsEntry {
-    fn update(&self, input: &str) -> Result<Self> {
-        debug!("New value input: {input}");
-        let value = match self.value {
-            TimeTechniquesSettingsValue::Duration(_) => TimeTechniquesSettingsValue::Duration(
-                match NaiveTime::parse_from_str(input, "%H:%M:%S") {
-                    Ok(t) => Ok(t),
-                    Err(_) => NaiveTime::parse_from_str(&format!("0:{input}"), "%H:%M:%S"),
-                }?
-                .signed_duration_since(NaiveTime::default())
-                .to_std()?,
-            ),
-            TimeTechniquesSettingsValue::Int(_) => {
-                TimeTechniquesSettingsValue::Int(input.parse::<u32>()?)
-            }
-        };
-        Ok(Self {
-            name: self.name.clone(),
-            value,
-            hint: self.hint.clone(),
-        })
-    }
-}
 #[derive(Default)]
 pub struct TimeManagementTab<'a> {
     // command_tx: Option<UnboundedSender<Action>>,
@@ -397,19 +341,17 @@ impl<'a> Component for TimeManagementTab<'a> {
                 }
                 Action::NextTechnique => {
                     self.time_techniques_list_state.select_next();
-
                     self.update_time_management_engine();
                 }
                 Action::Up => self.time_management_settings_state.select_previous(),
                 Action::Down => self.time_management_settings_state.select_next(),
+                // Block selection of other columns (should remove from config)
                 // Action::Left => self.time_management_settings_state.select_previous_column(),
                 // Action::Right => self.time_management_settings_state.select_next_column(),
                 Action::NextSegment => self.time_technique_switch(false)?,
                 Action::Pause => self.timer_state = self.timer_state.clone().pause(),
-
                 Action::Focus(mode) if mode != Mode::TimeManagement => self.is_focused = false,
                 Action::Focus(Mode::TimeManagement) => self.is_focused = true,
-
                 Action::Help => self.show_help = !self.show_help,
                 _ => (),
             }
