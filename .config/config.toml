@@ -1,3 +1,31 @@
+[keybindings.TimeManagement]
+
+# App
+"<q>" = "Quit"
+"<Ctrl-c>" = "Quit"
+"<Ctrl-z>" = "Suspend"
+"<?>" = "Help"
+# Tabs
+"<Shift-Right>" = "TabRight"
+"<Shift-l>" = "TabRight"
+"<Shift-Left>" = "TabLeft"
+"<shift-h>" = "TabLeft"
+# Navigation
+"<e>" = "Edit"
+"<Esc>" = "Escape"
+"<Enter>"= "Enter"
+"<Space>"="NextSegment"
+"<p>" = "Pause"
+"<Tab>"="NextTechnique"
+"<BackTab>"="PreviousTechnique"
+"<j>" = "Down"
+"<Down>" = "Down"
+"<k>" = "Up"
+"<Up>" = "Up"
+"<h>" = "Left"
+"<Left>" = "Left"
+"<l>" = "Right"
+"<Right>" = "Right"
 [keybindings.Explorer]
 # App
 "<q>" = "Quit"
@@ -25,7 +53,7 @@
 "<s>" = "Search"
 "<Esc>" = "Escape"
 "<o>" = "Open"
-"<e>" = "EditTask"
+"<e>" = "Edit"
 "<r>" = "ReloadVault"
 # Scrolling
 "<Ctrl-u>" = "ViewUp"

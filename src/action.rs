@@ -19,6 +19,10 @@ pub enum Action {
     Key(KeyEvent),
     ReloadVault,
     // Movements
+    PreviousTechnique,
+    NextTechnique,
+    NextSegment,
+    Pause,
     Up,
     Down,
     Left,
@@ -39,7 +43,7 @@ pub enum Action {
     TabRight,
     TabLeft,
     Open,
-    EditTask,
+    Edit,
     Focus(Mode),
 }
 impl PartialOrd for Action {
