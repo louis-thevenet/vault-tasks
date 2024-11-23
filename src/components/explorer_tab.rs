@@ -245,7 +245,7 @@ impl<'a> ExplorerTab<'a> {
             .collect()
     }
     pub fn render_footer(area: Rect, frame: &mut Frame) {
-        Line::raw("Press hjkl|◄▼▲▶ to move | o to open in editor | s to filter")
+        Line::raw("Navigate: <hjkl|◄▼▲▶> | Open in editor: o | Quick edit: e | Filter: s")
             .centered()
             .render(area, frame.buffer_mut());
     }
@@ -587,6 +587,7 @@ impl<'a> Component for ExplorerTab<'a> {
                 Action::Search => {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
                 }
+                Action::Edit => {
                     let entries = self
                         .task_mgr
                         .get_vault_data_from_path(&self.current_path, 0)?;
