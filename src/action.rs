@@ -43,7 +43,7 @@ pub enum Action {
     TabRight,
     TabLeft,
     Open,
-    EditTask,
+    Edit,
     Focus(Mode),
 }
 impl PartialOrd for Action {

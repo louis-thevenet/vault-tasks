@@ -43,7 +43,7 @@ serde = {version = "1.0.215", features = ["derive"]}
 tracing = "0.1.40"
 pretty_assertions = "1.4.1"
 strum = {version = "0.26.3", features = ["derive"]}
-vault-tasks-time-management = "0.3.0"
+vault-tasks-time-management = "0.3.1"
 strum_macros = "0.26.4"
 notify-rust = "4.11.3"
 

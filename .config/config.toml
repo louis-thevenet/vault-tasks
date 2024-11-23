@@ -11,8 +11,11 @@
 "<Shift-Left>" = "TabLeft"
 "<shift-h>" = "TabLeft"
 # Navigation
-"<Enter>"= "NextSegment"
-"<Space>"="Pause"
+"<e>" = "Edit"
+"<Esc>" = "Escape"
+"<Enter>"= "Enter"
+"<Space>"="NextSegment"
+"<p>" = "Pause"
 "<Tab>"="NextTechnique"
 "<BackTab>"="PreviousTechnique"
 "<j>" = "Down"
@@ -50,7 +53,7 @@
 "<s>" = "Search"
 "<Esc>" = "Escape"
 "<o>" = "Open"
-"<e>" = "EditTask"
+"<e>" = "Edit"
 "<r>" = "ReloadVault"
 # Scrolling
 "<Ctrl-u>" = "ViewUp"

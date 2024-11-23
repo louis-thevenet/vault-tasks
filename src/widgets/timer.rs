@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use better_panic::debug_install;
 use chrono::{NaiveTime, TimeDelta};
 use ratatui::widgets::{Block, Gauge, StatefulWidget, Widget};
 pub struct TimerWidget;
@@ -111,14 +110,14 @@ impl TimerState {
     }
 }
 impl TimerWidget {
-    fn format_time_delta(td: TimeDelta) -> String {
+    pub fn format_time_delta(td: TimeDelta) -> String {
         let seconds = td.num_seconds() % 60;
         let minutes = (td.num_seconds() / 60) % 60;
         let hours = (td.num_seconds() / 60) / 60;
 
         let mut res = String::new();
         if td.num_hours() > 0 {
-            res.push_str(&format!("{hours:02}"));
+            res.push_str(&format!("{hours:02}:"));
         }
         res.push_str(&format!("{minutes:02}:{seconds:02}"));
         res

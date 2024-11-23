@@ -587,7 +587,6 @@ impl<'a> Component for ExplorerTab<'a> {
                 Action::Search => {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
                 }
-                Action::EditTask => {
                     let entries = self
                         .task_mgr
                         .get_vault_data_from_path(&self.current_path, 0)?;
