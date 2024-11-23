@@ -1,8 +1,8 @@
 ---
-source: vault-tasks-tui/src/components/home.rs
+source: src/components/home.rs
 expression: terminal.backend()
 ---
-"  Explorer     Filter                                                           "
+"  Explorer     Filter     Time Management                                       "
 "                                                                                "
 "                                                                                "
 "                                                                                "
@@ -21,4 +21,4 @@ expression: terminal.backend()
 "                                                                                "
 "                                                                                "
 "                                                                                "
-"              Shift+<hl|◄►> to change tab | q to quit | ? for Help              "
+"                 Change tab: Shift+<hl|◄►> | Quit: q | Help: ?                  "
