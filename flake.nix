@@ -25,7 +25,7 @@
           ...
         }:
         let
-          cargoToml = builtins.fromTOML (builtins.readFile ./vault-tasks/Cargo.toml);
+          cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
           rust-toolchain = pkgs.symlinkJoin {
             name = "rust-toolchain";
             paths = with pkgs; [
