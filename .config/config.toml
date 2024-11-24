@@ -1,31 +1,3 @@
-[keybindings.TimeManagement]
-
-# App
-"<q>" = "Quit"
-"<Ctrl-c>" = "Quit"
-"<Ctrl-z>" = "Suspend"
-"<?>" = "Help"
-# Tabs
-"<Shift-Right>" = "TabRight"
-"<Shift-l>" = "TabRight"
-"<Shift-Left>" = "TabLeft"
-"<shift-h>" = "TabLeft"
-# Navigation
-"<e>" = "Edit"
-"<Esc>" = "Escape"
-"<Enter>"= "Enter"
-"<Space>"="NextSegment"
-"<p>" = "Pause"
-"<Tab>"="NextMethod"
-"<BackTab>"="PreviousMethod"
-"<j>" = "Down"
-"<Down>" = "Down"
-"<k>" = "Up"
-"<Up>" = "Up"
-"<h>" = "Left"
-"<Left>" = "Left"
-"<l>" = "Right"
-"<Right>" = "Right"
 [keybindings.Explorer]
 # App
 "<q>" = "Quit"
@@ -112,6 +84,34 @@
 "<Shift-Left>" = "TabLeft"
 "<Shift-h>" = "TabLeft"
 
+[keybindings.TimeManagement]
+# App
+"<q>" = "Quit"
+"<Ctrl-c>" = "Quit"
+"<Ctrl-z>" = "Suspend"
+"<?>" = "Help"
+# Tabs
+"<Shift-Right>" = "TabRight"
+"<Shift-l>" = "TabRight"
+"<Shift-Left>" = "TabLeft"
+"<shift-h>" = "TabLeft"
+# Navigation
+"<e>" = "Edit"
+"<Esc>" = "Escape"
+"<Enter>" = "Enter"
+"<Space>" = "NextSegment"
+"<p>" = "Pause"
+"<Tab>" = "NextMethod"
+"<BackTab>" = "PreviousMethod"
+"<j>" = "Down"
+"<Down>" = "Down"
+"<k>" = "Up"
+"<Up>" = "Up"
+"<h>" = "Left"
+"<Left>" = "Left"
+"<l>" = "Right"
+"<Right>" = "Right"
+
 [styles.Explorer]
 highlighted_entry = "dark grey on rgb 255 153 000"
 highlighted_searchbar = "rgb 255 153 000"
@@ -130,7 +130,45 @@ indent_length = 2
 parse_dot_files = false
 file_tags_propagation = true
 ignored = []
-# vault_path= "./test-vault"
+# vault_path= "./test-vault" # default vault path when none is provided
 explorer_default_search_string = "- [ ] "
 filter_default_search_string = ""
 task_state_marker = 'x'
+
+[[time_management_methods_settings.FlowTime]]
+name = "Break Factor"
+hint = "Break time is (focus time) / (break factor)"
+
+[time_management_methods_settings.FlowTime.value]
+Int = 5
+
+[[time_management_methods_settings.Pomodoro]]
+name = "Focus Time"
+hint = ""
+
+[time_management_methods_settings.Pomodoro.value.Duration]
+secs = 1500
+nanos = 0
+
+[[time_management_methods_settings.Pomodoro]]
+name = "Short Break Time"
+hint = ""
+
+[time_management_methods_settings.Pomodoro.value.Duration]
+secs = 300
+nanos = 0
+
+[[time_management_methods_settings.Pomodoro]]
+name = "Long Break Time"
+hint = ""
+
+[time_management_methods_settings.Pomodoro.value.Duration]
+secs = 900
+nanos = 0
+
+[[time_management_methods_settings.Pomodoro]]
+name = "Long Break Interval"
+hint = "Short breaks before a long break"
+
+[time_management_methods_settings.Pomodoro.value]
+Int = 4
