@@ -67,11 +67,14 @@
             RUST_BACKTRACE = "full";
             RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
 
-            nativeBuildInputs = nativeBuildInputs;
-            buildInputs = buildInputs ++ [
-              rust-toolchain
-              pkgs.clippy
-            ];
+            packages =
+              nativeBuildInputs
+              ++ buildInputs
+              ++ [
+                rust-toolchain
+                pkgs.clippy
+                pkgs.just
+              ];
           };
 
           # Add your auto-formatters here.

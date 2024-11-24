@@ -4,7 +4,7 @@
 
 It will parse any Markdown file or vault and display the tasks it contains.
 
-![Demo](./examples/demo_full.mp4)
+![Demo](./examples/demo_full.gif)
 
 ## Why
 
@@ -172,7 +172,7 @@ Check the key map within the app with `?`
 | `shift-tab` | Previous time management technique |
 | `tab`       | Next time management technique     |
 
-![](./examples/demo_pomodoro.gif)
+![](./examples/demo_time.gif)
 
 ### Modes
 
