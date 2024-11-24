@@ -4,7 +4,7 @@
 
 It will parse any Markdown file or vault and display the tasks it contains.
 
-![Demo](./examples/vault-tasks.gif)
+![Demo](./examples/demo_full.mp4)
 
 ## Why
 
@@ -98,10 +98,10 @@ See `vault-tasks --help` for basic usage.
 
 This is what you will see in the preview of this `README.md` in `vault-tasks`:
 
-![](./examples/demo_explorer.png)
+![](./examples/demo_readme_explorer.png)
 
-Or when filtering for `@today` tasks:
-![](./examples/demo_filter.png)
+<!-- Or when filtering for `@today` tasks: -->
+<!-- ![](./examples/demo_filter.png) -->
 
 ### Default Key Map
 
@@ -129,7 +129,7 @@ Check the key map within the app with `?`
 | `k` | `↑`, `shift-tab`  | Previous entry      |
 | `j` | `↓`, `tab`        | Next entry          |
 | `h` | `←`, `back_space` | Leave current entry |
-| `l` | `→`,`enter`       | Enter next entry    |
+| `l` | `→`,`enter`       | Enter current entry |
 
 ##### Commands
 
@@ -140,6 +140,8 @@ Check the key map within the app with `?`
 | `e` | Quickly edit selection                         |
 | `r` | Reload vault                                   |
 
+![](./examples/demo_explorer.gif)
+
 #### Filter Tab
 
 ##### Commands
@@ -148,6 +150,8 @@ Check the key map within the app with `?`
 | --------- | ------------------------ |
 | `enter`   | Focus/Unfocus search bar |
 | `Shift-s` | Change sorting mode      |
+
+![](./examples/demo_filter.gif)
 
 #### Time Management Tab
 
@@ -164,9 +168,11 @@ Check the key map within the app with `?`
 | ----------- | ---------------------------------- |
 | `space`     | Next segment (skip current)        |
 | `p`         | Pause timer                        |
-| `e`         | Edit setting                       |
+| `e`         | Edit selected setting              |
 | `shift-tab` | Previous time management technique |
 | `tab`       | Next time management technique     |
+
+![](./examples/demo_pomodoro.gif)
 
 ### Modes
 
