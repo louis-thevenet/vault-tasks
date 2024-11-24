@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use std::{
-    collections::HashMap,
+    collections::{hash_map::Entry, HashMap},
     env,
     fs::{create_dir_all, File},
     io::Write,
@@ -120,6 +120,30 @@ impl Config {
             for (style_key, style) in default_styles {
                 user_styles.entry(style_key.clone()).or_insert(*style);
             }
+        }
+        if let Entry::Vacant(e) = cfg
+            .time_management_methods_settings
+            .entry(MethodsAvailable::Pomodoro)
+        {
+            e.insert(
+                default_config
+                    .time_management_methods_settings
+                    .get(&MethodsAvailable::Pomodoro)
+                    .unwrap()
+                    .clone(),
+            );
+        }
+        if let Entry::Vacant(e) = cfg
+            .time_management_methods_settings
+            .entry(MethodsAvailable::FlowTime)
+        {
+            e.insert(
+                default_config
+                    .time_management_methods_settings
+                    .get(&MethodsAvailable::FlowTime)
+                    .unwrap()
+                    .clone(),
+            );
         }
 
         if let Some(path) = &args.vault_path {
