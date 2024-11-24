@@ -8,7 +8,7 @@ use tracing::debug;
 use crate::widgets::timer::TimerWidget;
 
 #[derive(Default, Clone, Copy, FromRepr, EnumIter, strum_macros::Display, PartialEq, Eq, Hash)]
-pub enum TimerTechniquesAvailable {
+pub enum MethodsAvailable {
     #[default]
     #[strum(to_string = "Pomodoro")]
     Pomodoro,
@@ -17,34 +17,41 @@ pub enum TimerTechniquesAvailable {
 }
 
 #[derive(Clone)]
-pub enum TimeTechniquesSettingsValue {
+/// Represents every value a method setting can be.
+pub enum MethodSettingsValue {
     Duration(Duration),
     Int(u32),
 }
-impl Display for TimeTechniquesSettingsValue {
+impl Display for MethodSettingsValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
             match self {
-                TimeTechniquesSettingsValue::Duration(duration) => TimerWidget::format_time_delta(
+                MethodSettingsValue::Duration(duration) => TimerWidget::format_time_delta(
                     chrono::Duration::from_std(*duration).unwrap_or_default(),
                 ),
-                TimeTechniquesSettingsValue::Int(n) => n.to_string(),
+                MethodSettingsValue::Int(n) => n.to_string(),
             }
         )
     }
 }
-pub struct TimeTechniquesSettingsEntry {
+
+/// Represents an entry in the setting table of a method.
+pub struct MethodSettingsEntry {
+    /// Name of the setting
     pub name: String,
-    pub value: TimeTechniquesSettingsValue,
+    /// Setting value
+    pub value: MethodSettingsValue,
+    /// An hint on the setting
     pub hint: String,
 }
-impl TimeTechniquesSettingsEntry {
+impl MethodSettingsEntry {
+    /// Parses an input string to a `MethodSettingValue`
     pub fn update(&self, input: &str) -> Result<Self> {
         debug!("New value input: {input}");
         let value = match self.value {
-            TimeTechniquesSettingsValue::Duration(_) => TimeTechniquesSettingsValue::Duration(
+            MethodSettingsValue::Duration(_) => MethodSettingsValue::Duration(
                 match NaiveTime::parse_from_str(input, "%H:%M:%S") {
                     Ok(t) => Ok(t),
                     Err(_) => NaiveTime::parse_from_str(&format!("0:{input}"), "%H:%M:%S"),
@@ -52,9 +59,7 @@ impl TimeTechniquesSettingsEntry {
                 .signed_duration_since(NaiveTime::default())
                 .to_std()?,
             ),
-            TimeTechniquesSettingsValue::Int(_) => {
-                TimeTechniquesSettingsValue::Int(input.parse::<u32>()?)
-            }
+            MethodSettingsValue::Int(_) => MethodSettingsValue::Int(input.parse::<u32>()?),
         };
         Ok(Self {
             name: self.name.clone(),
