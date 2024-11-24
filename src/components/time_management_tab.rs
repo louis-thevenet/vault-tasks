@@ -8,7 +8,6 @@ use layout::Flex;
 use notify_rust::Notification;
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Cell, List, ListItem, ListState, Row, Table, TableState};
-use settings::{MethodSettingsEntry, MethodSettingsValue, MethodsAvailable};
 use strum::IntoEnumIterator;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error};
@@ -22,6 +21,7 @@ use vault_tasks_time_management::{State, TimeManagementEngine};
 use super::Component;
 
 use crate::app::Mode;
+use crate::config::{MethodSettingsEntry, MethodSettingsValue, MethodsAvailable};
 use crate::tui::Tui;
 use crate::widgets::help_menu::HelpMenu;
 use crate::widgets::input_bar::InputBar;
@@ -191,41 +191,42 @@ impl<'a> Component for TimeManagementTab<'a> {
         self.config = config;
         self.methods_list_state.select(Some(0));
         self.help_menu_wigdet = HelpMenu::new(Mode::TimeManagement, &self.config);
-        self.method_settings.insert(
-            MethodsAvailable::FlowTime,
-            vec![MethodSettingsEntry {
-                name: String::from("Break Factor"),
-                value: MethodSettingsValue::Int(5),
-                hint: String::from("Break time is (focus time) / (break factor)"),
-            }],
-        );
+        self.method_settings = self.config.time_management_methods_settings.clone();
+        // self.method_settings.insert(
+        //     MethodsAvailable::FlowTime,
+        //     vec![MethodSettingsEntry {
+        //         name: String::from("Break Factor"),
+        //         value: MethodSettingsValue::Int(5),
+        //         hint: String::from("Break time is (focus time) / (break factor)"),
+        //     }],
+        // );
         self.method_settings_list_state.select_column(Some(1)); // Select value column
         self.method_settings_list_state.select(Some(0)); // Select first line
-        self.method_settings.insert(
-            MethodsAvailable::Pomodoro,
-            vec![
-                MethodSettingsEntry {
-                    name: String::from("Focus Time"),
-                    value: MethodSettingsValue::Duration(Duration::from_secs(60 * 25)),
-                    hint: String::new(),
-                },
-                MethodSettingsEntry {
-                    name: String::from("Short Break Time"),
-                    value: MethodSettingsValue::Duration(Duration::from_secs(60 * 5)),
-                    hint: String::new(),
-                },
-                MethodSettingsEntry {
-                    name: String::from("Long Break Time"),
-                    value: MethodSettingsValue::Duration(Duration::from_secs(60 * 15)),
-                    hint: String::new(),
-                },
-                MethodSettingsEntry {
-                    name: String::from("Long Break Interval"),
-                    value: MethodSettingsValue::Int(4),
-                    hint: String::from("Short breaks before a long break"),
-                },
-            ],
-        );
+                                                         // self.method_settings.insert(
+                                                         //     MethodsAvailable::Pomodoro,
+                                                         //     vec![
+                                                         //         MethodSettingsEntry {
+                                                         //             name: String::from("Focus Time"),
+                                                         //             value: MethodSettingsValue::Duration(Duration::from_secs(60 * 25)),
+                                                         //             hint: String::new(),
+                                                         //         },
+                                                         //         MethodSettingsEntry {
+                                                         //             name: String::from("Short Break Time"),
+                                                         //             value: MethodSettingsValue::Duration(Duration::from_secs(60 * 5)),
+                                                         //             hint: String::new(),
+                                                         //         },
+                                                         //         MethodSettingsEntry {
+                                                         //             name: String::from("Long Break Time"),
+                                                         //             value: MethodSettingsValue::Duration(Duration::from_secs(60 * 15)),
+                                                         //             hint: String::new(),
+                                                         //         },
+                                                         //         MethodSettingsEntry {
+                                                         //             name: String::from("Long Break Interval"),
+                                                         //             value: MethodSettingsValue::Int(4),
+                                                         //             hint: String::from("Short breaks before a long break"),
+                                                         //         },
+                                                         //     ],
+                                                         // );
         Ok(())
     }
 

@@ -1,3 +1,8 @@
+"time_management_method_settings"=[
+  "Pomodoro":[],
+  "FlowTime":[]
+]
+
 [keybindings.TimeManagement]
 
 # App
@@ -134,3 +139,5 @@ ignored = []
 explorer_default_search_string = "- [ ] "
 filter_default_search_string = ""
 task_state_marker = 'x'
+
+
