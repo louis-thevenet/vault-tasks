@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/louis-thevenet/vault-tasks/compare/v0.5.0...v0.5.1) (2024-11-24)
+
+
+### Bug Fixes
+
+* **config:** crash if no time management settings were provided in config file ([1f2f0a7](https://github.com/louis-thevenet/vault-tasks/commit/1f2f0a7748273aa5e2f7ba5e522cff81aa51dbac))
+* **config:** merge highlight styles into Home section ([ada558e](https://github.com/louis-thevenet/vault-tasks/commit/ada558ed8c6b16ad919e027a9af8d05981d36a5d))
+
 ## [0.5.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.4.0...v0.5.0) (2024-11-24)
 
 
