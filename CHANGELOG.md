@@ -5,6 +5,22 @@
 
 ### Features
 
+* add config option for time management methods ([ecc6c42](https://github.com/louis-thevenet/vault-tasks/commit/ecc6c4243719ed81661776e0de54684f54349e60))
+* add Time Management tab ([#27](https://github.com/louis-thevenet/vault-tasks/issues/27)) ([09624cf](https://github.com/louis-thevenet/vault-tasks/commit/09624cfe8ff87813b06602db683c3d9088c148ea))
+* **core:** include relative date in stdout mode ([671408b](https://github.com/louis-thevenet/vault-tasks/commit/671408b2dc056969387667b0457f83f6fad83f33))
+
+
+### Bug Fixes
+
+* add a cli argument to show fps and tps counters ([dd2c15a](https://github.com/louis-thevenet/vault-tasks/commit/dd2c15aee941b4bbeafb1fb6995139539b89aadb))
+* home component not registering when focusing time management tab ([a792263](https://github.com/louis-thevenet/vault-tasks/commit/a7922638d0560cd72342e37024116467af7fefe3))
+* time management settings wrong line selected on startup ([07d63e2](https://github.com/louis-thevenet/vault-tasks/commit/07d63e281027dbb61f59405682d6d1b6b0a6e2e3))
+
+## [0.5.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.4.0...v0.5.0) (2024-11-24)
+
+
+### Features
+
 * add config option for time management methods ([70fbb59](https://github.com/louis-thevenet/vault-tasks/commit/70fbb594595bf9ece7fcd73b774b86c818155799))
 * add Time Management tab ([#27](https://github.com/louis-thevenet/vault-tasks/issues/27)) ([8d5c12c](https://github.com/louis-thevenet/vault-tasks/commit/8d5c12ce8581f0ab9468a17bcf7ff7ea5801a987))
 * **core:** include relative date in stdout mode ([7fdff9c](https://github.com/louis-thevenet/vault-tasks/commit/7fdff9c18087e8df4cbae5b1425ce451c423944b))
