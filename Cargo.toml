@@ -51,7 +51,7 @@ notify-rust = "4.11.3"
 insta = {version = "1.41.1", features = ["yaml"]}
 
 # Config for 'cargo dist'
-[package.metadata.dist]
+[workspace.metadata.dist]
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
 cargo-dist-version = "0.11.1"
 # CI backends to support
@@ -70,7 +70,7 @@ description = "TUI Markdown Task Manager"
 build = "build.rs"
 categories = ["command-line-utilities", "visualization"]
 keywords = ["markdown", "task-manager", "productivity", "tui", "obsidian"]
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 repository = "https://github.com/louis-thevenet/vault-tasks"
 authors = ["Louis Thevenet <louis.tvnt@gmail.com>"]
