@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::time::Duration;
 
 use color_eyre::eyre::bail;
@@ -8,7 +7,6 @@ use layout::Flex;
 use notify_rust::Notification;
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Cell, List, ListItem, ListState, Row, Table, TableState};
-use settings::{MethodSettingsEntry, MethodSettingsValue, MethodsAvailable};
 use strum::IntoEnumIterator;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error};
@@ -22,13 +20,13 @@ use vault_tasks_time_management::{State, TimeManagementEngine};
 use super::Component;
 
 use crate::app::Mode;
+use crate::config::{MethodSettingsValue, MethodsAvailable};
 use crate::tui::Tui;
 use crate::widgets::help_menu::HelpMenu;
 use crate::widgets::input_bar::InputBar;
 use crate::widgets::timer::{TimerState, TimerWidget};
 use crate::{action::Action, config::Config};
 
-mod settings;
 /// Struct that helps with drawing the component
 struct TimeManagementTabArea {
     timer: Rect,
@@ -46,7 +44,6 @@ pub struct TimeManagementTab<'a> {
     timer_state: TimerState,
     tm_engine: TimeManagementEngine,
     methods_list_state: ListState,
-    method_settings: HashMap<MethodsAvailable, Vec<MethodSettingsEntry>>,
     method_settings_list_state: TableState,
     edit_setting_bar: InputBar<'a>,
     // Whether the help panel is open or not
@@ -121,7 +118,8 @@ impl<'a> TimeManagementTab<'a> {
     }
     /// Retrieve a settings value from its key.
     fn find_settings_value(&self, method: MethodsAvailable, key: &str) -> MethodSettingsValue {
-        self.method_settings
+        self.config
+            .time_management_methods_settings
             .get(&method)
             .unwrap()
             .iter()
@@ -191,41 +189,12 @@ impl<'a> Component for TimeManagementTab<'a> {
         self.config = config;
         self.methods_list_state.select(Some(0));
         self.help_menu_wigdet = HelpMenu::new(Mode::TimeManagement, &self.config);
-        self.method_settings.insert(
-            MethodsAvailable::FlowTime,
-            vec![MethodSettingsEntry {
-                name: String::from("Break Factor"),
-                value: MethodSettingsValue::Int(5),
-                hint: String::from("Break time is (focus time) / (break factor)"),
-            }],
-        );
-        self.method_settings_list_state.select_column(Some(1)); // Select value column
-        self.method_settings_list_state.select(Some(0)); // Select first line
-        self.method_settings.insert(
-            MethodsAvailable::Pomodoro,
-            vec![
-                MethodSettingsEntry {
-                    name: String::from("Focus Time"),
-                    value: MethodSettingsValue::Duration(Duration::from_secs(60 * 25)),
-                    hint: String::new(),
-                },
-                MethodSettingsEntry {
-                    name: String::from("Short Break Time"),
-                    value: MethodSettingsValue::Duration(Duration::from_secs(60 * 5)),
-                    hint: String::new(),
-                },
-                MethodSettingsEntry {
-                    name: String::from("Long Break Time"),
-                    value: MethodSettingsValue::Duration(Duration::from_secs(60 * 15)),
-                    hint: String::new(),
-                },
-                MethodSettingsEntry {
-                    name: String::from("Long Break Interval"),
-                    value: MethodSettingsValue::Int(4),
-                    hint: String::from("Short breaks before a long break"),
-                },
-            ],
-        );
+        if self.config.time_management_methods_settings.is_empty() {
+            error!("Time management settings are empty");
+        } else {
+            self.method_settings_list_state.select_column(Some(1)); // Select value column
+            self.method_settings_list_state.select(Some(0)); // Select first line
+        }
         Ok(())
     }
 
@@ -250,7 +219,11 @@ impl<'a> Component for TimeManagementTab<'a> {
                     let selected_method = MethodsAvailable::from_repr(
                         self.methods_list_state.selected().unwrap_or_default(),
                     );
-                    let Some(settings) = self.method_settings.get(&selected_method.unwrap()) else {
+                    let Some(settings) = self
+                        .config
+                        .time_management_methods_settings
+                        .get(&selected_method.unwrap())
+                    else {
                         bail!("Tried to edit a time management method that doesn't exist")
                     };
 
@@ -262,7 +235,8 @@ impl<'a> Component for TimeManagementTab<'a> {
                     debug!("Editing field {}", old_value.name);
                     // Don't accept invalid inputs
                     if let Ok(value) = old_value.update(input) {
-                        self.method_settings
+                        self.config
+                            .time_management_methods_settings
                             .get_mut(&selected_method.unwrap())
                             .unwrap()[self.method_settings_list_state.selected().unwrap()] = value;
                         self.edit_setting_bar.is_focused = false;
@@ -299,7 +273,11 @@ impl<'a> Component for TimeManagementTab<'a> {
                     let selected_method = MethodsAvailable::from_repr(
                         self.methods_list_state.selected().unwrap_or_default(),
                     );
-                    let Some(settings) = self.method_settings.get(&selected_method.unwrap()) else {
+                    let Some(settings) = self
+                        .config
+                        .time_management_methods_settings
+                        .get(&selected_method.unwrap())
+                    else {
                         bail!("Tried to edit a time management method that doesn't exist")
                     };
 
@@ -443,7 +421,8 @@ impl<'a> TimeManagementTab<'a> {
         let selected_method =
             MethodsAvailable::from_repr(self.methods_list_state.selected().unwrap_or_default());
         let rows = self
-            .method_settings
+            .config
+            .time_management_methods_settings
             .get(&selected_method.unwrap_or_default())
             .unwrap()
             .iter()
