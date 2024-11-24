@@ -116,7 +116,7 @@ impl<'a> FilterTab<'a> {
             .styles
             .get(&crate::app::Mode::Home)
             .unwrap()
-            .get("highlighted_tab")
+            .get("highlighted_style")
             .unwrap();
 
         let selected_tab_index = self.sorting_mode as usize;
@@ -253,9 +253,9 @@ impl<'a> Component for FilterTab<'a> {
                 *self
                     .config
                     .styles
-                    .get(&crate::app::Mode::Filter)
+                    .get(&crate::app::Mode::Home)
                     .unwrap()
-                    .get("highlighted_searchbar")
+                    .get("highlighted_bar_style")
                     .unwrap()
             } else {
                 Style::new()

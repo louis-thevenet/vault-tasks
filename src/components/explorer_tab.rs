@@ -358,9 +358,9 @@ impl<'a> ExplorerTab<'a> {
                 *self
                     .config
                     .styles
-                    .get(&crate::app::Mode::Explorer)
+                    .get(&crate::app::Mode::Home)
                     .unwrap()
-                    .get("highlighted_searchbar")
+                    .get("highlighted_bar_style")
                     .unwrap()
             } else {
                 Style::new()
@@ -429,9 +429,9 @@ impl<'a> ExplorerTab<'a> {
                 *self
                     .config
                     .styles
-                    .get(&crate::app::Mode::Explorer)
+                    .get(&crate::app::Mode::Home)
                     .unwrap()
-                    .get("highlighted_searchbar")
+                    .get("highlighted_bar_style")
                     .unwrap(),
             ),
         );
@@ -661,9 +661,9 @@ impl<'a> Component for ExplorerTab<'a> {
         let highlighted_style = *self
             .config
             .styles
-            .get(&crate::app::Mode::Explorer)
+            .get(&crate::app::Mode::Home)
             .unwrap()
-            .get("highlighted_entry")
+            .get("highlighted_style")
             .unwrap();
 
         // Left Block

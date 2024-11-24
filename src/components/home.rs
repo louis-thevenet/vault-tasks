@@ -46,7 +46,7 @@ impl Home {
             .styles
             .get(&crate::app::Mode::Home)
             .unwrap()
-            .get("highlighted_tab")
+            .get("highlighted_style")
             .unwrap();
 
         let selected_tab_index = self.selected_tab as usize;

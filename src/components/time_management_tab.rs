@@ -356,7 +356,7 @@ impl<'a> TimeManagementTab<'a> {
             .styles
             .get(&crate::app::Mode::Home)
             .unwrap()
-            .get("highlighted_tab")
+            .get("highlighted_style")
             .unwrap();
 
         let items: Vec<ListItem> = MethodsAvailable::iter()
@@ -395,9 +395,9 @@ impl<'a> TimeManagementTab<'a> {
                 *self
                     .config
                     .styles
-                    .get(&crate::app::Mode::Explorer)
+                    .get(&crate::app::Mode::Home)
                     .unwrap()
-                    .get("highlighted_searchbar")
+                    .get("highlighted_bar_style")
                     .unwrap(),
             ),
         );
@@ -439,7 +439,7 @@ impl<'a> TimeManagementTab<'a> {
             .styles
             .get(&crate::app::Mode::Home)
             .unwrap()
-            .get("highlighted_tab")
+            .get("highlighted_style")
             .unwrap();
 
         StatefulWidget::render(
