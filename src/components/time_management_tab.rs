@@ -8,9 +8,7 @@ use layout::Flex;
 use notify_rust::Notification;
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Cell, List, ListItem, ListState, Row, Table, TableState};
-use settings::{
-    TimeTechniquesSettingsEntry, TimeTechniquesSettingsValue, TimerTechniquesAvailable,
-};
+use settings::{MethodSettingsEntry, MethodSettingsValue, MethodsAvailable};
 use strum::IntoEnumIterator;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error};
@@ -33,9 +31,9 @@ use crate::{action::Action, config::Config};
 mod settings;
 /// Struct that helps with drawing the component
 struct TimeManagementTabArea {
-    clock: Rect,
-    technique_list: Rect,
-    technique_settings: Rect,
+    timer: Rect,
+    methods_list: Rect,
+    method_settings: Rect,
     footer: Rect,
 }
 
@@ -45,13 +43,11 @@ pub struct TimeManagementTab<'a> {
     config: Config,
     is_focused: bool,
     // Timer
-    time_techniques_list_state: ListState,
     timer_state: TimerState,
-    timer_engine: TimeManagementEngine,
-    time_management_technique_settings:
-        HashMap<TimerTechniquesAvailable, Vec<TimeTechniquesSettingsEntry>>,
-
-    time_management_settings_state: TableState,
+    tm_engine: TimeManagementEngine,
+    methods_list_state: ListState,
+    method_settings: HashMap<MethodsAvailable, Vec<MethodSettingsEntry>>,
+    method_settings_list_state: TableState,
     edit_setting_bar: InputBar<'a>,
     // Whether the help panel is open or not
     show_help: bool,
@@ -70,12 +66,12 @@ impl<'a> TimeManagementTab<'a> {
             Constraint::Length(1),
             Constraint::Length(1),
         ]);
-        let [_header, clock, techniques_area, footer, _tab_footera] = vertical.areas(area);
+        let [_header, clock, methods_area, footer, _tab_footera] = vertical.areas(area);
 
-        let [technique_list, technique_settings] = Layout::horizontal([
+        let [methods_list, methods_settings] = Layout::horizontal([
             Constraint::Length(
                 u16::try_from(
-                    TimerTechniquesAvailable::iter()
+                    MethodsAvailable::iter()
                         .map(|t| 3 + 1 + t.to_string().len())
                         .max()
                         .unwrap_or_default(),
@@ -84,21 +80,23 @@ impl<'a> TimeManagementTab<'a> {
             ),
             Constraint::Min(0),
         ])
-        .areas(techniques_area);
+        .areas(methods_area);
 
         TimeManagementTabArea {
-            clock,
-            technique_list,
-            technique_settings,
+            timer: clock,
+            methods_list,
+            method_settings: methods_settings,
             footer,
         }
     }
-    fn time_technique_switch(&mut self, notify: bool) -> Result<()> {
+
+    /// Skips to the next segment using the `TimeManagementEngine`.
+    fn time_management_method_switch(&mut self, notify: bool) -> Result<()> {
         let time_spent = match self.timer_state.get_time_spent() {
             Ok(d) => d,
             Err(e) => bail!("{e}"),
         };
-        let (to_spend, notification_body) = match self.timer_engine.switch(time_spent) {
+        let (to_spend, notification_body) = match self.tm_engine.switch(time_spent) {
             State::Focus(d) => (d, "Time to focus!"),
             State::Break(d) => (d, "Time for a break!"),
         };
@@ -116,19 +114,15 @@ impl<'a> TimeManagementTab<'a> {
     }
     fn render_footer(area: Rect, frame: &mut Frame) {
         Line::raw(
-            "Next Segment: <space> | Pause: p | Edit setting: e (navigate: j|k | ▼|▲) | Cycle techniques: tab|Shift-tab",
+            "Next Segment: <space> | Pause: p | Edit setting: e (navigate: j|k | ▼|▲) | Cycle methods: tab|Shift-tab",
         )
         .centered()
         .render(area, frame.buffer_mut());
     }
-
-    fn find_settings_value(
-        &self,
-        technique: TimerTechniquesAvailable,
-        key: &str,
-    ) -> TimeTechniquesSettingsValue {
-        self.time_management_technique_settings
-            .get(&technique)
+    /// Retrieve a settings value from its key.
+    fn find_settings_value(&self, method: MethodsAvailable, key: &str) -> MethodSettingsValue {
+        self.method_settings
+            .get(&method)
             .unwrap()
             .iter()
             .find(|e| e.name == key)
@@ -136,54 +130,47 @@ impl<'a> TimeManagementTab<'a> {
             .value
             .clone()
     }
-    fn find_settings_int(&self, technique: TimerTechniquesAvailable, key: &str) -> u32 {
-        match self.find_settings_value(technique, key) {
-            TimeTechniquesSettingsValue::Duration(_duration) => 0,
-            TimeTechniquesSettingsValue::Int(n) => n,
+    fn find_settings_int(&self, method: MethodsAvailable, key: &str) -> u32 {
+        match self.find_settings_value(method, key) {
+            MethodSettingsValue::Duration(_duration) => 0,
+            MethodSettingsValue::Int(n) => n,
         }
     }
-    fn find_settings_duration(&self, technique: TimerTechniquesAvailable, key: &str) -> Duration {
-        match self.find_settings_value(technique, key) {
-            TimeTechniquesSettingsValue::Duration(duration) => duration,
-            TimeTechniquesSettingsValue::Int(_n) => Duration::ZERO,
+    fn find_settings_duration(&self, method: MethodsAvailable, key: &str) -> Duration {
+        match self.find_settings_value(method, key) {
+            MethodSettingsValue::Duration(duration) => duration,
+            MethodSettingsValue::Int(_n) => Duration::ZERO,
         }
     }
+    /// Updates `TImeManagementEngine` to the new selected method.
     fn update_time_management_engine(&mut self) {
-        let technique: Box<dyn TimeManagementTechnique> = if let Some(i) =
-            self.time_techniques_list_state.selected()
+        let method: Box<dyn TimeManagementTechnique> = if let Some(i) =
+            self.methods_list_state.selected()
         {
-            match TimerTechniquesAvailable::from_repr(i) {
-                Some(TimerTechniquesAvailable::Pomodoro) => Box::new(Pomodoro::new(
-                    self.find_settings_duration(TimerTechniquesAvailable::Pomodoro, "Focus Time"),
-                    self.find_settings_int(
-                        TimerTechniquesAvailable::Pomodoro,
-                        "Long Break Interval",
-                    ) as usize,
-                    self.find_settings_duration(
-                        TimerTechniquesAvailable::Pomodoro,
-                        "Short Break Time",
-                    ),
-                    self.find_settings_duration(
-                        TimerTechniquesAvailable::Pomodoro,
-                        "Long Break Time",
-                    ),
+            match MethodsAvailable::from_repr(i) {
+                Some(MethodsAvailable::Pomodoro) => Box::new(Pomodoro::new(
+                    self.find_settings_duration(MethodsAvailable::Pomodoro, "Focus Time"),
+                    self.find_settings_int(MethodsAvailable::Pomodoro, "Long Break Interval")
+                        as usize,
+                    self.find_settings_duration(MethodsAvailable::Pomodoro, "Short Break Time"),
+                    self.find_settings_duration(MethodsAvailable::Pomodoro, "Long Break Time"),
                 )),
-                Some(TimerTechniquesAvailable::FlowTime) => Box::new(
+                Some(MethodsAvailable::FlowTime) => Box::new(
                     FlowTime::new(
-                        self.find_settings_int(TimerTechniquesAvailable::FlowTime, "Break Factor"),
+                        self.find_settings_int(MethodsAvailable::FlowTime, "Break Factor"),
                     )
                     .unwrap(),
                 ),
                 None => {
-                    error!("No corresponding technique found, yet an update was triggered");
+                    error!("No corresponding time management method found, yet an update was triggered");
                     return;
                 }
             }
         } else {
-            error!("No technique selected, yet an update was triggered");
+            error!("No time management method selected, yet an update was triggered");
             return;
         };
-        self.timer_engine = TimeManagementEngine::new(technique);
+        self.tm_engine = TimeManagementEngine::new(method);
         self.timer_state = TimerState::default();
     }
 }
@@ -202,39 +189,39 @@ impl<'a> Component for TimeManagementTab<'a> {
 
     fn register_config_handler(&mut self, config: Config) -> Result<()> {
         self.config = config;
-        self.time_techniques_list_state.select(Some(0));
+        self.methods_list_state.select(Some(0));
         self.help_menu_wigdet = HelpMenu::new(Mode::TimeManagement, &self.config);
-        self.time_management_technique_settings.insert(
-            TimerTechniquesAvailable::FlowTime,
-            vec![TimeTechniquesSettingsEntry {
+        self.method_settings.insert(
+            MethodsAvailable::FlowTime,
+            vec![MethodSettingsEntry {
                 name: String::from("Break Factor"),
-                value: TimeTechniquesSettingsValue::Int(5),
+                value: MethodSettingsValue::Int(5),
                 hint: String::from("Break time is (focus time) / (break factor)"),
             }],
         );
-        self.time_management_settings_state.select_column(Some(1)); // Select value column
-        self.time_management_settings_state.select(Some(0)); // Select first line
-        self.time_management_technique_settings.insert(
-            TimerTechniquesAvailable::Pomodoro,
+        self.method_settings_list_state.select_column(Some(1)); // Select value column
+        self.method_settings_list_state.select(Some(0)); // Select first line
+        self.method_settings.insert(
+            MethodsAvailable::Pomodoro,
             vec![
-                TimeTechniquesSettingsEntry {
+                MethodSettingsEntry {
                     name: String::from("Focus Time"),
-                    value: TimeTechniquesSettingsValue::Duration(Duration::from_secs(60 * 25)),
+                    value: MethodSettingsValue::Duration(Duration::from_secs(60 * 25)),
                     hint: String::new(),
                 },
-                TimeTechniquesSettingsEntry {
+                MethodSettingsEntry {
                     name: String::from("Short Break Time"),
-                    value: TimeTechniquesSettingsValue::Duration(Duration::from_secs(60 * 5)),
+                    value: MethodSettingsValue::Duration(Duration::from_secs(60 * 5)),
                     hint: String::new(),
                 },
-                TimeTechniquesSettingsEntry {
+                MethodSettingsEntry {
                     name: String::from("Long Break Time"),
-                    value: TimeTechniquesSettingsValue::Duration(Duration::from_secs(60 * 15)),
+                    value: MethodSettingsValue::Duration(Duration::from_secs(60 * 15)),
                     hint: String::new(),
                 },
-                TimeTechniquesSettingsEntry {
+                MethodSettingsEntry {
                     name: String::from("Long Break Interval"),
-                    value: TimeTechniquesSettingsValue::Int(4),
+                    value: MethodSettingsValue::Int(4),
                     hint: String::from("Short breaks before a long break"),
                 },
             ],
@@ -247,7 +234,7 @@ impl<'a> Component for TimeManagementTab<'a> {
         let _ = tui;
         // We always perform this action
         if matches!(action, Action::Tick) && self.timer_state.tick() {
-            self.time_technique_switch(true)?;
+            self.time_management_method_switch(true)?;
         }
 
         if !self.is_focused {
@@ -260,30 +247,24 @@ impl<'a> Component for TimeManagementTab<'a> {
             match action {
                 Action::Enter => {
                     let input = self.edit_setting_bar.input.value();
-                    let technique = TimerTechniquesAvailable::from_repr(
-                        self.time_techniques_list_state
-                            .selected()
-                            .unwrap_or_default(),
+                    let selected_method = MethodsAvailable::from_repr(
+                        self.methods_list_state.selected().unwrap_or_default(),
                     );
-                    let Some(settings) = self
-                        .time_management_technique_settings
-                        .get(&technique.unwrap())
-                    else {
-                        bail!("Tried to edit a technique that doesn't exist")
+                    let Some(settings) = self.method_settings.get(&selected_method.unwrap()) else {
+                        bail!("Tried to edit a time management method that doesn't exist")
                     };
 
                     let Some(old_value) =
-                        settings.get(self.time_management_settings_state.selected().unwrap())
+                        settings.get(self.method_settings_list_state.selected().unwrap())
                     else {
-                        bail!("Tried to edit settings from a technique that doesn't exist")
+                        bail!("Tried to edit settings from a time management method that doesn't exist")
                     };
                     debug!("Editing field {}", old_value.name);
                     // Don't accept invalid inputs
                     if let Ok(value) = old_value.update(input) {
-                        self.time_management_technique_settings
-                            .get_mut(&technique.unwrap())
-                            .unwrap()[self.time_management_settings_state.selected().unwrap()] =
-                            value;
+                        self.method_settings
+                            .get_mut(&selected_method.unwrap())
+                            .unwrap()[self.method_settings_list_state.selected().unwrap()] = value;
                         self.edit_setting_bar.is_focused = false;
 
                         // Update engine
@@ -315,40 +296,35 @@ impl<'a> Component for TimeManagementTab<'a> {
         } else {
             match action {
                 Action::Edit => {
-                    let technique = TimerTechniquesAvailable::from_repr(
-                        self.time_techniques_list_state
-                            .selected()
-                            .unwrap_or_default(),
+                    let selected_method = MethodsAvailable::from_repr(
+                        self.methods_list_state.selected().unwrap_or_default(),
                     );
-                    let Some(settings) = self
-                        .time_management_technique_settings
-                        .get(&technique.unwrap())
-                    else {
-                        bail!("Tried to edit a technique that doesn't exist")
+                    let Some(settings) = self.method_settings.get(&selected_method.unwrap()) else {
+                        bail!("Tried to edit a time management method that doesn't exist")
                     };
 
                     let Some(old_value) =
-                        settings.get(self.time_management_settings_state.selected().unwrap())
+                        settings.get(self.method_settings_list_state.selected().unwrap())
                     else {
-                        bail!("Tried to edit settings from a technique that doesn't exist")
+                        bail!("Tried to edit settings from a time management method that doesn't exist")
                     };
                     self.edit_setting_bar.input = Input::new(old_value.value.to_string());
                     self.edit_setting_bar.is_focused = true;
                 }
-                Action::PreviousTechnique => {
-                    self.time_techniques_list_state.select_previous();
+                Action::PreviousMethod => {
+                    self.methods_list_state.select_previous();
                     self.update_time_management_engine();
                 }
-                Action::NextTechnique => {
-                    self.time_techniques_list_state.select_next();
+                Action::NextMethod => {
+                    self.methods_list_state.select_next();
                     self.update_time_management_engine();
                 }
-                Action::Up => self.time_management_settings_state.select_previous(),
-                Action::Down => self.time_management_settings_state.select_next(),
+                Action::Up => self.method_settings_list_state.select_previous(),
+                Action::Down => self.method_settings_list_state.select_next(),
                 // Block selection of other columns (should remove from config)
                 // Action::Left => self.time_management_settings_state.select_previous_column(),
                 // Action::Right => self.time_management_settings_state.select_next_column(),
-                Action::NextSegment => self.time_technique_switch(false)?,
+                Action::NextSegment => self.time_management_method_switch(false)?,
                 Action::Pause => self.timer_state = self.timer_state.clone().pause(),
                 Action::Focus(mode) if mode != Mode::TimeManagement => self.is_focused = false,
                 Action::Focus(Mode::TimeManagement) => self.is_focused = true,
@@ -367,13 +343,13 @@ impl<'a> Component for TimeManagementTab<'a> {
         let areas = Self::split_frame(area);
 
         // Timer
-        TimerWidget {}.render(areas.clock, frame.buffer_mut(), &mut self.timer_state);
+        TimerWidget {}.render(areas.timer, frame.buffer_mut(), &mut self.timer_state);
 
-        // Techniques List
-        self.render_technique_list(areas.technique_list, frame.buffer_mut());
+        // Methods List
+        self.render_methods_list(areas.methods_list, frame.buffer_mut());
 
-        // Technique Settings
-        self.render_technique_settings(areas.technique_settings, frame.buffer_mut());
+        // Method Settings
+        self.render_methods_settings(areas.method_settings, frame.buffer_mut());
 
         if self.edit_setting_bar.is_focused {
             self.render_edit_bar(frame, area);
@@ -392,9 +368,9 @@ impl<'a> Component for TimeManagementTab<'a> {
     }
 }
 impl<'a> TimeManagementTab<'a> {
-    fn render_technique_list(&mut self, area: Rect, buffer: &mut Buffer) {
+    fn render_methods_list(&mut self, area: Rect, buffer: &mut Buffer) {
         let block = Block::new()
-            .title(Line::raw("Techniques").centered())
+            .title(Line::raw("Methods").centered())
             .borders(Borders::ALL);
 
         let highlight_style = *self
@@ -405,7 +381,7 @@ impl<'a> TimeManagementTab<'a> {
             .get("highlighted_tab")
             .unwrap();
 
-        let items: Vec<ListItem> = TimerTechniquesAvailable::iter()
+        let items: Vec<ListItem> = MethodsAvailable::iter()
             .map(|item| ListItem::from(item.to_string()))
             .collect();
 
@@ -413,7 +389,7 @@ impl<'a> TimeManagementTab<'a> {
             .block(block)
             .highlight_style(highlight_style);
 
-        StatefulWidget::render(list, area, buffer, &mut self.time_techniques_list_state);
+        StatefulWidget::render(list, area, buffer, &mut self.methods_list_state);
     }
     fn render_edit_bar(&mut self, frame: &mut Frame, area: Rect) {
         let vertical = Layout::vertical([Constraint::Length(3)]).flex(Flex::Center);
@@ -451,7 +427,7 @@ impl<'a> TimeManagementTab<'a> {
             .clone()
             .render(area, frame.buffer_mut());
     }
-    fn render_technique_settings(&mut self, area: Rect, buffer: &mut Buffer) {
+    fn render_methods_settings(&mut self, area: Rect, buffer: &mut Buffer) {
         let header = ["Name", "Value", "Hint"]
             .into_iter()
             .map(|s| Cell::new(Span::from(s).into_centered_line()))
@@ -459,19 +435,16 @@ impl<'a> TimeManagementTab<'a> {
             .height(2);
 
         let widths = [
-            Constraint::Percentage(33),
-            Constraint::Percentage(33),
-            Constraint::Percentage(33),
+            Constraint::Percentage(25),
+            Constraint::Percentage(25),
+            Constraint::Percentage(50),
         ];
 
-        let technique = TimerTechniquesAvailable::from_repr(
-            self.time_techniques_list_state
-                .selected()
-                .unwrap_or_default(),
-        );
+        let selected_method =
+            MethodsAvailable::from_repr(self.methods_list_state.selected().unwrap_or_default());
         let rows = self
-            .time_management_technique_settings
-            .get(&technique.unwrap_or_default())
+            .method_settings
+            .get(&selected_method.unwrap_or_default())
             .unwrap()
             .iter()
             .map(|stg| {
@@ -497,7 +470,7 @@ impl<'a> TimeManagementTab<'a> {
                 .block(Block::bordered().title("Settings")),
             area,
             buffer,
-            &mut self.time_management_settings_state,
+            &mut self.method_settings_list_state,
         );
     }
 }
