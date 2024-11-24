@@ -213,7 +213,7 @@ impl<'a> Component for TimeManagementTab<'a> {
             }],
         );
         self.time_management_settings_state.select_column(Some(1)); // Select value column
-        self.time_management_settings_state.select(Some(1)); // Select value column
+        self.time_management_settings_state.select(Some(0)); // Select first line
         self.time_management_technique_settings.insert(
             TimerTechniquesAvailable::Pomodoro,
             vec![
