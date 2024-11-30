@@ -83,11 +83,32 @@ impl<'a> ExplorerTab<'a> {
         }
         self.entries_center_view = match self.task_mgr.get_path_layer_entries(&self.current_path) {
             Ok(res) => Self::vault_data_to_entry_list(&res),
-            Err(e) => {
-                self.leave_selected_entry()?;
-                vec![(String::from(WARNING_EMOJI), e.to_string())]
+            Err(_e) => {
+                // If no entries are found, go to parent object
+                while self
+                    .task_mgr
+                    .get_path_layer_entries(&self.current_path)
+                    .is_err()
+                    && !self.current_path.is_empty()
+                {
+                    self.leave_selected_entry()?;
+                }
+                Self::vault_data_to_entry_list(
+                    &self
+                        .task_mgr
+                        .get_path_layer_entries(&self.current_path)
+                        .unwrap_or_default(),
+                )
             }
         };
+        if self.state_left_view.selected.unwrap_or_default() >= self.entries_left_view.len() {
+            self.state_left_view.select(None);
+        } else {
+            self.select_previous_left_entry();
+        }
+        if self.state_center_view.selected.unwrap_or_default() >= self.entries_center_view.len() {
+            self.state_center_view.select(Some(0));
+        }
         self.update_preview();
         Ok(())
     }
@@ -95,6 +116,7 @@ impl<'a> ExplorerTab<'a> {
     pub(super) fn update_preview(&mut self) {
         debug!("Updating preview");
         let Ok(path_to_preview) = self.get_preview_path() else {
+            self.entries_right_view = vec![];
             return;
         };
 
@@ -400,19 +422,6 @@ impl<'a> Component for ExplorerTab<'a> {
                         &self.config.tasks_config,
                     ));
                     self.update_entries()?;
-                    if self.state_left_view.selected.unwrap_or_default()
-                        >= self.entries_left_view.len()
-                    {
-                        self.state_left_view.select(None);
-                    } else {
-                        self.select_previous_left_entry();
-                    }
-                    if self.state_center_view.selected.unwrap_or_default()
-                        >= self.entries_center_view.len()
-                    {
-                        self.state_center_view.select(Some(0));
-                    }
-                    self.update_preview();
                 }
                 _ => (),
             }
