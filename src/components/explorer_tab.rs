@@ -1,7 +1,3 @@
-use std::cmp::Ordering;
-use std::path::PathBuf;
-
-use color_eyre::eyre::bail;
 use color_eyre::Result;
 use crossterm::event::Event;
 use layout::Flex;
@@ -14,6 +10,7 @@ use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
 use tui_scrollview::ScrollViewState;
 use tui_widget_list::{ListBuilder, ListState, ListView};
+use vault_tasks_core::task::State;
 
 use super::Component;
 
@@ -27,6 +24,9 @@ use vault_tasks_core::filter::parse_search_input;
 use vault_tasks_core::parser::task::parse_task;
 use vault_tasks_core::vault_data::VaultData;
 use vault_tasks_core::TaskManager;
+
+mod aux;
+mod entry_list;
 
 pub const FILE_EMOJI: &str = "📄";
 pub const DIRECTORY_EMOJI: &str = "📁";
@@ -65,103 +65,8 @@ impl<'a> ExplorerTab<'a> {
         Self::default()
     }
 
-    fn enter_selected_entry(&mut self) -> Result<()> {
-        // Update path with selected entry
-        self.current_path.push(
-            self.entries_center_view[self.state_center_view.selected.unwrap_or_default()]
-                .1
-                .clone(),
-        );
-
-        // Can we enter ?
-        if !self.task_mgr.can_enter(&self.current_path) {
-            self.current_path.pop();
-            debug!("Coudln't enter: {:?}", self.current_path);
-            return Ok(());
-        }
-
-        // Update selections
-        self.state_left_view
-            .select(Some(self.state_center_view.selected.unwrap_or_default()));
-        self.state_center_view.select(Some(0));
-
-        debug!("Entering: {:?}", self.current_path);
-
-        // Update entries
-        self.update_entries()
-    }
-    fn leave_selected_entry(&mut self) -> Result<()> {
-        if self.current_path.is_empty() {
-            return Ok(());
-        }
-
-        self.current_path.pop().unwrap_or_default();
-        // Update index of selected entry to previous selected entry
-        self.state_center_view.select(self.state_left_view.selected);
-
-        self.update_entries()?;
-
-        // Find previously selected entry
-        self.select_previous_left_entry();
-        Ok(())
-    }
-    fn select_previous_left_entry(&mut self) {
-        if let Some(new_previous_entry) = self.current_path.last() {
-            self.state_left_view.select(Some(
-                self.entries_left_view
-                    .clone()
-                    .into_iter()
-                    .enumerate()
-                    .find(|(_, entry)| &entry.1 == new_previous_entry)
-                    .unwrap_or_default()
-                    .0,
-            ));
-        }
-    }
-
-    fn vault_data_to_prefix_name(vd: &VaultData) -> (String, String) {
-        match vd {
-            VaultData::Directory(name, _) => (
-                if name.contains(".md") {
-                    FILE_EMOJI.to_owned()
-                } else {
-                    DIRECTORY_EMOJI.to_owned()
-                },
-                name.clone(),
-            ),
-            VaultData::Header(level, name, _) => ("#".repeat(*level).clone(), name.clone()),
-            VaultData::Task(task) => (task.state.to_string(), task.name.clone()),
-        }
-    }
-
-    fn vault_data_to_entry_list(vd: &[VaultData]) -> Vec<(String, String)> {
-        let mut res = vd
-            .iter()
-            .map(Self::vault_data_to_prefix_name)
-            .collect::<Vec<(String, String)>>();
-
-        if let Some(entry) = res.first() {
-            if entry.0 == DIRECTORY_EMOJI || entry.0 == FILE_EMOJI {
-                res.sort_by(|a, b| {
-                    if a.0 == DIRECTORY_EMOJI {
-                        if b.0 == DIRECTORY_EMOJI {
-                            a.1.cmp(&b.1)
-                        } else {
-                            Ordering::Less
-                        }
-                    } else if b.0 == DIRECTORY_EMOJI {
-                        Ordering::Greater
-                    } else {
-                        a.1.cmp(&b.1)
-                    }
-                });
-            }
-        }
-        res
-    }
-
     /// Updates left and center entries.
-    fn update_entries(&mut self) -> Result<()> {
+    pub(super) fn update_entries(&mut self) -> Result<()> {
         debug!("Updating entries");
 
         if self.current_path.is_empty() {
@@ -187,26 +92,7 @@ impl<'a> ExplorerTab<'a> {
         Ok(())
     }
 
-    fn get_preview_path(&self) -> Result<Vec<String>> {
-        let mut path_to_preview = self.current_path.clone();
-        if self.entries_center_view.is_empty() {
-            bail!("Center view is empty for {:?}", self.current_path)
-        }
-        match self
-            .entries_center_view
-            .get(self.state_center_view.selected.unwrap_or_default())
-        {
-            Some(res) => path_to_preview.push(res.clone().1),
-            None => bail!(
-                "Index ({:?}) of selected entry out of range {:?}",
-                self.state_center_view.selected,
-                self.entries_center_view
-            ),
-        }
-        Ok(path_to_preview)
-    }
-
-    fn update_preview(&mut self) {
+    pub(super) fn update_preview(&mut self) {
         debug!("Updating preview");
         let Ok(path_to_preview) = self.get_preview_path() else {
             return;
@@ -219,7 +105,7 @@ impl<'a> ExplorerTab<'a> {
         };
         self.task_list_widget_state.scroll_up();
     }
-    fn build_list(
+    pub(super) fn build_list(
         entries_to_display: Vec<String>,
         surrouding_block: Block<'_>,
         highlighted_style: Style,
@@ -236,18 +122,6 @@ impl<'a> ExplorerTab<'a> {
         });
 
         ListView::new(builder, item_count).block(surrouding_block)
-    }
-
-    fn apply_prefixes(entries: &[(String, String)]) -> Vec<String> {
-        entries
-            .iter()
-            .map(|item| format!("{} {}", item.0, item.1))
-            .collect()
-    }
-    pub fn render_footer(area: Rect, frame: &mut Frame) {
-        Line::raw("Navigate: <hjkl|◄▼▲▶> | Open in editor: o | Quick edit: e | Filter: s")
-            .centered()
-            .render(area, frame.buffer_mut());
     }
     fn path_to_paragraph(&self) -> Paragraph {
         Paragraph::new(
@@ -269,41 +143,6 @@ impl<'a> ExplorerTab<'a> {
         )
     }
 
-    fn get_current_path_to_file(&self) -> PathBuf {
-        let mut path = self.config.tasks_config.vault_path.clone();
-        for e in &self
-            .get_preview_path()
-            .unwrap_or_else(|_| self.current_path.clone())
-        {
-            if path
-                .extension()
-                .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
-            {
-                break;
-            }
-            path.push(e);
-        }
-        path
-    }
-    fn open_current_file(&self, tui_opt: Option<&mut Tui>) -> Result<()> {
-        let Some(tui) = tui_opt else {
-            bail!("Could not open current entry, Tui was None")
-        };
-        let path = self.get_current_path_to_file();
-        info!("Opening {:?} in default editor.", path);
-        if let Some(tx) = &self.command_tx {
-            tui.exit()?;
-            edit::edit_file(path)?;
-            tui.enter()?;
-            tx.send(Action::ClearScreen)?;
-        } else {
-            bail!("Failed to open current path")
-        }
-        if let Some(tx) = self.command_tx.clone() {
-            tx.send(Action::ReloadVault)?;
-        }
-        Ok(())
-    }
     fn split_frame(area: Rect) -> ExplorerArea {
         let vertical = Layout::vertical([
             Constraint::Length(1),
@@ -336,6 +175,13 @@ impl<'a> ExplorerTab<'a> {
             footer,
         }
     }
+
+    pub fn render_footer(area: Rect, frame: &mut Frame) {
+        Line::raw("Navigate: <hjkl|◄▼▲▶> | Open in editor: o | Quick edit: e | Filter: s")
+            .centered()
+            .render(area, frame.buffer_mut());
+    }
+
     fn render_search_bar(&mut self, frame: &mut Frame, area: Rect) {
         // Search Bar
         if self.search_bar_widget.is_focused {
@@ -587,18 +433,21 @@ impl<'a> Component for ExplorerTab<'a> {
                 Action::Search => {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
                 }
-                Action::Edit => {
-                    let entries = self
-                        .task_mgr
-                        .get_vault_data_from_path(&self.current_path, 0)?;
-                    if entries.len() <= self.state_center_view.selected.unwrap_or_default() {
-                        error!("Cannot edit: Index of selected entry > list of entries");
-                        return Ok(None);
+                Action::ToggleStatus => {
+                    if let Some(mut task) = self.get_selected_task() {
+                        task.state = match task.state {
+                            State::ToDo => State::Done,
+                            State::Done => State::ToDo,
+                        };
+                        task.fix_task_attributes(
+                            &self.config.tasks_config,
+                            &self.get_current_path_to_file(),
+                        )?;
+                        return Ok(Some(Action::ReloadVault));
                     }
-                    let entry =
-                        entries[self.state_center_view.selected.unwrap_or_default()].clone();
-                    debug!("{entry:#?}");
-                    if let VaultData::Task(task) = entry {
+                }
+                Action::Edit => {
+                    if let Some(task) = self.get_selected_task() {
                         self.edit_task_bar.input =
                             Input::new(task.get_fixed_attributes(&self.config.tasks_config, 0));
                         self.edit_task_bar.is_focused = !self.edit_task_bar.is_focused;

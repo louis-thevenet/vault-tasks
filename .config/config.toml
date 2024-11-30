@@ -26,6 +26,7 @@
 "<Esc>" = "Escape"
 "<o>" = "Open"
 "<e>" = "Edit"
+"<t>" = "ToggleStatus"
 "<r>" = "ReloadVault"
 # Scrolling
 "<Ctrl-u>" = "ViewUp"
