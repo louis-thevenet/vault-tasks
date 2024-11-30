@@ -29,6 +29,7 @@ I also spend most of my writing time in the terminal (Helix) and do not rely on 
 
 ## Planned Features
 
+- `new` action in Explorer Tab to create a new child on selected entry
 - A Timeline tab with a calendar and a chronological view. (I'd also like to be able to import calendar files)
 
 ## Installation
@@ -138,6 +139,7 @@ Check the key map within the app with `?`
 | `s` | Focus search bar (`enter` or `esc` to unfocus) |
 | `o` | Open selection in default editor               |
 | `e` | Quickly edit selection                         |
+| `t` | Change selected task state                     |
 | `r` | Reload vault                                   |
 
 ![](./examples/demo_explorer.gif)
