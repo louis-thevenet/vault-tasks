@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.5.1...v0.6.0) (2024-11-30)
+
+
+### Features
+
+* add ToggleStatus action on tasks ([266e6b2](https://github.com/louis-thevenet/vault-tasks/commit/266e6b2de7f5f635150c6df307b4579217b3edb3))
+
+
+### Bug Fixes
+
+* crash when selected item was changed and did not match the active filter anymore ([3d7e948](https://github.com/louis-thevenet/vault-tasks/commit/3d7e948e4c22466323d6bd774b505bb7b69e1236))
+
 ## [0.5.1](https://github.com/louis-thevenet/vault-tasks/compare/v0.5.0...v0.5.1) (2024-11-24)
 
 
