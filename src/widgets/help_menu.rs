@@ -18,7 +18,7 @@ pub struct HelpMenu<'a> {
     pub state: ScrollViewState,
 }
 
-impl<'a> HelpMenu<'a> {
+impl HelpMenu<'_> {
     fn get_keys_for_action(config: &Config, app_mode: Mode, action: &Action) -> String {
         config
             .keybindings
@@ -118,7 +118,7 @@ impl<'a> HelpMenu<'a> {
     }
 }
 
-impl<'a> StatefulWidget for HelpMenu<'a> {
+impl StatefulWidget for HelpMenu<'_> {
     type State = ScrollViewState;
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State)
     where

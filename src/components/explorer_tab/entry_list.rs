@@ -3,7 +3,7 @@ use tracing::debug;
 
 use super::ExplorerTab;
 
-impl<'a> ExplorerTab<'a> {
+impl ExplorerTab<'_> {
     pub(super) fn leave_selected_entry(&mut self) -> Result<()> {
         if self.current_path.is_empty() {
             return Ok(());

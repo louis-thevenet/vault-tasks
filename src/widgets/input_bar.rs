@@ -13,7 +13,7 @@ pub struct InputBar<'a> {
     pub block: Option<Block<'a>>,
 }
 
-impl<'a> Widget for InputBar<'a> {
+impl Widget for InputBar<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let width = area.width.max(3) - 3; // 2 for borders, 1 for cursor
         let scroll = self.input.visual_scroll(width as usize);

@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use color_eyre::eyre::bail;
 use color_eyre::Result;
 use crossterm::event::Event;
@@ -7,6 +5,7 @@ use layout::Flex;
 use notify_rust::Notification;
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Cell, List, ListItem, ListState, Row, Table, TableState};
+use std::time::Duration;
 use strum::IntoEnumIterator;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error};
@@ -18,7 +17,6 @@ use vault_tasks_time_management::time_management_technique::TimeManagementTechni
 use vault_tasks_time_management::{State, TimeManagementEngine};
 
 use super::Component;
-
 use crate::app::Mode;
 use crate::config::{MethodSettingsValue, MethodsAvailable};
 use crate::tui::Tui;
@@ -50,7 +48,7 @@ pub struct TimeManagementTab<'a> {
     show_help: bool,
     help_menu_wigdet: HelpMenu<'a>,
 }
-impl<'a> TimeManagementTab<'a> {
+impl TimeManagementTab<'_> {
     pub fn new() -> Self {
         Self::default()
     }
@@ -172,7 +170,7 @@ impl<'a> TimeManagementTab<'a> {
         self.timer_state = TimerState::default();
     }
 }
-impl<'a> Component for TimeManagementTab<'a> {
+impl Component for TimeManagementTab<'_> {
     fn blocking_mode(&self) -> bool {
         self.is_focused && (self.show_help || self.edit_setting_bar.is_focused)
     }
@@ -345,7 +343,7 @@ impl<'a> Component for TimeManagementTab<'a> {
         Ok(())
     }
 }
-impl<'a> TimeManagementTab<'a> {
+impl TimeManagementTab<'_> {
     fn render_methods_list(&mut self, area: Rect, buffer: &mut Buffer) {
         let block = Block::new()
             .title(Line::raw("Methods").centered())

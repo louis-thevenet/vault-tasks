@@ -10,7 +10,7 @@ use tracing::{error, info};
 use vault_tasks_core::task::Task;
 use vault_tasks_core::vault_data::VaultData;
 
-impl<'a> ExplorerTab<'a> {
+impl ExplorerTab<'_> {
     pub(super) fn apply_prefixes(entries: &[(String, String)]) -> Vec<String> {
         entries
             .iter()

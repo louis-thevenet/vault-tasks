@@ -52,7 +52,7 @@ pub struct FilterTab<'a> {
     sorting_mode: SortingMode,
 }
 
-impl<'a> FilterTab<'a> {
+impl FilterTab<'_> {
     pub fn new() -> Self {
         Self::default()
     }
@@ -138,7 +138,7 @@ impl<'a> FilterTab<'a> {
         .render(area, frame.buffer_mut());
     }
 }
-impl<'a> Component for FilterTab<'a> {
+impl Component for FilterTab<'_> {
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
         self.command_tx = Some(tx);
         Ok(())

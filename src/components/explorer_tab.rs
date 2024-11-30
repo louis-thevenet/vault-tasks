@@ -60,7 +60,7 @@ pub struct ExplorerTab<'a> {
     edit_task_bar: InputBar<'a>,
 }
 
-impl<'a> ExplorerTab<'a> {
+impl ExplorerTab<'_> {
     pub fn new() -> Self {
         Self::default()
     }
@@ -307,7 +307,7 @@ impl<'a> ExplorerTab<'a> {
     }
 }
 
-impl<'a> Component for ExplorerTab<'a> {
+impl Component for ExplorerTab<'_> {
     fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
         self.command_tx = Some(tx);
         Ok(())
