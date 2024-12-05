@@ -3557,9 +3557,9 @@ dependencies = [
 
 [[package]]
 name = "vault-tasks-time-management"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2cddc89651a8e12e973f30b46dac05027e33caff317dcafcc023aef5433c50d7"
+checksum = "f4e8f5c3086af6f1309acba2fbb4a606f3f94b0964ccc3e3acded9a9db25d4ba"
 dependencies = [
  "anyhow",
  "color-eyre",
