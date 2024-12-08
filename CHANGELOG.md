@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.1](https://github.com/louis-thevenet/vault-tasks/compare/v0.6.0...v0.6.1) (2024-12-08)
+
+
+### Bug Fixes
+
+* **flowtime:** skipped break time is added to next break segment ([f8cbde3](https://github.com/louis-thevenet/vault-tasks/commit/f8cbde3f9de0714be04275909f4c34d1eb36b421))
+* **pomodoro:** skipped break and focus time are added to next segment ([b944813](https://github.com/louis-thevenet/vault-tasks/commit/b944813aa077a1e26d1b2619fda1a6d8ed7690ff))
+
 ## [0.6.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.5.1...v0.6.0) (2024-11-30)
 
 
