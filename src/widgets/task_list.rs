@@ -1,6 +1,6 @@
 use ratatui::prelude::*;
 use tui_scrollview::{ScrollView, ScrollViewState};
-use vault_tasks_core::vault_data::VaultData;
+use vault_tasks_core::{vault_data::VaultData, PrettySymbolsConfig};
 
 use crate::config::Config;
 
@@ -9,6 +9,7 @@ use super::task_list_item::TaskListItem;
 #[derive(Default, Clone)]
 pub struct TaskList {
     file_content: Vec<VaultData>,
+    symbols: PrettySymbolsConfig,
     not_american_format: bool,
     show_relative_due_dates: bool,
     display_filename: bool,
@@ -19,6 +20,7 @@ impl TaskList {
     pub fn new(config: &Config, file_content: &[VaultData], display_filename: bool) -> Self {
         Self {
             not_american_format: !config.tasks_config.use_american_format,
+            symbols: config.tasks_config.pretty_symbols.clone(),
             file_content: file_content.to_vec(),
             display_filename,
             header_style: Style::default(),
@@ -47,6 +49,7 @@ impl StatefulWidget for TaskList {
                 TaskListItem::new(
                     fc.clone(),
                     self.not_american_format,
+                    self.symbols.clone(),
                     self.display_filename,
                     self.show_relative_due_dates,
                 )

@@ -136,6 +136,23 @@ task_state_markers.done = 'x'
 task_state_markers.incomplete = '/'
 task_state_markers.canceled = '-'
 
+# Nice if your terminal font doesn't have emojis
+# pretty_symbols.task_done="[x]"
+# pretty_symbols.task_todo="[ ]"
+# pretty_symbols.task_incomplete="[/]"
+# pretty_symbols.task_canceled="[-]"
+# pretty_symbols.due_date="@"
+# pretty_symbols.priority="!"
+# pretty_symbols.today_tag="+"
+
+pretty_symbols.task_done="✅"
+pretty_symbols.task_todo="❌"
+pretty_symbols.task_incomplete="⏳"
+pretty_symbols.task_canceled="🚫"
+pretty_symbols.due_date="📅"
+pretty_symbols.priority="❗"
+pretty_symbols.today_tag="☀️"
+
 [[time_management_methods_settings.FlowTime]]
 name = "Break Factor"
 hint = "Break time is (focus time) / (break factor)"

@@ -7,13 +7,15 @@ use ratatui::{
 use tracing::error;
 
 use vault_tasks_core::{
-    task::{DueDate, Task, PRIORITY_EMOJI, TODAY_FLAG_EMOJI},
+    task::{DueDate, Task},
     vault_data::VaultData,
+    PrettySymbolsConfig,
 };
 
 pub struct TaskListItem {
     item: VaultData,
     pub height: u16,
+    symbols: PrettySymbolsConfig,
     not_american_format: bool,
     show_relative_due_dates: bool,
     display_filename: bool,
@@ -28,6 +30,7 @@ impl TaskListItem {
     pub fn new(
         item: VaultData,
         not_american_format: bool,
+        symbols: PrettySymbolsConfig,
         display_filename: bool,
         show_relative_due_dates: bool,
     ) -> Self {
@@ -37,13 +40,14 @@ impl TaskListItem {
             height,
             not_american_format,
             display_filename,
+            symbols,
             header_style: Style::default(),
             show_relative_due_dates,
         }
     }
     fn task_to_paragraph(&self, area: Rect, task: &Task) -> (Rc<[Rect]>, Paragraph<'_>) {
         let mut lines = vec![];
-        let state = task.state.to_string();
+        let state = task.state.display(self.symbols.clone());
         let title = Span::styled(format!("{state} {}", task.name), Style::default());
         let surrounding_block =
             Block::default()
@@ -57,10 +61,12 @@ impl TaskListItem {
         let mut data_line = vec![];
 
         if task.is_today {
-            data_line.push(Span::raw(format!("{TODAY_FLAG_EMOJI} ")));
+            data_line.push(Span::raw(format!("{} ", self.symbols.today_tag)));
         }
 
-        let due_date_str = task.due_date.to_display_format(self.not_american_format);
+        let due_date_str = task
+            .due_date
+            .to_display_format(self.symbols.due_date.clone(), self.not_american_format);
 
         if !due_date_str.is_empty() {
             data_line.push(Span::from(format!("{due_date_str} ")));
@@ -74,7 +80,10 @@ impl TaskListItem {
             }
         }
         if task.priority > 0 {
-            data_line.push(Span::raw(format!("{}{} ", PRIORITY_EMOJI, task.priority)));
+            data_line.push(Span::raw(format!(
+                "{}{} ",
+                self.symbols.priority, task.priority
+            )));
         }
         if !data_line.is_empty() {
             lines.push(Line::from(data_line));
@@ -183,6 +192,7 @@ impl Widget for TaskListItem {
                     let sb_widget = Self::new(
                         child.clone(),
                         self.not_american_format,
+                        self.symbols.clone(),
                         self.display_filename,
                         self.show_relative_due_dates,
                     )
@@ -198,6 +208,7 @@ impl Widget for TaskListItem {
                     let sb_widget = Self::new(
                         VaultData::Task(sb.clone()),
                         self.not_american_format,
+                        self.symbols.clone(),
                         false,
                         self.show_relative_due_dates,
                     )
