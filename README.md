@@ -74,12 +74,14 @@ See `vault-tasks --help` for basic usage.
       A description
       of this task
   - [x] A subtask today @today
-  - [ ] Another subtask 10/23 @today
+  - [/] Another subtask 10/23 @today
+    Partly done
+  - [-] This one is canceled
 ```
 
 | Token                                      | Meaning                                                           |
 | ------------------------------------------ | ----------------------------------------------------------------- |
-| `- [ ]` (`- [X]`)                          | declares a task and sets its state                                |
+| `- [ ]` (`- [x]`, ...)                     | declares a task and sets its state                                |
 | `p1` (`p10`, ...)                          | sets the priority                                                 |
 | `#tag`                                     | is a tag, a task can have zero or more tags                       |
 | `@today` (`@tod`, `@t`)                    | is a special tag that will mark the task as part of today's tasks |
@@ -89,13 +91,15 @@ See `vault-tasks --help` for basic usage.
 | a day of the week (`monday` or `mon`, etc) | sets the due date to the next occurence of that day               |
 | `3d` (`3m, 3w, 3y`, ...)                   | means "in 3 days" and will set the due date accordingly           |
 
+- Task states are **Done** (`x`), **To-Do** (` `), **Incomplete** (`/`) and **Canceled** (`-`)
+
 - `@today` allows you mark a task for today while keeping a due date. It will show up with a ☀️ in `vault-tasks`.
 
 - Relative dates are always replaced by literal dates once `vault-tasks` is run. Thanks to this, `vault-tasks` does not store any data except its config file.
 
 - Other tokens will be part of the title of that task
 
-- Descriptions and subtasks are declared using indents (see config file)
+- Descriptions and subtasks are declared using indents (see [[README#Configuration]])
 
 This is what you will see in the preview of this `README.md` in `vault-tasks`:
 
@@ -139,8 +143,11 @@ Check the key map within the app with `?`
 | `s` | Focus search bar (`enter` or `esc` to unfocus) |
 | `o` | Open selection in default editor               |
 | `e` | Quickly edit selection                         |
-| `t` | Change selected task state                     |
 | `r` | Reload vault                                   |
+| `t` | Mark task **To-Do**                            |
+| `d` | Mark task **Done**                             |
+| `i` | Mark task **Incomplete**                       |
+| `c` | Mark task **Canceled**                         |
 
 ![](./examples/demo_explorer.gif)
 
@@ -178,7 +185,7 @@ Check the key map within the app with `?`
 
 ### Modes
 
-You can start already focused on a tab by using one of the CLI commands:
+You can start already focused on a tab by using one of the CLI subcommands:
 
 ```bash
 vault-tasks explorer # is the default
@@ -197,29 +204,34 @@ Example output:
 
 ```
 vault-tasks -v ./README.md stdout
-
 ./README.md
 ‾‾‾‾‾‾‾‾‾‾‾
-	README.md
-	‾‾‾‾‾‾‾‾‾
-		Vault-tasks
-		‾‾‾‾‾‾‾‾‾‾‾
-			Usage
-			‾‾‾‾‾
-				Writing tasks
-				‾‾‾‾‾‾‾‾‾‾‾‾‾
-					❌ An example task
-					📅 2024-11-17 (tomorrow)❗1
-					#tag
-					A description
-					of this task
+        README.md
+        ‾‾‾‾‾‾‾‾‾
+                Vault-tasks
+                ‾‾‾‾‾‾‾‾‾‾‾
+                        Usage
+                        ‾‾‾‾‾
+                                Writing tasks
+                                ‾‾‾‾‾‾‾‾‾‾‾‾‾
+                                        ❌ An example task
+                                        📅 2024-12-22 (tomorrow)❗1
+                                        #tag
+                                        A description
+                                        of this task
 
-						✅ A subtask
-						☀️ 📅 2024-11-16 (today)
+                                                ✅ A subtask
+                                                ☀️ 📅 2024-12-21 (today)
 
 
-						❌ Another subtask
-						☀️ 📅 2024-10-23 (3 weeks ago)
+                                                ⏳ Another subtask
+                                                ☀️ 📅 2024-10-23 (2 months ago)
+                                                Partly done
+
+
+                                                🚫 This one is canceled
+
+
 ```
 
 ## Configuration
