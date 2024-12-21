@@ -130,7 +130,11 @@ ignored = []
 # vault_path= "./test-vault" # default vault path when none is provided
 explorer_default_search_string = "- [ ] "
 filter_default_search_string = ""
-task_state_marker = 'x'
+
+task_state_markers.todo = ' '
+task_state_markers.done = 'x'
+task_state_markers.incomplete = '/'
+task_state_markers.canceled = '-'
 
 [[time_management_methods_settings.FlowTime]]
 name = "Break Factor"
