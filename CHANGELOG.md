@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.6.1...v0.7.0) (2024-12-21)
+
+
+### Features
+
+* add actions to mark tasks Done, ToDo, Incomplete and Canceled ([f07a13b](https://github.com/louis-thevenet/vault-tasks/commit/f07a13b9084f48f8520a1b81575b3f3976396c82))
+* add Incomplete and Canceled states ([d98b378](https://github.com/louis-thevenet/vault-tasks/commit/d98b3784bf33149dea5357132787308b4175dfa4))
+* **config:** add config options for task state markers ([ed9334f](https://github.com/louis-thevenet/vault-tasks/commit/ed9334fb2fa5bd498d4c4672b3c18d469fb6a16f))
+* **config:** add config options for tui symbols (e.g. use ASCII sequences instead of emojis) ([734ae1a](https://github.com/louis-thevenet/vault-tasks/commit/734ae1a1298a07ce8f222ce4b26cda9ef1f9bbb2))
+
 ## [0.6.1](https://github.com/louis-thevenet/vault-tasks/compare/v0.6.0...v0.6.1) (2024-12-08)
 
 
