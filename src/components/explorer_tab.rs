@@ -1,3 +1,4 @@
+use color_eyre::eyre::eyre;
 use color_eyre::Result;
 use crossterm::event::Event;
 use layout::Flex;
@@ -305,6 +306,15 @@ impl ExplorerTab<'_> {
         );
         self.edit_task_bar.clone().render(area, frame.buffer_mut());
     }
+
+    fn edit_selected_task_state(&mut self, new_state: State) -> Result<()> {
+        if let Some(mut task) = self.get_selected_task() {
+            task.state = new_state;
+            task.fix_task_attributes(&self.config.tasks_config, &self.get_current_path_to_file())?;
+            return Ok(());
+        }
+        Err(eyre!("No selected task"))
+    }
 }
 
 impl Component for ExplorerTab<'_> {
@@ -442,20 +452,21 @@ impl Component for ExplorerTab<'_> {
                 Action::Search => {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
                 }
-                Action::ToggleStatus => {
-                    if let Some(mut task) = self.get_selected_task() {
-                        task.state = match task.state {
-                            State::ToDo => State::Done,
-                            State::Done => State::ToDo,
-                            State::Incomplete => State::Done,
-                            State::Canceled => State::ToDo,
-                        };
-                        task.fix_task_attributes(
-                            &self.config.tasks_config,
-                            &self.get_current_path_to_file(),
-                        )?;
-                        return Ok(Some(Action::ReloadVault));
-                    }
+                Action::MarkDone => {
+                    self.edit_selected_task_state(State::Done)?;
+                    return Ok(Some(Action::ReloadVault));
+                }
+                Action::MarkCancel => {
+                    self.edit_selected_task_state(State::Canceled)?;
+                    return Ok(Some(Action::ReloadVault));
+                }
+                Action::MarkToDo => {
+                    self.edit_selected_task_state(State::ToDo)?;
+                    return Ok(Some(Action::ReloadVault));
+                }
+                Action::MarkIncomplete => {
+                    self.edit_selected_task_state(State::Incomplete)?;
+                    return Ok(Some(Action::ReloadVault));
                 }
                 Action::Edit => {
                     if let Some(task) = self.get_selected_task() {

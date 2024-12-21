@@ -44,7 +44,10 @@ pub enum Action {
     TabLeft,
     Open,
     Edit,
-    ToggleStatus,
+    MarkToDo,
+    MarkDone,
+    MarkCancel,
+    MarkIncomplete,
     Focus(Mode),
 }
 impl PartialOrd for Action {
