@@ -447,6 +447,8 @@ impl Component for ExplorerTab<'_> {
                         task.state = match task.state {
                             State::ToDo => State::Done,
                             State::Done => State::ToDo,
+                            State::Incomplete => State::Done,
+                            State::Canceled => State::ToDo,
                         };
                         task.fix_task_attributes(
                             &self.config.tasks_config,

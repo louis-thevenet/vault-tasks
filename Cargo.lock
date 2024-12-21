@@ -3540,9 +3540,9 @@ dependencies = [
 
 [[package]]
 name = "vault-tasks-core"
-version = "0.6.0"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "270f759f44114ee622b89f3716b3355a642223d720a3c8a1b331fbe58a3c4bb5"
+checksum = "e7ff95745849835277d9e14c6aa879c082969573e770b43a520512bb05e3e594"
 dependencies = [
  "chrono",
  "color-eyre",
