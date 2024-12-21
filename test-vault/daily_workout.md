@@ -7,10 +7,10 @@
   - [x] Arm circles
   - [ ] Lunges with a twist
 
-- [x] Strength training (10 min) #workout
+- [/] Strength training (10 min) #workout
 
-  - [x] Squats: 3 sets of 12 reps
-  - [x] Push-ups: 3 sets of 10 reps
+  - [-] Squats: 3 sets of 12 reps
+  - [/] Push-ups: 3 sets of 10 reps
   - [x] Plank: Hold for 3 sets of 60 seconds
 
 - [ ] Cardio (10 min) #workout

@@ -16,13 +16,13 @@
   - [x] In a microwave or double boiler, melt butter and chocolate together until smooth. Set aside to cool slightly. 2024/09/30
   - [x] Preheat the oven to 425°F (220°C). Grease four ramekins with non-stick spray. 2024/09/30
 
-- [ ] Whisk eggs, yolks, sugar, and vanilla: 2024/09/30 #cooking
+- [/] Whisk eggs, yolks, sugar, and vanilla: 2024/09/30 #cooking
 
   - [x] In a large mixing bowl, whisk together eggs, egg yolks, sugar, and vanilla until pale and creamy. 2024/09/30
   - [x] Gradually fold in the cooled chocolate mixture. 2024/09/30
   - [ ] Sift in flour and gently fold it into the batter until just combined. Do not overmix. 2024/09/30
 
-- [ ] Bake cakes: 2024/10/01 #cooking
+- [/] Bake cakes: 2024/10/01 #cooking
 
   - [x] Divide the batter evenly among the prepared ramekins. 2024/10/01
   - [x] Bake for 12 minutes, or until the edges are set but the centers are still gooey. 2024/10/01

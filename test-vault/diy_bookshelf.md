@@ -18,6 +18,6 @@
   - [x] Attach the vertical supports (1x6 boards) to the bottom and top horizontal supports (1x4 boards) 2024/10/01
   - [x] Attach the shelf dividers (1x2 boards) between the shelves 2024/10/01
 
-- [ ] Sand the bookshelf for a smooth finish 2024/10/01 #bookshelf
+- [/] Sand the bookshelf for a smooth finish 2024/10/01 #bookshelf
   - [x] Paint or stain the bookshelf according to your chosen color or finish 2024/10/01
   - [ ] Allow the paint/stain to dry completely before using the bookshelf 2024/10/01
