@@ -6,24 +6,24 @@ use ratatui::widgets::{Block, Borders, Paragraph};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error, info};
 
+use crate::core::task::State;
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
 use tui_scrollview::ScrollViewState;
 use tui_widget_list::{ListBuilder, ListState, ListView};
-use vault_tasks_core::task::State;
 
 use super::Component;
 
 use crate::app::Mode;
+use crate::core::filter::parse_search_input;
+use crate::core::parser::task::parse_task;
+use crate::core::vault_data::VaultData;
+use crate::core::TaskManager;
 use crate::tui::Tui;
 use crate::widgets::help_menu::HelpMenu;
 use crate::widgets::input_bar::InputBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
-use vault_tasks_core::filter::parse_search_input;
-use vault_tasks_core::parser::task::parse_task;
-use vault_tasks_core::vault_data::VaultData;
-use vault_tasks_core::TaskManager;
 
 mod entry_list;
 mod utils;

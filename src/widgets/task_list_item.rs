@@ -6,7 +6,7 @@ use ratatui::{
 };
 use tracing::error;
 
-use vault_tasks_core::{
+use crate::core::{
     task::{DueDate, Task},
     vault_data::VaultData,
     PrettySymbolsConfig,

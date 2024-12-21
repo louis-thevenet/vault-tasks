@@ -1,8 +1,9 @@
+use core::TaskManager;
+
 use clap::Parser;
 use cli::Cli;
 use color_eyre::Result;
 use config::Config;
-use vault_tasks_core::TaskManager;
 
 use crate::app::App;
 
@@ -14,6 +15,8 @@ mod config;
 mod errors;
 mod logging;
 
+mod core;
+mod time_management;
 mod tui;
 mod widgets;
 

@@ -1,5 +1,6 @@
-use crate::action::Action;
+use crate::core::task::Task;
 use crate::tui::Tui;
+use crate::{action::Action, core::vault_data::VaultData};
 
 use super::{ExplorerTab, DIRECTORY_EMOJI, FILE_EMOJI};
 use color_eyre::eyre::bail;
@@ -7,8 +8,6 @@ use color_eyre::Result;
 use std::cmp::Ordering;
 use std::path::PathBuf;
 use tracing::{error, info};
-use vault_tasks_core::task::Task;
-use vault_tasks_core::vault_data::VaultData;
 
 impl ExplorerTab<'_> {
     pub(super) fn apply_prefixes(entries: &[(String, String)]) -> Vec<String> {

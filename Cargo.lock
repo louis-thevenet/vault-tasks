@@ -3515,6 +3515,7 @@ dependencies = [
  "human-panic",
  "insta",
  "lazy_static",
+ "lexical-sort",
  "libc",
  "notify-rust",
  "pretty_assertions",
@@ -3533,36 +3534,8 @@ dependencies = [
  "tui-input",
  "tui-scrollview",
  "tui-widget-list",
- "vault-tasks-core",
- "vault-tasks-time-management",
  "vergen-gix",
-]
-
-[[package]]
-name = "vault-tasks-core"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7ff95745849835277d9e14c6aa879c082969573e770b43a520512bb05e3e594"
-dependencies = [
- "chrono",
- "color-eyre",
- "lexical-sort",
- "pretty_assertions",
- "serde",
- "strum",
- "strum_macros",
- "tracing",
  "winnow",
-]
-
-[[package]]
-name = "vault-tasks-time-management"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4e8f5c3086af6f1309acba2fbb4a606f3f94b0964ccc3e3acded9a9db25d4ba"
-dependencies = [
- "anyhow",
- "color-eyre",
 ]
 
 [[package]]

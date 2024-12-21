@@ -11,6 +11,7 @@ use chrono::NaiveTime;
 use std::{fmt::Display, time::Duration};
 use strum::{EnumIter, FromRepr};
 
+use crate::core::TasksConfig;
 use crate::widgets::timer::TimerWidget;
 use crate::{action::Action, app::Mode, cli::Cli};
 use color_eyre::{eyre::bail, Result};
@@ -22,7 +23,6 @@ use lazy_static::lazy_static;
 use ratatui::style::{Color, Modifier, Style};
 use serde::{de::Deserializer, Deserialize};
 use tracing::{debug, info};
-use vault_tasks_core::TasksConfig;
 
 const CONFIG: &str = include_str!("../.config/config.toml");
 

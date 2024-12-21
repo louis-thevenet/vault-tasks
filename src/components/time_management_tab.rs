@@ -1,3 +1,7 @@
+use crate::time_management::flow_time::FlowTime;
+use crate::time_management::pomodoro::Pomodoro;
+use crate::time_management::time_management_technique::TimeManagementTechnique;
+use crate::time_management::{State, TimeManagementEngine};
 use color_eyre::eyre::bail;
 use color_eyre::Result;
 use crossterm::event::Event;
@@ -11,10 +15,6 @@ use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error};
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
-use vault_tasks_time_management::flow_time::FlowTime;
-use vault_tasks_time_management::pomodoro::Pomodoro;
-use vault_tasks_time_management::time_management_technique::TimeManagementTechnique;
-use vault_tasks_time_management::{State, TimeManagementEngine};
 
 use super::Component;
 use crate::app::Mode;

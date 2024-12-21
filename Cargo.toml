@@ -7,8 +7,6 @@ anyhow = "1.0.93"
 vergen-gix = {version = "1.0.3", features = ["build", "cargo"]}
 
 [dependencies]
-vault-tasks-core = "0.7.3"
-vault-tasks-time-management = "0.3.2"
 better-panic = "0.3.0"
 clap = {version = "4.5.21", features = [
   "derive",
@@ -46,6 +44,8 @@ pretty_assertions = "1.4.1"
 strum = {version = "0.26.3", features = ["derive"]}
 strum_macros = "0.26.4"
 notify-rust = "4.11.3"
+lexical-sort = "0.3.1"
+winnow = "0.6.20"
 
 [dev-dependencies]
 insta = {version = "1.41.1", features = ["yaml"]}
@@ -61,6 +61,7 @@ edition = "2021"
 repository = "https://github.com/louis-thevenet/vault-tasks"
 authors = ["Louis Thevenet <louis.tvnt@gmail.com>"]
 license = "MIT"
+
 [profile.dev]
 
 [profile.dev.package]

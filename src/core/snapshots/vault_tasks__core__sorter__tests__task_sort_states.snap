@@ -1,0 +1,16 @@
+---
+source: src/core/sorter.rs
+description: ""
+expression: tasks
+info:
+  - " test"
+  - " test"
+  - " test"
+  - " test"
+---
+[
+    "  - [/] test",
+    "  - [ ] test",
+    "  - [-] test",
+    "  - [x] test",
+]
