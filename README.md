@@ -1,4 +1,4 @@
-# Vault-tasks
+onfig Vault-tasks
 
 `vault-tasks` is a TUI Markdown task manager.
 
@@ -99,7 +99,7 @@ See `vault-tasks --help` for basic usage.
 
 - Other tokens will be part of the title of that task
 
-- Descriptions and subtasks are declared using indents (see [[README#Configuration]])
+- Descriptions and subtasks are declared using indents (see configuration)
 
 This is what you will see in the preview of this `README.md` in `vault-tasks`:
 
