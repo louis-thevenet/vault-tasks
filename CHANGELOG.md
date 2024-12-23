@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/louis-thevenet/vault-tasks/compare/v0.7.0...v0.7.1) (2024-12-23)
+
+
+### Bug Fixes
+
+* **tui:** changing state on wrong element type doesn't crash anymore but simply logs error ([9d8f4c8](https://github.com/louis-thevenet/vault-tasks/commit/9d8f4c85efefdcb9f3c58b313af2bf04f75e4261))
+
 ## [0.7.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.6.1...v0.7.0) (2024-12-21)
 
 
