@@ -453,20 +453,24 @@ impl Component for ExplorerTab<'_> {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
                 }
                 Action::MarkDone => {
-                    self.edit_selected_task_state(State::Done)?;
-                    return Ok(Some(Action::ReloadVault));
+                    if self.edit_selected_task_state(State::Done).is_ok() {
+                        return Ok(Some(Action::ReloadVault));
+                    }
                 }
                 Action::MarkCancel => {
-                    self.edit_selected_task_state(State::Canceled)?;
-                    return Ok(Some(Action::ReloadVault));
+                    if self.edit_selected_task_state(State::Canceled).is_ok() {
+                        return Ok(Some(Action::ReloadVault));
+                    }
                 }
                 Action::MarkToDo => {
-                    self.edit_selected_task_state(State::ToDo)?;
-                    return Ok(Some(Action::ReloadVault));
+                    if self.edit_selected_task_state(State::ToDo).is_ok() {
+                        return Ok(Some(Action::ReloadVault));
+                    }
                 }
                 Action::MarkIncomplete => {
-                    self.edit_selected_task_state(State::Incomplete)?;
-                    return Ok(Some(Action::ReloadVault));
+                    if self.edit_selected_task_state(State::Incomplete).is_ok() {
+                        return Ok(Some(Action::ReloadVault));
+                    }
                 }
                 Action::Edit => {
                     if let Some(task) = self.get_selected_task() {
