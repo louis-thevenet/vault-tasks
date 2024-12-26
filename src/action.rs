@@ -19,6 +19,8 @@ pub enum Action {
     Key(KeyEvent),
     ReloadVault,
     // Movements
+    NextCalendarMode,
+    PreviousCalendarMode,
     PreviousMethod,
     NextMethod,
     NextSegment,

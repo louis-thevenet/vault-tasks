@@ -22,6 +22,17 @@
 "<Ctrl-Right>" = "ViewRight"
 "<Ctrl-h>" = "ViewLeft"
 "<Ctrl-Left>" = "ViewLeft"
+# Navigation
+"<j>" = "Down"
+"<Down>" = "Down"
+"<k>" = "Up"
+"<Up>" = "Up"
+"<h>" = "Left"
+"<Left>" = "Left"
+"<l>" = "Right"
+"<Right>" = "Right"
+"<Tab>" = "NextCalendarMode"
+"<BackTab>" = "PreviousCalendarMode"
 
 [keybindings.Explorer]
 # App
