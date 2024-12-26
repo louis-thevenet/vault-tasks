@@ -9,6 +9,19 @@
 "<Shift-l>" = "TabRight"
 "<Shift-Left>" = "TabLeft"
 "<shift-h>" = "TabLeft"
+# Scrolling
+"<Ctrl-u>" = "ViewUp"
+"<Ctrl-k>" = "ViewUp"
+"<Ctrl-Up>" = "ViewUp"
+"<PageUp>" = "ViewPageUp"
+"<Ctrl-j>" = "ViewDown"
+"<Ctrl-d>" = "ViewDown"
+"<Ctrl-Down>" = "ViewDown"
+"<PageDown>" = "ViewPageDown"
+"<Ctrl-l>" = "ViewRight"
+"<Ctrl-Right>" = "ViewRight"
+"<Ctrl-h>" = "ViewLeft"
+"<Ctrl-Left>" = "ViewLeft"
 
 [keybindings.Explorer]
 # App
