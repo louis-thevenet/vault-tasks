@@ -10,7 +10,7 @@ use crate::{
     cli::{Cli, Commands},
     components::{
         explorer_tab::ExplorerTab, filter_tab::FilterTab, fps::FpsCounter, home::Home,
-        time_management_tab::TimeManagementTab, Component,
+        time_management_tab::TimeManagementTab, timeline_tab::TimelineTab, Component,
     },
     config::Config,
     tui::{Event, Tui},
@@ -41,6 +41,7 @@ pub enum Mode {
     Explorer,
     Filter,
     TimeManagement,
+    Timeline,
 }
 
 impl App {
@@ -56,6 +57,7 @@ impl App {
                 Box::<FpsCounter>::default(),
                 Box::new(ExplorerTab::new()),
                 Box::new(FilterTab::new()),
+                Box::new(TimelineTab::new()),
                 Box::new(TimeManagementTab::new()),
             ],
             should_quit: false,

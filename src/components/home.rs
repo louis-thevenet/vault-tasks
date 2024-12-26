@@ -24,6 +24,7 @@ impl Home {
                 SelectedTab::Explorer => Action::Focus(Mode::Explorer),
                 SelectedTab::Filter => Action::Focus(Mode::Filter),
                 SelectedTab::TimeManagement => Action::Focus(Mode::TimeManagement),
+                SelectedTab::Timeline => Action::Focus(Mode::Timeline),
             }) {
                 error!("Could not focus selected tab: {e}");
             }
@@ -106,6 +107,8 @@ enum SelectedTab {
     Explorer,
     #[strum(to_string = "Filter")]
     Filter,
+    #[strum(to_string = "Timeline")]
+    Timeline,
     #[strum(to_string = "Time Management")]
     TimeManagement,
 }
