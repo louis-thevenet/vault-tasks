@@ -78,8 +78,8 @@ impl<'a> CalendarTab<'a> {
         .areas(area);
 
         let [calendar, timeline] = Layout::horizontal([
-            Constraint::Length(4 * (7 * 3 + 1)), // calendar
-            Constraint::Min(0),                  // timeline
+            Constraint::Length(7 * 3 + 5), // calendar
+            Constraint::Min(0),            // timeline
         ])
         .areas(content);
 
@@ -310,7 +310,7 @@ impl<'a> Component for CalendarTab<'a> {
         let areas = Self::split_frame(area);
 
         // Calendar
-        StyledCalendar::render_year(frame, areas.calendar, self.selected_date, &self.events);
+        StyledCalendar::render_quarter(frame, areas.calendar, self.selected_date, &self.events);
         // Timeline
 
         self.entries_list.clone().render(
