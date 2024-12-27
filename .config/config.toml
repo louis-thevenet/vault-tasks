@@ -18,10 +18,6 @@
 "<Ctrl-d>" = "ViewDown"
 "<Ctrl-Down>" = "ViewDown"
 "<PageDown>" = "ViewPageDown"
-"<Ctrl-l>" = "ViewRight"
-"<Ctrl-Right>" = "ViewRight"
-"<Ctrl-h>" = "ViewLeft"
-"<Ctrl-Left>" = "ViewLeft"
 # Navigation
 "<j>" = "Down"
 "<Down>" = "Down"
@@ -31,8 +27,12 @@
 "<Left>" = "Left"
 "<l>" = "Right"
 "<Right>" = "Right"
-"<Tab>" = "NextCalendarMode"
-"<BackTab>" = "PreviousCalendarMode"
+"<Shift-j>" = "NextMonth"
+"<Shift-Down>" = "NextMonth"
+"<Shift-k>" = "PreviousMonth"
+"<Shift-Up>" = "PreviousMonth"
+"<n>" = "NextYear"
+"<Shift-n>" = "PreviousYear"
 
 [keybindings.Explorer]
 # App

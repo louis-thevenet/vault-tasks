@@ -1,4 +1,4 @@
-use color_eyre::Result;
+use color_eyre::{owo_colors::OwoColorize, Result};
 
 use ::time::{Date, OffsetDateTime};
 use ratatui::{
@@ -7,11 +7,11 @@ use ratatui::{
     text::Line,
     widgets::{
         calendar::{CalendarEventStore, Monthly},
-        ListState, StatefulWidget, Widget,
+        StatefulWidget, Widget,
     },
     Frame,
 };
-use time::{Duration, Month};
+use time::{util::days_in_year, Duration, Month};
 
 use crate::{action::Action, app::Mode, config::Config, widgets::help_menu::HelpMenu};
 
@@ -27,8 +27,6 @@ struct TimelineTabArea {
 pub struct TimelineTab<'a> {
     config: Config,
     is_focused: bool,
-    calendar: StyledCalendar,
-    calendar_mode: ListState,
     selected_date: Date,
     // Whether the help panel is open or not
     show_help: bool,
@@ -45,12 +43,10 @@ impl<'a> Default for TimelineTab<'a> {
         // .unwrap();
         Self {
             selected_date: OffsetDateTime::now_local().unwrap().date(),
-            calendar: StyledCalendar,
             config: Config::default(),
             is_focused: false,
             show_help: false,
             help_menu_wigdet: HelpMenu::default(),
-            calendar_mode: ListState::default(),
         }
     }
 }
@@ -88,8 +84,6 @@ impl<'a> TimelineTab<'a> {
 impl<'a> Component for TimelineTab<'a> {
     fn register_config_handler(&mut self, config: Config) -> color_eyre::eyre::Result<()> {
         self.config = config;
-        self.calendar_mode.select(Some(0));
-        self.calendar = StyledCalendar::default();
         self.help_menu_wigdet = HelpMenu::new(Mode::Timeline, &self.config);
         Ok(())
     }
@@ -123,8 +117,25 @@ impl<'a> Component for TimelineTab<'a> {
                 Action::Down => self.selected_date += Duration::weeks(1),
                 Action::Up => self.selected_date -= Duration::weeks(1),
                 Action::Right => self.selected_date += Duration::days(1),
-                Action::NextCalendarMode => self.calendar_mode.select_next(),
-                Action::PreviousCalendarMode => self.calendar_mode.select_previous(),
+                Action::NextMonth => {
+                    self.selected_date += Duration::days(i64::from(
+                        self.selected_date.month().length(self.selected_date.year()),
+                    ));
+                }
+                Action::PreviousMonth => {
+                    self.selected_date -= Duration::days(i64::from(
+                        self.selected_date.month().length(self.selected_date.year()),
+                    ));
+                }
+                Action::NextYear => {
+                    self.selected_date +=
+                        Duration::days(i64::from(days_in_year(self.selected_date.year() + 1)));
+                }
+
+                Action::PreviousYear => {
+                    self.selected_date -=
+                        Duration::days(i64::from(days_in_year(self.selected_date.year() + 1)));
+                }
                 _ => (),
             }
         }
@@ -142,9 +153,7 @@ impl<'a> Component for TimelineTab<'a> {
         let areas = Self::split_frame(area);
 
         // Calendar
-        self.calendar
-            .render_year(frame, areas.calendar, self.selected_date)
-            .unwrap();
+        StyledCalendar::render_year(frame, areas.calendar, self.selected_date).unwrap();
 
         // Footer
         Self::render_footer(areas.footer, frame);
@@ -164,7 +173,7 @@ impl<'a> Component for TimelineTab<'a> {
 struct StyledCalendar;
 
 impl StyledCalendar {
-    fn render_year(self, frame: &mut Frame, area: Rect, date: Date) -> Result<()> {
+    fn render_year(frame: &mut Frame, area: Rect, date: Date) -> Result<()> {
         let events = events(date)?;
 
         let area = area.inner(Margin {
@@ -183,12 +192,12 @@ impl StyledCalendar {
                 .unwrap()
                 .replace_month(Month::try_from(i as u8 + 1).unwrap())
                 .unwrap();
-            self.render_month(frame, area, month, &events);
+            StyledCalendar::render_month(frame, area, month, &events);
         }
         Ok(())
     }
 
-    fn render_month(self, frame: &mut Frame, area: Rect, date: Date, events: &CalendarEventStore) {
+    fn render_month(frame: &mut Frame, area: Rect, date: Date, events: &CalendarEventStore) {
         let calendar = Monthly::new(date, events)
             .default_style(Style::new().bold())
             .show_month_header(Style::default())
