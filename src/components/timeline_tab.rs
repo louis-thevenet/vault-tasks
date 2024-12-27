@@ -1,22 +1,32 @@
+use std::collections::btree_map::Entry;
+
 use ::time::{Date, OffsetDateTime};
-use color_eyre::Result;
+use chrono::{Duration, NaiveDate, NaiveTime};
+use color_eyre::{owo_colors::OwoColorize, Result};
 use ratatui::{
-    layout::{Constraint, Layout, Margin, Rect},
-    style::{Color, Modifier, Style, Stylize},
+    layout::{Constraint, Layout, Rect},
     text::Line,
-    widgets::{
-        calendar::{CalendarEventStore, Monthly},
-        StatefulWidget, Widget,
-    },
+    widgets::StatefulWidget,
     Frame,
 };
-use time::{util::days_in_year, Duration, Month};
+use time::util::days_in_year;
+use tui_scrollview::ScrollViewState;
 
 use crate::{
     action::Action,
     app::Mode,
     config::Config,
-    widgets::{help_menu::HelpMenu, styled_calendar::StyledCalendar},
+    core::{
+        filter::{filter_to_vec, Filter},
+        sorter::SortingMode,
+        task::{DueDate, Task},
+        vault_data::VaultData,
+        TaskManager,
+    },
+    widgets::{
+        help_menu::HelpMenu, input_bar::InputBar, styled_calendar::StyledCalendar,
+        task_list::TaskList, task_list_item::TaskListItem,
+    },
 };
 
 use super::Component;
@@ -29,28 +39,31 @@ struct TimelineTabArea {
 }
 
 pub struct TimelineTab<'a> {
+    // Utils
     config: Config,
     is_focused: bool,
+    task_mgr: TaskManager,
+    // Content
+    tasks: Vec<Task>,
+    entries_list: TaskList,
     selected_date: Date,
+    task_list_widget_state: ScrollViewState,
     // Whether the help panel is open or not
     show_help: bool,
     help_menu_wigdet: HelpMenu<'a>,
 }
 impl<'a> Default for TimelineTab<'a> {
     fn default() -> Self {
-        // let now = chrono::Local::now();
-        // let selected_date =OffsetDateTime:: Date::from_calendar_date(
-        //     now.year(),
-        //     Month::try_from(now.month() as u8).unwrap(),
-        //     now.day() as u8,
-        // )
-        // .unwrap();
         Self {
             selected_date: OffsetDateTime::now_local().unwrap().date(),
             config: Config::default(),
             is_focused: false,
             show_help: false,
             help_menu_wigdet: HelpMenu::default(),
+            tasks: vec![],
+            task_mgr: TaskManager::default(),
+            task_list_widget_state: ScrollViewState::new(),
+            entries_list: TaskList::default(),
         }
     }
 }
@@ -80,14 +93,68 @@ impl<'a> TimelineTab<'a> {
         }
     }
     fn render_footer(area: Rect, frame: &mut Frame) {
-        Line::raw("Place holder")
-            .centered()
-            .render(area, frame.buffer_mut());
+        ratatui::widgets::Widget::render(
+            Line::raw("Place holder").centered(),
+            area,
+            frame.buffer_mut(),
+        );
+    }
+    fn update_tasks(&mut self) {
+        self.tasks = filter_to_vec(&self.task_mgr.tasks, &Filter::default());
+        self.tasks.sort_by(SortingMode::cmp_due_date);
+
+        self.entries_list = TaskList::new(
+            &self.config,
+            &self
+                .tasks
+                .clone()
+                .iter()
+                .map(|t| VaultData::Task(t.clone()))
+                .collect::<Vec<VaultData>>(),
+            true,
+        );
+    }
+    fn updated_date(&mut self) {
+        let mut index_closest_task = 0;
+        let mut best = Duration::max_value();
+        for (i, task) in self.tasks.iter().enumerate() {
+            let d = match task.due_date {
+                DueDate::NoDate => Duration::max_value(),
+                DueDate::Day(naive_date) => NaiveDate::from_ymd_opt(
+                    self.selected_date.year(),
+                    self.selected_date.month() as u32,
+                    u32::from(self.selected_date.day()),
+                )
+                .unwrap()
+                .signed_duration_since(naive_date)
+                .abs(),
+                DueDate::DayTime(naive_date_time) => NaiveDate::from_ymd_opt(
+                    self.selected_date.year(),
+                    self.selected_date.month() as u32,
+                    u32::from(self.selected_date.day()),
+                )
+                .unwrap()
+                .and_time(NaiveTime::default())
+                .signed_duration_since(naive_date_time)
+                .abs(),
+            };
+            if d < best {
+                best = d;
+                index_closest_task = i;
+            }
+        }
+        self.task_list_widget_state.scroll_to_top();
+        (0..self.entries_list.height_of(index_closest_task)).for_each(|_| {
+            self.task_list_widget_state.scroll_down();
+        });
     }
 }
 impl<'a> Component for TimelineTab<'a> {
     fn register_config_handler(&mut self, config: Config) -> color_eyre::eyre::Result<()> {
+        self.task_mgr = TaskManager::load_from_config(&config.tasks_config)?;
         self.config = config;
+        self.update_tasks();
+        self.updated_date();
         self.help_menu_wigdet = HelpMenu::new(Mode::Timeline, &self.config);
         Ok(())
     }
@@ -117,29 +184,54 @@ impl<'a> Component for TimelineTab<'a> {
                 Action::Focus(mode) if mode != Mode::Timeline => self.is_focused = false,
                 Action::Focus(Mode::Timeline) => self.is_focused = true,
                 Action::Help => self.show_help = !self.show_help,
-                Action::Left => self.selected_date -= Duration::days(1),
-                Action::Down => self.selected_date += Duration::weeks(1),
-                Action::Up => self.selected_date -= Duration::weeks(1),
-                Action::Right => self.selected_date += Duration::days(1),
+                Action::Left => {
+                    self.selected_date -= time::Duration::days(1);
+
+                    self.updated_date();
+                }
+                Action::Down => {
+                    self.selected_date += time::Duration::weeks(1);
+                    self.updated_date();
+                }
+                Action::Up => {
+                    self.selected_date -= time::Duration::weeks(1);
+                    self.updated_date();
+                }
+                Action::Right => {
+                    self.selected_date += time::Duration::days(1);
+                    self.updated_date();
+                }
                 Action::NextMonth => {
-                    self.selected_date += Duration::days(i64::from(
+                    self.selected_date += time::Duration::days(i64::from(
                         self.selected_date.month().length(self.selected_date.year()),
                     ));
+                    self.updated_date();
                 }
                 Action::PreviousMonth => {
-                    self.selected_date -= Duration::days(i64::from(
+                    self.selected_date -= time::Duration::days(i64::from(
                         self.selected_date.month().length(self.selected_date.year()),
                     ));
+                    self.updated_date();
                 }
                 Action::NextYear => {
-                    self.selected_date +=
-                        Duration::days(i64::from(days_in_year(self.selected_date.year() + 1)));
+                    self.selected_date += time::Duration::days(i64::from(days_in_year(
+                        self.selected_date.year() + 1,
+                    )));
+                    self.updated_date();
                 }
 
                 Action::PreviousYear => {
-                    self.selected_date -=
-                        Duration::days(i64::from(days_in_year(self.selected_date.year() + 1)));
+                    self.selected_date -= time::Duration::days(i64::from(days_in_year(
+                        self.selected_date.year() + 1,
+                    )));
+                    self.updated_date();
                 }
+                Action::ViewUp => self.task_list_widget_state.scroll_up(),
+                Action::ViewDown => self.task_list_widget_state.scroll_down(),
+                Action::ViewPageUp => self.task_list_widget_state.scroll_page_up(),
+                Action::ViewPageDown => self.task_list_widget_state.scroll_page_down(),
+                Action::ViewRight => self.task_list_widget_state.scroll_right(),
+                Action::ViewLeft => self.task_list_widget_state.scroll_left(),
                 _ => (),
             }
         }
@@ -158,6 +250,22 @@ impl<'a> Component for TimelineTab<'a> {
 
         // Calendar
         StyledCalendar::render_year(frame, areas.calendar, self.selected_date).unwrap();
+        // Timeline
+
+        // let task_widget = TaskListItem::new(
+        //     crate::core::vault_data::VaultData::Task(self.tasks[index_closest_task].clone()),
+        //     !self.config.tasks_config.use_american_format,
+        //     self.config.tasks_config.pretty_symbols.clone(),
+        //     true,
+        //     true,
+        // );
+        // task_widget.render(areas.timeline, frame.buffer_mut());
+
+        self.entries_list.clone().render(
+            areas.timeline,
+            frame.buffer_mut(),
+            &mut self.task_list_widget_state,
+        );
 
         // Footer
         Self::render_footer(areas.footer, frame);

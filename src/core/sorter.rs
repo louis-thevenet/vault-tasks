@@ -29,7 +29,7 @@ impl SortingMode {
     }
 
     /// Compare two tasks by due date
-    fn cmp_due_date(t1: &Task, t2: &Task) -> Ordering {
+    pub fn cmp_due_date(t1: &Task, t2: &Task) -> Ordering {
         match (&t1.due_date, &t2.due_date) {
             (DueDate::Day(d1), DueDate::Day(d2)) => d1.cmp(d2),
             (DueDate::DayTime(d1), DueDate::DayTime(d2)) => d1.cmp(d2),

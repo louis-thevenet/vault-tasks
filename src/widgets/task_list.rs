@@ -1,4 +1,4 @@
-use crate::core::{vault_data::VaultData, PrettySymbolsConfig};
+use crate::core::vault_data::VaultData;
 use ratatui::prelude::*;
 use tui_scrollview::{ScrollView, ScrollViewState};
 
@@ -8,28 +8,47 @@ use super::task_list_item::TaskListItem;
 
 #[derive(Default, Clone)]
 pub struct TaskList {
-    file_content: Vec<VaultData>,
-    symbols: PrettySymbolsConfig,
-    not_american_format: bool,
-    show_relative_due_dates: bool,
-    display_filename: bool,
-    header_style: Style,
+    content: Vec<TaskListItem>,
+    constraints: Vec<Constraint>,
+    height: u16,
 }
 
 impl TaskList {
     pub fn new(config: &Config, file_content: &[VaultData], display_filename: bool) -> Self {
+        let content = file_content
+            .iter()
+            .map(|fc| {
+                TaskListItem::new(
+                    fc.clone(),
+                    !config.tasks_config.use_american_format,
+                    config.tasks_config.pretty_symbols.clone(),
+                    display_filename,
+                    config.tasks_config.show_relative_due_dates,
+                )
+                .header_style(
+                    *config
+                        .styles
+                        .get(&crate::app::Mode::Explorer)
+                        .unwrap()
+                        .get("preview_headers")
+                        .unwrap(),
+                )
+            })
+            .collect::<Vec<TaskListItem>>();
+        let mut height = 0;
+        let mut constraints = vec![];
+        for item in &content {
+            height += item.height;
+            constraints.push(Constraint::Length(item.height));
+        }
         Self {
-            not_american_format: !config.tasks_config.use_american_format,
-            symbols: config.tasks_config.pretty_symbols.clone(),
-            file_content: file_content.to_vec(),
-            display_filename,
-            header_style: Style::default(),
-            show_relative_due_dates: config.tasks_config.show_relative_due_dates,
+            content,
+            constraints,
+            height,
         }
     }
-    pub const fn header_style(mut self, style: Style) -> Self {
-        self.header_style = style;
-        self
+    pub fn height_of(&mut self, i: usize) -> u16 {
+        (0..i).map(|i| self.content[i].height).sum()
     }
 }
 impl StatefulWidget for TaskList {
@@ -42,46 +61,24 @@ impl StatefulWidget for TaskList {
     ) where
         Self: Sized,
     {
-        let content = self
-            .file_content
-            .iter()
-            .map(|fc| {
-                TaskListItem::new(
-                    fc.clone(),
-                    self.not_american_format,
-                    self.symbols.clone(),
-                    self.display_filename,
-                    self.show_relative_due_dates,
-                )
-                .header_style(self.header_style)
-            })
-            .collect::<Vec<TaskListItem>>();
-
-        let mut constraints = vec![];
-        let mut height = 0;
-        for item in &content {
-            height += item.height;
-            constraints.push(Constraint::Length(item.height));
-        }
-
         // If we need the vertical scrollbar
         // Then take into account that we need to draw it
         //
         // If we don't do this, the horizontal scrollbar
         // appears for only one character
         // It basically disables the horizontal scrollbar
-        let width = if height > area.height {
+        let width = if self.height > area.height {
             area.width - 1
         } else {
             area.width
         };
 
-        let size = Size::new(width, height);
+        let size = Size::new(width, self.height);
         let mut scroll_view = ScrollView::new(size);
 
-        let layout = Layout::vertical(constraints).split(scroll_view.area());
+        let layout = Layout::vertical(self.constraints).split(scroll_view.area());
 
-        for (i, item) in content.into_iter().enumerate() {
+        for (i, item) in self.content.into_iter().enumerate() {
             scroll_view.render_widget(item, layout[i]);
         }
         scroll_view.render(area, buf, state);

@@ -7,7 +7,7 @@ use super::{
     vault_data::VaultData,
 };
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Default, PartialEq, Eq, Debug)]
 pub struct Filter {
     pub task: Task,
     state: Option<State>,

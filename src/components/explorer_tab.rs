@@ -243,17 +243,11 @@ impl ExplorerTab<'_> {
         // If we have tasks, then render a TaskList widget
         match self.entries_right_view.first() {
             Some(VaultData::Task(_) | VaultData::Header(_, _, _)) => {
-                TaskList::new(&self.config, &self.entries_right_view, false)
-                    .header_style(
-                        *self
-                            .config
-                            .styles
-                            .get(&crate::app::Mode::Explorer)
-                            .unwrap()
-                            .get("preview_headers")
-                            .unwrap(),
-                    )
-                    .render(area, frame.buffer_mut(), &mut self.task_list_widget_state);
+                TaskList::new(&self.config, &self.entries_right_view, false).render(
+                    area,
+                    frame.buffer_mut(),
+                    &mut self.task_list_widget_state,
+                );
             }
             // Else render a ListView widget
             Some(VaultData::Directory(_, _)) => Self::build_list(
