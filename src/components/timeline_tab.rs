@@ -1,15 +1,13 @@
-use std::collections::btree_map::Entry;
-
 use ::time::{Date, OffsetDateTime};
-use chrono::{Duration, NaiveDate, NaiveTime};
-use color_eyre::{owo_colors::OwoColorize, Result};
+use chrono::{Datelike, Duration, NaiveDate, NaiveTime};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
+    style::{Color, Modifier, Style},
     text::Line,
-    widgets::StatefulWidget,
+    widgets::{calendar::CalendarEventStore, StatefulWidget},
     Frame,
 };
-use time::util::days_in_year;
+use time::{util::days_in_year, Weekday};
 use tui_scrollview::ScrollViewState;
 
 use crate::{
@@ -23,10 +21,7 @@ use crate::{
         vault_data::VaultData,
         TaskManager,
     },
-    widgets::{
-        help_menu::HelpMenu, input_bar::InputBar, styled_calendar::StyledCalendar,
-        task_list::TaskList, task_list_item::TaskListItem,
-    },
+    widgets::{help_menu::HelpMenu, styled_calendar::StyledCalendar, task_list::TaskList},
 };
 
 use super::Component;
@@ -46,6 +41,7 @@ pub struct TimelineTab<'a> {
     // Content
     tasks: Vec<Task>,
     entries_list: TaskList,
+    events: CalendarEventStore,
     selected_date: Date,
     task_list_widget_state: ScrollViewState,
     // Whether the help panel is open or not
@@ -64,6 +60,7 @@ impl<'a> Default for TimelineTab<'a> {
             task_mgr: TaskManager::default(),
             task_list_widget_state: ScrollViewState::new(),
             entries_list: TaskList::default(),
+            events: CalendarEventStore::default(),
         }
     }
 }
@@ -147,12 +144,75 @@ impl<'a> TimelineTab<'a> {
         (0..self.entries_list.height_of(index_closest_task)).for_each(|_| {
             self.task_list_widget_state.scroll_down();
         });
+        self.tasks_to_events(&self.tasks[index_closest_task].clone());
+    }
+    fn naive_date_to_date(naive_date: NaiveDate) -> Date {
+        Date::from_iso_week_date(
+            naive_date.year(),
+            naive_date.iso_week().week() as u8,
+            match naive_date.weekday() {
+                chrono::Weekday::Mon => Weekday::Monday,
+                chrono::Weekday::Tue => Weekday::Tuesday,
+                chrono::Weekday::Wed => Weekday::Wednesday,
+                chrono::Weekday::Thu => Weekday::Thursday,
+                chrono::Weekday::Fri => Weekday::Friday,
+                chrono::Weekday::Sat => Weekday::Saturday,
+                chrono::Weekday::Sun => Weekday::Sunday,
+            },
+        )
+        .unwrap()
+    }
+    fn tasks_to_events(&mut self, previewed_task: &Task) {
+        const SELECTED: Style = Style::new()
+            .fg(Color::White)
+            .bg(Color::Red)
+            .add_modifier(Modifier::BOLD);
+        const PREVIEWED: Style = Style::new()
+            .fg(Color::White)
+            .bg(Color::Green)
+            .add_modifier(Modifier::BOLD);
+        const TASK: Style = Style::new()
+            .fg(Color::Red)
+            .add_modifier(Modifier::UNDERLINED);
+
+        self.events = CalendarEventStore::today(
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .bg(Color::Blue),
+        );
+
+        for task in self.tasks.clone() {
+            let theme = if task == *previewed_task {
+                PREVIEWED
+            } else {
+                TASK
+            };
+            match task.clone().due_date {
+                DueDate::NoDate => (),
+                DueDate::Day(naive_date) => {
+                    let date = Self::naive_date_to_date(naive_date);
+                    if !self.events.0.contains_key(&date) {
+                        self.events.add(date, theme);
+                    }
+                }
+                DueDate::DayTime(naive_datetime) => {
+                    let date = Self::naive_date_to_date(naive_datetime.date());
+                    if !self.events.0.contains_key(&date) {
+                        self.events.add(date, theme);
+                    }
+                }
+            }
+        }
+
+        // selected date
+        self.events.add(self.selected_date, SELECTED);
     }
 }
 impl<'a> Component for TimelineTab<'a> {
     fn register_config_handler(&mut self, config: Config) -> color_eyre::eyre::Result<()> {
         self.task_mgr = TaskManager::load_from_config(&config.tasks_config)?;
         self.config = config;
+
         self.update_tasks();
         self.updated_date();
         self.help_menu_wigdet = HelpMenu::new(Mode::Timeline, &self.config);
@@ -249,17 +309,8 @@ impl<'a> Component for TimelineTab<'a> {
         let areas = Self::split_frame(area);
 
         // Calendar
-        StyledCalendar::render_year(frame, areas.calendar, self.selected_date).unwrap();
+        StyledCalendar::render_year(frame, areas.calendar, self.selected_date, &self.events);
         // Timeline
-
-        // let task_widget = TaskListItem::new(
-        //     crate::core::vault_data::VaultData::Task(self.tasks[index_closest_task].clone()),
-        //     !self.config.tasks_config.use_american_format,
-        //     self.config.tasks_config.pretty_symbols.clone(),
-        //     true,
-        //     true,
-        // );
-        // task_widget.render(areas.timeline, frame.buffer_mut());
 
         self.entries_list.clone().render(
             areas.timeline,
