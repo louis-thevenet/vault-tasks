@@ -1,24 +1,17 @@
-use color_eyre::{owo_colors::OwoColorize, Result};
-use crossterm::style::StyledContent;
-use std::{
-    default, fmt,
-    mem::{discriminant, Discriminant},
-};
-use strum::{EnumCount, EnumIter, EnumTryAs, FromRepr, IntoEnumIterator};
-use tracing::debug;
+use color_eyre::Result;
 
 use ::time::{Date, OffsetDateTime};
 use ratatui::{
-    layout::{Columns, Constraint, Layout, Margin, Rect},
+    layout::{Constraint, Layout, Margin, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::Line,
     widgets::{
         calendar::{CalendarEventStore, Monthly},
-        Block, Borders, List, ListItem, ListState, Padding, StatefulWidget, Widget,
+        ListState, StatefulWidget, Widget,
     },
     Frame,
 };
-use time::{convert::Day, Duration, Month};
+use time::{Duration, Month};
 
 use crate::{action::Action, app::Mode, config::Config, widgets::help_menu::HelpMenu};
 
@@ -27,7 +20,6 @@ use super::Component;
 /// Struct that helps with drawing the component
 struct TimelineTabArea {
     calendar: Rect,
-    calendar_modes: Rect,
     footer: Rect,
     timeline: Rect,
 }
@@ -53,7 +45,7 @@ impl<'a> Default for TimelineTab<'a> {
         // .unwrap();
         Self {
             selected_date: OffsetDateTime::now_local().unwrap().date(),
-            calendar: StyledCalendar::default(),
+            calendar: StyledCalendar,
             config: Config::default(),
             is_focused: false,
             show_help: false,
@@ -75,27 +67,16 @@ impl<'a> TimelineTab<'a> {
         ])
         .areas(area);
 
-        let [calendar_area, timeline] = Layout::horizontal([
+        let [calendar, timeline] = Layout::horizontal([
             Constraint::Length(4 * (7 * 3 + 1)), // calendar
             Constraint::Min(0),                  // timeline
         ])
         .areas(content);
 
-        let [settings, calendar] = Layout::vertical([
-            Constraint::Length(2 + StyledCalendar::COUNT as u16), // 2 for block borders
-            Constraint::Min(0),
-        ])
-        .areas(calendar_area);
-
-        let [calendar_modes, _other] =
-            Layout::horizontal([Constraint::Percentage(50), Constraint::Percentage(50)])
-                .areas(settings);
-
         TimelineTabArea {
             calendar,
-            timeline,
             footer,
-            calendar_modes,
+            timeline,
         }
     }
     fn render_footer(area: Rect, frame: &mut Frame) {
@@ -108,9 +89,7 @@ impl<'a> Component for TimelineTab<'a> {
     fn register_config_handler(&mut self, config: Config) -> color_eyre::eyre::Result<()> {
         self.config = config;
         self.calendar_mode.select(Some(0));
-        self.calendar =
-            StyledCalendar::from_repr(self.calendar_mode.selected().unwrap_or_default())
-                .unwrap_or_default();
+        self.calendar = StyledCalendar::default();
         self.help_menu_wigdet = HelpMenu::new(Mode::Timeline, &self.config);
         Ok(())
     }
@@ -163,42 +142,9 @@ impl<'a> Component for TimelineTab<'a> {
         let areas = Self::split_frame(area);
 
         // Calendar
-        StyledCalendar::from_repr(
-            self.calendar_mode
-                .selected()
-                .unwrap_or_default()
-                .min(StyledCalendar::COUNT - 1),
-        )
-        .unwrap_or_default()
-        .render_year(frame, areas.calendar, self.selected_date)
-        .unwrap();
-
-        let block = Block::new()
-            .title(Line::raw("Modes").centered())
-            .borders(Borders::ALL);
-
-        let highlight_style = *self
-            .config
-            .styles
-            .get(&crate::app::Mode::Home)
-            .unwrap()
-            .get("highlighted_style")
+        self.calendar
+            .render_year(frame, areas.calendar, self.selected_date)
             .unwrap();
-
-        let items: Vec<ListItem> = StyledCalendar::iter()
-            .map(|item| ListItem::from(item.to_string()))
-            .collect();
-
-        let list = List::new(items)
-            .block(block)
-            .highlight_style(highlight_style);
-
-        StatefulWidget::render(
-            list,
-            areas.calendar_modes,
-            frame.buffer_mut(),
-            &mut self.calendar_mode,
-        );
 
         // Footer
         Self::render_footer(areas.footer, frame);
@@ -214,22 +160,8 @@ impl<'a> Component for TimelineTab<'a> {
     }
 }
 
-#[derive(Default, Clone, Copy, FromRepr, EnumCount, EnumIter, strum_macros::Display)]
-enum StyledCalendar {
-    #[default]
-    #[strum(to_string = "Default")]
-    Default = 0,
-    #[strum(to_string = "Show Surrounding")]
-    Surrounding = 1,
-    #[strum(to_string = "Show Weekdays and Header")]
-    WeekdaysHeader = 2,
-    #[strum(to_string = "Show Surrounding and Weekdays Header")]
-    SurroundingAndWeekdaysHeader = 3,
-    #[strum(to_string = "Show Month Header")]
-    MonthHeader = 4,
-    #[strum(to_string = "Show Month and Weekdays Header")]
-    MonthAndWeekdaysHeader = 5,
-}
+#[derive(Default, Clone, Copy)]
+struct StyledCalendar;
 
 impl StyledCalendar {
     fn render_year(self, frame: &mut Frame, area: Rect, date: Date) -> Result<()> {
@@ -257,55 +189,12 @@ impl StyledCalendar {
     }
 
     fn render_month(self, frame: &mut Frame, area: Rect, date: Date, events: &CalendarEventStore) {
-        let calendar = match self {
-            Self::Default => Monthly::new(date, events)
-                .default_style(Style::new().bold().bg(Color::Rgb(50, 50, 50)))
-                .show_month_header(Style::default()),
-            Self::Surrounding => Monthly::new(date, events)
-                .default_style(Style::new().bold().bg(Color::Rgb(50, 50, 50)))
-                .show_month_header(Style::default())
-                .show_surrounding(Style::new().dim()),
-            Self::WeekdaysHeader => Monthly::new(date, events)
-                .default_style(Style::new().bold().bg(Color::Rgb(50, 50, 50)))
-                .show_month_header(Style::default())
-                .show_weekdays_header(Style::new().bold().green()),
-            Self::SurroundingAndWeekdaysHeader => Monthly::new(date, events)
-                .default_style(Style::new().bold().bg(Color::Rgb(50, 50, 50)))
-                .show_month_header(Style::default())
-                .show_surrounding(Style::new().dim())
-                .show_weekdays_header(Style::new().bold().green()),
-            Self::MonthHeader => Monthly::new(date, events)
-                .default_style(Style::new().bold().bg(Color::Rgb(50, 50, 50)))
-                .show_month_header(Style::default())
-                .show_month_header(Style::new().bold().green()),
-            Self::MonthAndWeekdaysHeader => Monthly::new(date, events)
-                .default_style(Style::new().bold().bg(Color::Rgb(50, 50, 50)))
-                .show_month_header(Style::default())
-                .show_weekdays_header(Style::new().bold().dim().light_yellow()),
-        };
+        let calendar = Monthly::new(date, events)
+            .default_style(Style::new().bold())
+            .show_month_header(Style::default())
+            .show_surrounding(Style::new().dim())
+            .show_weekdays_header(Style::new().bold().green());
         frame.render_widget(calendar, area);
-    }
-
-    fn next(self) -> Self {
-        match self {
-            Self::Default => Self::Surrounding,
-            Self::Surrounding => Self::WeekdaysHeader,
-            Self::WeekdaysHeader => Self::SurroundingAndWeekdaysHeader,
-            Self::SurroundingAndWeekdaysHeader => Self::MonthHeader,
-            Self::MonthHeader => Self::MonthAndWeekdaysHeader,
-            Self::MonthAndWeekdaysHeader => Self::Default,
-        }
-    }
-
-    fn previous(self) -> Self {
-        match self {
-            Self::Default => Self::MonthAndWeekdaysHeader,
-            Self::Surrounding => Self::Default,
-            Self::WeekdaysHeader => Self::Surrounding,
-            Self::SurroundingAndWeekdaysHeader => Self::WeekdaysHeader,
-            Self::MonthHeader => Self::SurroundingAndWeekdaysHeader,
-            Self::MonthAndWeekdaysHeader => Self::MonthHeader,
-        }
     }
 }
 
