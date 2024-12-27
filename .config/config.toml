@@ -1,4 +1,4 @@
-[keybindings.Timeline]
+[keybindings.Calendar]
 # App
 "<q>" = "Quit"
 "<Ctrl-c>" = "Quit"

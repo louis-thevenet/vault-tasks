@@ -12,12 +12,12 @@ use crate::{
     tui::{Event, Tui},
 };
 
+pub mod calendar_tab;
 pub mod explorer_tab;
 pub mod filter_tab;
 pub mod fps;
 pub mod home;
 pub mod time_management_tab;
-pub mod timeline_tab;
 
 /// `Component` is a trait that represents a visual and interactive element of the user interface.
 ///

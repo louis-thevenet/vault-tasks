@@ -27,13 +27,13 @@ use crate::{
 use super::Component;
 
 /// Struct that helps with drawing the component
-struct TimelineTabArea {
+struct CalendarTabArea {
     calendar: Rect,
     footer: Rect,
     timeline: Rect,
 }
 
-pub struct TimelineTab<'a> {
+pub struct CalendarTab<'a> {
     // Utils
     config: Config,
     is_focused: bool,
@@ -48,7 +48,7 @@ pub struct TimelineTab<'a> {
     show_help: bool,
     help_menu_wigdet: HelpMenu<'a>,
 }
-impl<'a> Default for TimelineTab<'a> {
+impl<'a> Default for CalendarTab<'a> {
     fn default() -> Self {
         Self {
             selected_date: OffsetDateTime::now_local().unwrap().date(),
@@ -64,11 +64,11 @@ impl<'a> Default for TimelineTab<'a> {
         }
     }
 }
-impl<'a> TimelineTab<'a> {
+impl<'a> CalendarTab<'a> {
     pub fn new() -> Self {
         Self::default()
     }
-    fn split_frame(area: Rect) -> TimelineTabArea {
+    fn split_frame(area: Rect) -> CalendarTabArea {
         let [_header, content, footer, _tab_footera] = Layout::vertical([
             Constraint::Length(1), // tabs
             Constraint::Min(0),    // content
@@ -83,7 +83,7 @@ impl<'a> TimelineTab<'a> {
         ])
         .areas(content);
 
-        TimelineTabArea {
+        CalendarTabArea {
             calendar,
             footer,
             timeline,
@@ -146,6 +146,7 @@ impl<'a> TimelineTab<'a> {
         });
         self.tasks_to_events(self.tasks.clone().get(index_closest_task));
     }
+    #[allow(clippy::cast_possible_truncation)]
     fn naive_date_to_date(naive_date: NaiveDate) -> Date {
         Date::from_iso_week_date(
             naive_date.year(),
@@ -208,14 +209,14 @@ impl<'a> TimelineTab<'a> {
         self.events.add(self.selected_date, SELECTED);
     }
 }
-impl<'a> Component for TimelineTab<'a> {
+impl<'a> Component for CalendarTab<'a> {
     fn register_config_handler(&mut self, config: Config) -> color_eyre::eyre::Result<()> {
         self.task_mgr = TaskManager::load_from_config(&config.tasks_config)?;
         self.config = config;
 
         self.update_tasks();
         self.updated_date();
-        self.help_menu_wigdet = HelpMenu::new(Mode::Timeline, &self.config);
+        self.help_menu_wigdet = HelpMenu::new(Mode::Calendar, &self.config);
         Ok(())
     }
 
@@ -226,8 +227,8 @@ impl<'a> Component for TimelineTab<'a> {
     ) -> color_eyre::eyre::Result<Option<crate::action::Action>> {
         if !self.is_focused {
             match action {
-                Action::Focus(Mode::Timeline) => self.is_focused = true,
-                Action::Focus(mode) if !(mode == Mode::Timeline) => self.is_focused = false,
+                Action::Focus(Mode::Calendar) => self.is_focused = true,
+                Action::Focus(mode) if !(mode == Mode::Calendar) => self.is_focused = false,
                 _ => (),
             }
         } else if self.show_help {
@@ -241,8 +242,8 @@ impl<'a> Component for TimelineTab<'a> {
             }
         } else {
             match action {
-                Action::Focus(mode) if mode != Mode::Timeline => self.is_focused = false,
-                Action::Focus(Mode::Timeline) => self.is_focused = true,
+                Action::Focus(mode) if mode != Mode::Calendar => self.is_focused = false,
+                Action::Focus(Mode::Calendar) => self.is_focused = true,
                 Action::Help => self.show_help = !self.show_help,
                 Action::Left => {
                     self.selected_date -= time::Duration::days(1);

@@ -2,7 +2,7 @@
 source: src/components/home.rs
 expression: terminal.backend()
 ---
-"  Explorer     Filter     Time Management                                       "
+"  Explorer     Filter     Calendar     Time Management                          "
 "                                                                                "
 "                                                                                "
 "                                                                                "
