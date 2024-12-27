@@ -144,7 +144,7 @@ impl<'a> TimelineTab<'a> {
         (0..self.entries_list.height_of(index_closest_task)).for_each(|_| {
             self.task_list_widget_state.scroll_down();
         });
-        self.tasks_to_events(&self.tasks[index_closest_task].clone());
+        self.tasks_to_events(self.tasks.clone().get(index_closest_task));
     }
     fn naive_date_to_date(naive_date: NaiveDate) -> Date {
         Date::from_iso_week_date(
@@ -162,7 +162,7 @@ impl<'a> TimelineTab<'a> {
         )
         .unwrap()
     }
-    fn tasks_to_events(&mut self, previewed_task: &Task) {
+    fn tasks_to_events(&mut self, previewed_task: Option<&Task>) {
         const SELECTED: Style = Style::new()
             .fg(Color::White)
             .bg(Color::Red)
@@ -182,7 +182,7 @@ impl<'a> TimelineTab<'a> {
         );
 
         for task in self.tasks.clone() {
-            let theme = if task == *previewed_task {
+            let theme = if previewed_task.is_some_and(|s| task == *s) {
                 PREVIEWED
             } else {
                 TASK
