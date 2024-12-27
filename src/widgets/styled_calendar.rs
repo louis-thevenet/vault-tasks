@@ -4,7 +4,7 @@ use ratatui::{
     widgets::calendar::{CalendarEventStore, Monthly},
     Frame,
 };
-use time::Date;
+use time::{Date, Month};
 
 #[derive(Default, Clone, Copy)]
 pub struct StyledCalendar;
@@ -37,20 +37,31 @@ impl StyledCalendar {
             horizontal: 1,
         });
         let [pred, cur, next] = Layout::vertical([Constraint::Length(2 + 5 + 1); 3]).areas(area);
+
+        let mut prev_date = date;
+        if date.month() == Month::January {
+            prev_date = prev_date.replace_year(date.year() - 1).unwrap();
+        }
         StyledCalendar::render_month(
             frame,
             pred,
-            date.replace_day(1)
+            prev_date
+                .replace_day(1)
                 .unwrap()
                 .replace_month(date.month().previous())
                 .unwrap(),
             events,
         );
         StyledCalendar::render_month(frame, cur, date.replace_day(1).unwrap(), events);
+        let mut next_date = date;
+        if date.month() == Month::December {
+            next_date = next_date.replace_year(date.year() + 1).unwrap();
+        }
         StyledCalendar::render_month(
             frame,
             next,
-            date.replace_day(1)
+            next_date
+                .replace_day(1)
                 .unwrap()
                 .replace_month(date.month().next())
                 .unwrap(),
