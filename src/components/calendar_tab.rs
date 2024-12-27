@@ -48,7 +48,7 @@ pub struct CalendarTab<'a> {
     show_help: bool,
     help_menu_wigdet: HelpMenu<'a>,
 }
-impl<'a> Default for CalendarTab<'a> {
+impl Default for CalendarTab<'_> {
     fn default() -> Self {
         Self {
             selected_date: OffsetDateTime::now_local().unwrap().date(),
@@ -64,7 +64,7 @@ impl<'a> Default for CalendarTab<'a> {
         }
     }
 }
-impl<'a> CalendarTab<'a> {
+impl CalendarTab<'_> {
     pub fn new() -> Self {
         Self::default()
     }
@@ -209,7 +209,7 @@ impl<'a> CalendarTab<'a> {
         self.events.add(self.selected_date, SELECTED);
     }
 }
-impl<'a> Component for CalendarTab<'a> {
+impl Component for CalendarTab<'_> {
     fn register_config_handler(&mut self, config: Config) -> color_eyre::eyre::Result<()> {
         self.task_mgr = TaskManager::load_from_config(&config.tasks_config)?;
         self.config = config;
