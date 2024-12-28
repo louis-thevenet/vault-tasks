@@ -74,6 +74,7 @@ impl App {
         let tab = match args.command {
             Some(Commands::Filter) => Action::Focus(Mode::Filter),
             Some(Commands::TimeManagement) => Action::Focus(Mode::TimeManagement),
+            Some(Commands::Calendar) => Action::Focus(Mode::Calendar),
             Some(Commands::Explorer | Commands::GenerateConfig { path: _ }) | None => {
                 Action::Focus(Mode::Explorer)
             }
