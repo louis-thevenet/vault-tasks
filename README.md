@@ -4,6 +4,17 @@
 
 It will parse any Markdown file or vault and display the tasks it contains.
 
+## Demo using `./test-vault`
+
+```
+test-vault
+├── chocolate_lava_cake.md
+├── daily_workout.md
+├── diy_bookshelf.md
+├── study_plan.md
+└── test.md
+```
+
 ![Demo](./examples/demo_full.gif)
 
 ## Why
