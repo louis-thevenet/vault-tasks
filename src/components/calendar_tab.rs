@@ -94,7 +94,7 @@ impl CalendarTab<'_> {
     }
     fn render_footer(area: Rect, frame: &mut Frame) {
         ratatui::widgets::Widget::render(
-            Line::raw("Place holder").centered(),
+            Line::raw("Navigate: <hjkl|◄▼▲▶> | Month: Shift+<jk|▼▲>").centered(),
             area,
             frame.buffer_mut(),
         );
