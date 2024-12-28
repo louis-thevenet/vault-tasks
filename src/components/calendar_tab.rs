@@ -227,6 +227,11 @@ impl Component for CalendarTab<'_> {
     ) -> color_eyre::eyre::Result<Option<crate::action::Action>> {
         if !self.is_focused {
             match action {
+                Action::ReloadVault => {
+                    self.task_mgr.reload(&self.config.tasks_config)?;
+                    self.update_tasks();
+                    self.updated_date();
+                }
                 Action::Focus(Mode::Calendar) => self.is_focused = true,
                 Action::Focus(mode) if !(mode == Mode::Calendar) => self.is_focused = false,
                 _ => (),
@@ -245,6 +250,11 @@ impl Component for CalendarTab<'_> {
                 Action::Focus(mode) if mode != Mode::Calendar => self.is_focused = false,
                 Action::Focus(Mode::Calendar) => self.is_focused = true,
                 Action::Help => self.show_help = !self.show_help,
+                Action::ReloadVault => {
+                    self.task_mgr.reload(&self.config.tasks_config)?;
+                    self.update_tasks();
+                    self.updated_date();
+                }
                 Action::Left => {
                     self.selected_date -= time::Duration::days(1);
 

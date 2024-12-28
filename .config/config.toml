@@ -19,6 +19,7 @@
 "<Ctrl-Down>" = "ViewDown"
 "<PageDown>" = "ViewPageDown"
 # Navigation
+"<r>" = "ReloadVault"
 "<j>" = "Down"
 "<Down>" = "Down"
 "<k>" = "Up"
