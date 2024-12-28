@@ -1,4 +1,4 @@
-onfig Vault-tasks
+# Vault-tasks
 
 `vault-tasks` is a TUI Markdown task manager.
 
