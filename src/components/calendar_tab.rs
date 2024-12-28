@@ -4,9 +4,9 @@ use ::time::{Date, OffsetDateTime};
 use chrono::{Datelike, Duration, NaiveDate, NaiveTime};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
-    style::{Color, Modifier, Style},
-    text::{Line, Span},
-    widgets::{calendar::CalendarEventStore, StatefulWidget},
+    style::{Color, Modifier, Style, Stylize},
+    text::{Line, Span, ToSpan},
+    widgets::{calendar::CalendarEventStore, StatefulWidget, Widget},
     Frame,
 };
 use time::{util::days_in_year, Weekday};
@@ -31,6 +31,7 @@ use super::Component;
 
 /// Struct that helps with drawing the component
 struct CalendarTabArea {
+    date: Rect,
     calendar: Rect,
     legend: Rect,
     footer: Rect,
@@ -106,7 +107,14 @@ impl CalendarTab<'_> {
         ])
         .areas(calendar);
 
+        let [date, timeline] = Layout::vertical([
+            Constraint::Length(1), // date
+            Constraint::Min(0),    // timeline
+        ])
+        .areas(timeline);
+
         CalendarTabArea {
+            date,
             calendar,
             legend,
             footer,
@@ -422,6 +430,12 @@ impl Component for CalendarTab<'_> {
 
         // Legend
         Self::render_legend(&areas, frame);
+
+        // Date
+        self.selected_date
+            .to_span()
+            .bold()
+            .render(areas.date, frame.buffer_mut());
 
         // Timeline
         self.entries_list.clone().render(
