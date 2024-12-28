@@ -6,10 +6,12 @@ Set Theme "Builtin Solarized Light"
 Set TypingSpeed 80ms
 Set FontSize 22
 Set Width 1800
-Set Height 800
+Set Height 1000
 
+Hide
 Type "vault-tasks -c ../.config/ -v ../test-vault time"
 Enter
+Show
 
 # Time Management tab
 Sleep 1s

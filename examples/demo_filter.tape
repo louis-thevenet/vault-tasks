@@ -6,10 +6,12 @@ Set Theme "Builtin Solarized Light"
 Set TypingSpeed 80ms
 Set FontSize 22
 Set Width 1800
-Set Height 800
+Set Height 1000
 
+Hide
 Type "vault-tasks -c ../.config/ -v ../test-vault filter"
 Enter
+Show
 
 Sleep 3s
 Type "#tobuy 09/29"

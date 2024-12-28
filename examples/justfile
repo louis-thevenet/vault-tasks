@@ -1,6 +1,7 @@
 make-all-vhs:
     vhs < ./demo_explorer.tape
     vhs < ./demo_filter.tape
+    vhs < ./demo_calendar.tape
     vhs < ./demo_time.tape
     git checkout HEAD -- ../test-vault/test.md # it is edited during explorer demo
     vhs < ./demo_full.tape
