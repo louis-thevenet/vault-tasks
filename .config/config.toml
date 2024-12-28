@@ -20,6 +20,7 @@
 "<PageDown>" = "ViewPageDown"
 # Navigation
 "<r>" = "ReloadVault"
+"<t>" = "GotoToday"
 "<j>" = "Down"
 "<Down>" = "Down"
 "<k>" = "Up"

@@ -123,7 +123,7 @@ impl CalendarTab<'_> {
     }
     fn render_footer(area: Rect, frame: &mut Frame) {
         ratatui::widgets::Widget::render(
-            Line::raw("Navigate: <hjkl|◄▼▲▶> | Month: Shift+<jk|▼▲>").centered(),
+            Line::raw("Navigate: <hjkl|◄▼▲▶> | Month: Shift+<jk|▼▲> | Goto Today: <t>").centered(),
             area,
             frame.buffer_mut(),
         );
@@ -356,6 +356,10 @@ impl Component for CalendarTab<'_> {
                 Action::Focus(mode) if mode != Mode::Calendar => self.is_focused = false,
                 Action::Focus(Mode::Calendar) => self.is_focused = true,
                 Action::Help => self.show_help = !self.show_help,
+                Action::GotoToday => {
+                    self.selected_date = OffsetDateTime::now_local().unwrap().date();
+                    self.updated_date();
+                }
                 Action::ReloadVault => {
                     self.task_mgr.reload(&self.config.tasks_config)?;
                     self.update_tasks();
