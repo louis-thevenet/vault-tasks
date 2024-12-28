@@ -74,6 +74,7 @@
                 rust-toolchain
                 pkgs.clippy
                 pkgs.just
+                pkgs.vhs
               ];
           };
 
