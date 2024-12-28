@@ -5,7 +5,7 @@ use chrono::{Datelike, Duration, NaiveDate, NaiveTime};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::Line,
+    text::{Line, Span},
     widgets::{calendar::CalendarEventStore, StatefulWidget},
     Frame,
 };
@@ -32,6 +32,7 @@ use super::Component;
 /// Struct that helps with drawing the component
 struct CalendarTabArea {
     calendar: Rect,
+    legend: Rect,
     footer: Rect,
     timeline: Rect,
 }
@@ -68,6 +69,20 @@ impl Default for CalendarTab<'_> {
     }
 }
 impl CalendarTab<'_> {
+    const SELECTED: Style = Style::new()
+        .fg(Color::White)
+        .bg(Color::Red)
+        .add_modifier(Modifier::BOLD);
+    const PREVIEWED: Style = Style::new()
+        .fg(Color::White)
+        .bg(Color::Green)
+        .add_modifier(Modifier::BOLD);
+    const TASK_DONE: Style = Style::new()
+        .fg(Color::Green)
+        .add_modifier(Modifier::UNDERLINED);
+    const TASK_TODO: Style = Style::new()
+        .fg(Color::Red)
+        .add_modifier(Modifier::UNDERLINED);
     pub fn new() -> Self {
         Self::default()
     }
@@ -81,13 +96,19 @@ impl CalendarTab<'_> {
         .areas(area);
 
         let [calendar, timeline] = Layout::horizontal([
-            Constraint::Length(7 * 3 + 5), // calendar
-            Constraint::Min(0),            // timeline
+            Constraint::Length(7 * 3 + 5 + 4), // calendar
+            Constraint::Min(0),                // timeline
         ])
         .areas(content);
+        let [calendar, legend] = Layout::vertical([
+            Constraint::Length(7 * 3 + 5), // calendar
+            Constraint::Min(0),            // legend
+        ])
+        .areas(calendar);
 
         CalendarTabArea {
             calendar,
+            legend,
             footer,
             timeline,
         }
@@ -167,21 +188,6 @@ impl CalendarTab<'_> {
         .unwrap()
     }
     fn tasks_to_events(&mut self, previewed_task: Option<&Task>) {
-        const SELECTED: Style = Style::new()
-            .fg(Color::White)
-            .bg(Color::Red)
-            .add_modifier(Modifier::BOLD);
-        const PREVIEWED: Style = Style::new()
-            .fg(Color::White)
-            .bg(Color::Green)
-            .add_modifier(Modifier::BOLD);
-        const TASK_DONE: Style = Style::new()
-            .fg(Color::Green)
-            .add_modifier(Modifier::UNDERLINED);
-        const TASK_TODO: Style = Style::new()
-            .fg(Color::Red)
-            .add_modifier(Modifier::UNDERLINED);
-
         self.events = CalendarEventStore::today(
             Style::default()
                 .add_modifier(Modifier::BOLD)
@@ -193,15 +199,16 @@ impl CalendarTab<'_> {
                 DueDate::NoDate => (),
                 DueDate::Day(naive_date) => self
                     .events
-                    .add(Self::naive_date_to_date(naive_date), PREVIEWED),
+                    .add(Self::naive_date_to_date(naive_date), Self::PREVIEWED),
 
-                DueDate::DayTime(naive_date_time) => self
-                    .events
-                    .add(Self::naive_date_to_date(naive_date_time.date()), PREVIEWED),
+                DueDate::DayTime(naive_date_time) => self.events.add(
+                    Self::naive_date_to_date(naive_date_time.date()),
+                    Self::PREVIEWED,
+                ),
             }
         }
         // selected date
-        self.events.add(self.selected_date, SELECTED);
+        self.events.add(self.selected_date, Self::SELECTED);
 
         let mut current = None;
         for task in self.tasks.clone() {
@@ -214,13 +221,17 @@ impl CalendarTab<'_> {
                 }
             };
             let theme = match task.state {
-                State::ToDo | State::Incomplete => TASK_TODO,
-                State::Done | State::Canceled => TASK_DONE,
+                State::ToDo | State::Incomplete => Self::TASK_TODO,
+                State::Done | State::Canceled => Self::TASK_DONE,
             };
             if let Some(date) = next {
                 // Already marked as selected
                 if date == self.selected_date
-                    || self.events.0.get(&date).is_some_and(|&t| t == PREVIEWED)
+                    || self
+                        .events
+                        .0
+                        .get(&date)
+                        .is_some_and(|&t| t == Self::PREVIEWED)
                 {
                     self.events.0.insert(
                         date,
@@ -236,7 +247,7 @@ impl CalendarTab<'_> {
                 if current.is_some_and(|d: Date| d == date) {
                     // update if needed
                     if let Entry::Occupied(mut e) = self.events.0.entry(date) {
-                        if theme == TASK_TODO {
+                        if theme == Self::TASK_TODO {
                             e.insert(theme); // Todo has priority over Done
                         }
                     } else {
@@ -251,6 +262,49 @@ impl CalendarTab<'_> {
                 }
             }
         }
+    }
+    fn render_legend(areas: &CalendarTabArea, frame: &mut Frame<'_>) {
+        let [todo, done, selected, previewed, today] =
+            Layout::vertical([Constraint::Length(1); 5]).areas(areas.legend);
+        ratatui::widgets::Widget::render(
+            Span::raw("Todo")
+                .style(Self::TASK_TODO)
+                .into_left_aligned_line(),
+            todo,
+            frame.buffer_mut(),
+        );
+        ratatui::widgets::Widget::render(
+            Span::raw("Done")
+                .style(Self::TASK_DONE)
+                .into_left_aligned_line(),
+            done,
+            frame.buffer_mut(),
+        );
+        ratatui::widgets::Widget::render(
+            Span::raw("Selected")
+                .style(Self::SELECTED)
+                .into_left_aligned_line(),
+            selected,
+            frame.buffer_mut(),
+        );
+        ratatui::widgets::Widget::render(
+            Span::raw("Previewed")
+                .style(Self::PREVIEWED)
+                .into_left_aligned_line(),
+            previewed,
+            frame.buffer_mut(),
+        );
+        ratatui::widgets::Widget::render(
+            Span::raw("Today")
+                .style(
+                    Style::default()
+                        .add_modifier(Modifier::BOLD)
+                        .bg(Color::Blue),
+                )
+                .into_left_aligned_line(),
+            today,
+            frame.buffer_mut(),
+        );
     }
 }
 impl Component for CalendarTab<'_> {
@@ -365,8 +419,11 @@ impl Component for CalendarTab<'_> {
 
         // Calendar
         StyledCalendar::render_quarter(frame, areas.calendar, self.selected_date, &self.events);
-        // Timeline
 
+        // Legend
+        Self::render_legend(&areas, frame);
+
+        // Timeline
         self.entries_list.clone().render(
             areas.timeline,
             frame.buffer_mut(),
