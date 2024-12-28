@@ -188,6 +188,12 @@ Check the key map within the app with `?`
 | `n`       |               | +1 year  |
 | `Shift-n` |               | -1 year  |
 
+##### Commands
+
+| Key | Action     |
+| --- | ---------- |
+| `t` | Goto Today |
+
 ![](./examples/demo_calendar.gif)
 
 #### Time Management Tab
