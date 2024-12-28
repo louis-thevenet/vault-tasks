@@ -1,3 +1,5 @@
+use std::collections::hash_map::Entry;
+
 use ::time::{Date, OffsetDateTime};
 use chrono::{Datelike, Duration, NaiveDate, NaiveTime};
 use ratatui::{
@@ -8,6 +10,7 @@ use ratatui::{
     Frame,
 };
 use time::{util::days_in_year, Weekday};
+use tracing::error;
 use tui_scrollview::ScrollViewState;
 
 use crate::{
@@ -17,7 +20,7 @@ use crate::{
     core::{
         filter::{filter_to_vec, Filter},
         sorter::SortingMode,
-        task::{DueDate, Task},
+        task::{DueDate, State, Task},
         vault_data::VaultData,
         TaskManager,
     },
@@ -172,7 +175,10 @@ impl CalendarTab<'_> {
             .fg(Color::White)
             .bg(Color::Green)
             .add_modifier(Modifier::BOLD);
-        const TASK: Style = Style::new()
+        const TASK_DONE: Style = Style::new()
+            .fg(Color::Green)
+            .add_modifier(Modifier::UNDERLINED);
+        const TASK_TODO: Style = Style::new()
             .fg(Color::Red)
             .add_modifier(Modifier::UNDERLINED);
 
@@ -181,32 +187,70 @@ impl CalendarTab<'_> {
                 .add_modifier(Modifier::BOLD)
                 .bg(Color::Blue),
         );
-
-        for task in self.tasks.clone() {
-            let theme = if previewed_task.is_some_and(|s| task == *s) {
-                PREVIEWED
-            } else {
-                TASK
-            };
-            match task.clone().due_date {
+        // Previewed date
+        if let Some(t) = previewed_task {
+            match t.due_date {
                 DueDate::NoDate => (),
-                DueDate::Day(naive_date) => {
-                    let date = Self::naive_date_to_date(naive_date);
-                    if !self.events.0.contains_key(&date) {
-                        self.events.add(date, theme);
+                DueDate::Day(naive_date) => self
+                    .events
+                    .add(Self::naive_date_to_date(naive_date), PREVIEWED),
+
+                DueDate::DayTime(naive_date_time) => self
+                    .events
+                    .add(Self::naive_date_to_date(naive_date_time.date()), PREVIEWED),
+            }
+        }
+        // selected date
+        self.events.add(self.selected_date, SELECTED);
+
+        let mut current = None;
+        for task in self.tasks.clone() {
+            let next = match task.clone().due_date {
+                DueDate::NoDate => None,
+                DueDate::Day(naive_date) => Some(Self::naive_date_to_date(naive_date)),
+
+                DueDate::DayTime(naive_datetime) => {
+                    Some(Self::naive_date_to_date(naive_datetime.date()))
+                }
+            };
+            let theme = match task.state {
+                State::ToDo | State::Incomplete => TASK_TODO,
+                State::Done | State::Canceled => TASK_DONE,
+            };
+            if let Some(date) = next {
+                // Already marked as selected
+                if date == self.selected_date
+                    || self.events.0.get(&date).is_some_and(|&t| t == PREVIEWED)
+                {
+                    self.events.0.insert(
+                        date,
+                        self.events
+                            .0
+                            .get(&date)
+                            .unwrap()
+                            .add_modifier(Modifier::UNDERLINED),
+                    );
+                }
+
+                // Are we on the same date as before ?
+                if current.is_some_and(|d: Date| d == date) {
+                    // update if needed
+                    if let Entry::Occupied(mut e) = self.events.0.entry(date) {
+                        if theme == TASK_TODO {
+                            e.insert(theme); // Todo has priority over Done
+                        }
+                    } else {
+                        error!("No event on this date but tasks exist");
                     }
                 }
-                DueDate::DayTime(naive_datetime) => {
-                    let date = Self::naive_date_to_date(naive_datetime.date());
-                    if !self.events.0.contains_key(&date) {
-                        self.events.add(date, theme);
-                    }
+                if self.events.0.contains_key(&date) {
+                    error!("Calendar entry exists but no tasks were added yet");
+                } else {
+                    self.events.add(date, theme);
+                    current = next;
                 }
             }
         }
-
-        // selected date
-        self.events.add(self.selected_date, SELECTED);
     }
 }
 impl Component for CalendarTab<'_> {
