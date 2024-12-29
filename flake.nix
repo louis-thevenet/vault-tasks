@@ -74,6 +74,10 @@
                 rust-toolchain
                 pkgs.clippy
                 pkgs.just
+                pkgs.vhs
+                (pkgs.python3.withPackages (python-pkgs: [
+                  python-pkgs.ics
+                ]))
               ];
           };
 
