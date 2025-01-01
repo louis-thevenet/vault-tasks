@@ -13,6 +13,12 @@ pub struct Filter {
     state: Option<State>,
 }
 
+impl Filter {
+    pub fn new(task: Task, state: Option<State>) -> Self {
+        Self { task, state }
+    }
+}
+
 /// Parses a [`Task`] from an input `&str`. Returns the `Task` and whether the input specify a task state (- [X] or - [ ]) or not.
 #[must_use]
 pub fn parse_search_input(input: &str, config: &TasksConfig) -> Filter {

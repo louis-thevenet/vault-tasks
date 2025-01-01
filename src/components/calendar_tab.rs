@@ -129,21 +129,12 @@ impl CalendarTab<'_> {
         );
     }
     fn update_tasks(&mut self) {
+        // Gather tasks to vector
         self.tasks = filter_to_vec(&self.task_mgr.tasks, &Filter::default());
         self.tasks.sort_by(SortingMode::cmp_due_date);
-
-        self.entries_list = TaskList::new(
-            &self.config,
-            &self
-                .tasks
-                .clone()
-                .iter()
-                .map(|t| VaultData::Task(t.clone()))
-                .collect::<Vec<VaultData>>(),
-            true,
-        );
     }
     fn updated_date(&mut self) {
+        // Find a task to preview
         let mut index_closest_task = 0;
         let mut best = Duration::max_value();
         for (i, task) in self.tasks.iter().enumerate() {
@@ -172,10 +163,27 @@ impl CalendarTab<'_> {
                 index_closest_task = i;
             }
         }
-        self.task_list_widget_state.scroll_to_top();
-        (0..self.entries_list.height_of(index_closest_task)).for_each(|_| {
-            self.task_list_widget_state.scroll_down();
-        });
+
+        // Build preview task list
+        let tasks_to_preview = if self.tasks.get(index_closest_task).is_some() {
+            &filter_to_vec(
+                &self.task_mgr.tasks,
+                &Filter::new(
+                    Task {
+                        due_date: self.tasks[index_closest_task].due_date.clone(),
+                        ..Default::default()
+                    },
+                    None,
+                ),
+            )
+            .iter()
+            .map(|t| VaultData::Task(t.clone()))
+            .collect::<Vec<VaultData>>()
+        } else {
+            &vec![]
+        };
+        self.entries_list = TaskList::new(&self.config, tasks_to_preview, true);
+        self.task_list_widget_state.scroll_to_top(); // reset view
         self.tasks_to_events(self.tasks.clone().get(index_closest_task));
     }
     #[allow(clippy::cast_possible_truncation)]

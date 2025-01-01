@@ -47,9 +47,9 @@ impl TaskList {
             height,
         }
     }
-    pub fn height_of(&mut self, i: usize) -> u16 {
-        (0..i).map(|i| self.content[i].height).sum()
-    }
+    // pub fn height_of(&mut self, i: usize) -> u16 {
+    //     (0..i).map(|i| self.content[i].height).sum()
+    // }
 }
 impl StatefulWidget for TaskList {
     type State = ScrollViewState;
