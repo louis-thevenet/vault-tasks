@@ -125,17 +125,17 @@ mod tests {
     #[test]
     fn task_sort_by_due_date() {
         let mut source = [
-            "- [ ] test 10/11",
-            "- [ ] test 10/9",
-            "- [ ] test 10/10 p5",
-            "- [ ] test 10/10 10:00",
+            "- [ ] test 2025/10/11",
+            "- [ ] test 2025/10/9",
+            "- [ ] test 2025/10/10 p5",
+            "- [ ] test 2025/10/10 10:00",
             "- [x] zèbre",
             "- [x] zzz",
             "- [ ] zzz",
-            "- [ ] test 10/10 p2",
+            "- [ ] test 2025/10/10 p2",
             "- [x] test",
             "- [ ] test2",
-            "- [ ] test 10/10 5:00",
+            "- [ ] test 2025/10/10 5:00",
             "- [ ] abc",
         ];
         let config = TasksConfig {
