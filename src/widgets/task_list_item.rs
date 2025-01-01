@@ -12,6 +12,7 @@ use crate::core::{
     PrettySymbolsConfig,
 };
 
+#[derive(Clone)]
 pub struct TaskListItem {
     item: VaultData,
     pub height: u16,

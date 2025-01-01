@@ -9,8 +9,8 @@ use crate::{
     action::Action,
     cli::{Cli, Commands},
     components::{
-        explorer_tab::ExplorerTab, filter_tab::FilterTab, fps::FpsCounter, home::Home,
-        time_management_tab::TimeManagementTab, Component,
+        calendar_tab::CalendarTab, explorer_tab::ExplorerTab, filter_tab::FilterTab,
+        fps::FpsCounter, home::Home, time_management_tab::TimeManagementTab, Component,
     },
     config::Config,
     tui::{Event, Tui},
@@ -41,6 +41,7 @@ pub enum Mode {
     Explorer,
     Filter,
     TimeManagement,
+    Calendar,
 }
 
 impl App {
@@ -56,6 +57,7 @@ impl App {
                 Box::<FpsCounter>::default(),
                 Box::new(ExplorerTab::new()),
                 Box::new(FilterTab::new()),
+                Box::new(CalendarTab::new()),
                 Box::new(TimeManagementTab::new()),
             ],
             should_quit: false,
@@ -72,6 +74,7 @@ impl App {
         let tab = match args.command {
             Some(Commands::Filter) => Action::Focus(Mode::Filter),
             Some(Commands::TimeManagement) => Action::Focus(Mode::TimeManagement),
+            Some(Commands::Calendar) => Action::Focus(Mode::Calendar),
             Some(Commands::Explorer | Commands::GenerateConfig { path: _ }) | None => {
                 Action::Focus(Mode::Explorer)
             }

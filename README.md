@@ -1,8 +1,19 @@
-onfig Vault-tasks
+# Vault-tasks
 
 `vault-tasks` is a TUI Markdown task manager.
 
 It will parse any Markdown file or vault and display the tasks it contains.
+
+## Demo using `./test-vault`
+
+```
+test-vault
+├── chocolate_lava_cake.md
+├── daily_workout.md
+├── diy_bookshelf.md
+├── study_plan.md
+└── test.md
+```
 
 ![Demo](./examples/demo_full.gif)
 
@@ -24,13 +35,13 @@ I also spend most of my writing time in the terminal (Helix) and do not rely on 
   - priority
 - Navigate vault
 - Search through tasks (sort and filter)
+- Calendar view and timeline
 - Edit tasks or open in default editor
 - Time Management tab (Pomodoro & Flowtime)
 
 ## Planned Features
 
 - `new` action in Explorer Tab to create a new child on selected entry
-- A Timeline tab with a calendar and a chronological view. (I'd also like to be able to import calendar files)
 
 ## Installation
 
@@ -162,6 +173,29 @@ Check the key map within the app with `?`
 
 ![](./examples/demo_filter.gif)
 
+#### Calendar Tab
+
+##### Navigation
+
+| Key       | Alternate Key | Action   |
+| --------- | ------------- | -------- |
+| `h`       | `←`           | +1 day   |
+| `l`       | `→`           | -1 day   |
+| `j`       | `↓`           | +7 days  |
+| `k`       | `↑`           | -7 days  |
+| `Shift-j` | `Shift-↓`     | +1 month |
+| `Shift-k` | `Shift-↑`     | -1 month |
+| `n`       |               | +1 year  |
+| `Shift-n` |               | -1 year  |
+
+##### Commands
+
+| Key | Action     |
+| --- | ---------- |
+| `t` | Goto Today |
+
+![](./examples/demo_calendar.gif)
+
 #### Time Management Tab
 
 ##### Navigation
@@ -192,6 +226,7 @@ vault-tasks explorer # is the default
 # Or
 vault-tasks filter
 vault-tasks time
+vault-tasks calendar
 ```
 
 You can also output the content of a vault in standard output using

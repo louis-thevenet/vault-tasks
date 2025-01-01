@@ -12,6 +12,7 @@ use crate::{
     tui::{Event, Tui},
 };
 
+pub mod calendar_tab;
 pub mod explorer_tab;
 pub mod filter_tab;
 pub mod fps;

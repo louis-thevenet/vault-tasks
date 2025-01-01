@@ -1,3 +1,41 @@
+[keybindings.Calendar]
+# App
+"<q>" = "Quit"
+"<Ctrl-c>" = "Quit"
+"<Ctrl-z>" = "Suspend"
+"<?>" = "Help"
+# Tabs
+"<Shift-Right>" = "TabRight"
+"<Shift-l>" = "TabRight"
+"<Shift-Left>" = "TabLeft"
+"<shift-h>" = "TabLeft"
+# Scrolling
+"<Ctrl-u>" = "ViewUp"
+"<Ctrl-k>" = "ViewUp"
+"<Ctrl-Up>" = "ViewUp"
+"<PageUp>" = "ViewPageUp"
+"<Ctrl-j>" = "ViewDown"
+"<Ctrl-d>" = "ViewDown"
+"<Ctrl-Down>" = "ViewDown"
+"<PageDown>" = "ViewPageDown"
+# Navigation
+"<r>" = "ReloadVault"
+"<t>" = "GotoToday"
+"<j>" = "Down"
+"<Down>" = "Down"
+"<k>" = "Up"
+"<Up>" = "Up"
+"<h>" = "Left"
+"<Left>" = "Left"
+"<l>" = "Right"
+"<Right>" = "Right"
+"<Shift-j>" = "NextMonth"
+"<Shift-Down>" = "NextMonth"
+"<Shift-k>" = "PreviousMonth"
+"<Shift-Up>" = "PreviousMonth"
+"<n>" = "NextYear"
+"<Shift-n>" = "PreviousYear"
+
 [keybindings.Explorer]
 # App
 "<q>" = "Quit"

@@ -24,6 +24,7 @@ impl Home {
                 SelectedTab::Explorer => Action::Focus(Mode::Explorer),
                 SelectedTab::Filter => Action::Focus(Mode::Filter),
                 SelectedTab::TimeManagement => Action::Focus(Mode::TimeManagement),
+                SelectedTab::Calendar => Action::Focus(Mode::Calendar),
             }) {
                 error!("Could not focus selected tab: {e}");
             }
@@ -83,6 +84,7 @@ impl Component for Home {
             Action::Focus(Mode::Explorer) => self.selected_tab = SelectedTab::Explorer,
             Action::Focus(Mode::Filter) => self.selected_tab = SelectedTab::Filter,
             Action::Focus(Mode::TimeManagement) => self.selected_tab = SelectedTab::TimeManagement,
+            Action::Focus(Mode::Calendar) => self.selected_tab = SelectedTab::Calendar,
             _ => (),
         }
         Ok(None)
@@ -106,6 +108,8 @@ enum SelectedTab {
     Explorer,
     #[strum(to_string = "Filter")]
     Filter,
+    #[strum(to_string = "Calendar")]
+    Calendar,
     #[strum(to_string = "Time Management")]
     TimeManagement,
 }

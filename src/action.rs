@@ -19,6 +19,11 @@ pub enum Action {
     Key(KeyEvent),
     ReloadVault,
     // Movements
+    GotoToday,
+    NextMonth,
+    PreviousMonth,
+    NextYear,
+    PreviousYear,
     PreviousMethod,
     NextMethod,
     NextSegment,
