@@ -53,7 +53,7 @@ cargo install vault-tasks
 
 ### Nix
 
-It will be added to nixpkgs when I have time to make a nix module. For now, add the repo to your inputs:
+You can get it from nixpkgs 24.11 or directly from this repo's flake:
 
 ```nix
 vault-tasks = {
