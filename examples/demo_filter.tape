@@ -1,5 +1,5 @@
 Output ./demo_filter.gif
-Output ./demo_filter.mp4
+# Output ./demo_filter.mp4
 
 Set Shell zsh
 Set Theme "Builtin Solarized Light"

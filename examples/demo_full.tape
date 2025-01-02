@@ -3,8 +3,8 @@
 #     vhs < vault-tasks.tape
 
 Output ./demo_full.gif
-Output ./demo_full.mp4
-Output ./demo_full.webm
+# Output ./demo_full.mp4
+# Output ./demo_full.webm
 # Output ./frames/
 
 Set Shell zsh

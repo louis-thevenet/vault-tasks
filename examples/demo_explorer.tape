@@ -1,5 +1,5 @@
 Output ./demo_explorer.gif
-Output ./demo_explorer.mp4
+# Output ./demo_explorer.mp4
 # Output ./demo_explorer.webm
 # Output ./frames/
 
