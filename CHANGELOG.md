@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.8.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.7.0...v0.8.0) (2025-01-01)
+
+
+### Features
+
+* add calendar tab ([#37](https://github.com/louis-thevenet/vault-tasks/issues/37)) ([20120cd](https://github.com/louis-thevenet/vault-tasks/commit/20120cdcbb827f20a7380e8f24cf6bc9e237f6ed))
+
+
+### Bug Fixes
+
+* **calendar:** only preview selected day ([14292b4](https://github.com/louis-thevenet/vault-tasks/commit/14292b45d6431d9c1d630f0ee7977024923a4632))
+* **tui:** changing state on wrong element type doesn't crash anymore but simply logs error ([9d8f4c8](https://github.com/louis-thevenet/vault-tasks/commit/9d8f4c85efefdcb9f3c58b313af2bf04f75e4261))
+
 ## [0.7.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.6.1...v0.7.0) (2024-12-21)
 
 
