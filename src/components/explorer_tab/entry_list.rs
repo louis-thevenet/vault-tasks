@@ -21,11 +21,16 @@ impl ExplorerTab<'_> {
     }
     pub(super) fn enter_selected_entry(&mut self) -> Result<()> {
         // Update path with selected entry
-        self.current_path.push(
-            self.entries_center_view[self.state_center_view.selected.unwrap_or_default()]
-                .1
-                .clone(),
-        );
+        let entry = match self
+            .entries_center_view
+            .get(self.state_center_view.selected.unwrap_or_default())
+        {
+            Some(i) => i,
+            None => return Ok(()), // No selected entry (vault is empty)
+        }
+        .1
+        .clone();
+        self.current_path.push(entry);
 
         // Can we enter ?
         if !self.task_mgr.can_enter(&self.current_path) {

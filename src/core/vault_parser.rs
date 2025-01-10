@@ -76,7 +76,7 @@ impl VaultParser {
                     &entry.file_name().into_string().unwrap_or_default(),
                 )
                 .extension()
-                .map_or(false, |ext| ext.eq_ignore_ascii_case("md"))
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
                 {
                     debug!("Ignoring {name:?} (not a .md file)");
                     continue;
