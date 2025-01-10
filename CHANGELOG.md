@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/louis-thevenet/vault-tasks/compare/v0.8.0...v0.8.1) (2025-01-10)
+
+
+### Bug Fixes
+
+* panic when vault was empty while trying to enter selected entry ([eb3b5de](https://github.com/louis-thevenet/vault-tasks/commit/eb3b5de009a4fb43e2f97b2e5467c34945f3048c))
+
 ## [0.8.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.7.0...v0.8.0) (2025-01-01)
 
 
