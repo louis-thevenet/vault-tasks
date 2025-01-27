@@ -4,6 +4,7 @@ use ratatui::{
     prelude::*,
     widgets::{Block, Borders, Paragraph},
 };
+use ratskin::RatSkin;
 use tracing::error;
 
 use crate::core::{
@@ -48,6 +49,7 @@ impl TaskListItem {
     }
     fn task_to_paragraph(&self, area: Rect, task: &Task) -> (Rc<[Rect]>, Paragraph<'_>) {
         let mut lines = vec![];
+        let rat_skin = RatSkin::default();
         let state = task.state.display(self.symbols.clone());
         let title = Span::styled(format!("{state} {}", task.name), Style::default());
         let surrounding_block =
@@ -106,9 +108,11 @@ impl TaskListItem {
             lines.push(Line::from(Span::styled(tag_line, Color::DarkGray)));
         }
         if let Some(description) = task.description.clone() {
-            for l in description.lines() {
-                lines.push(Line::from(Span::styled(l.to_string(), Color::Gray)));
-            }
+            let text = rat_skin.parse(RatSkin::parse_text(&description), 80);
+            lines = [lines, text].concat();
+            // for l in description.lines() {
+            //     lines.push(Line::from(Span::styled(l.to_string(), Color::Gray)));
+            // }
         }
         let mut constraints = vec![Constraint::Length((lines.len()).try_into().unwrap())];
 
