@@ -276,6 +276,7 @@ impl Component for FilterTab<'_> {
                 .iter()
                 .map(|t| VaultData::Task(t.clone()))
                 .collect::<Vec<VaultData>>(),
+            areas.task_list.width,
             true,
         );
 

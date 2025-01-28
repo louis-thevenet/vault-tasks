@@ -14,7 +14,12 @@ pub struct TaskList {
 }
 
 impl TaskList {
-    pub fn new(config: &Config, file_content: &[VaultData], display_filename: bool) -> Self {
+    pub fn new(
+        config: &Config,
+        file_content: &[VaultData],
+        max_width: u16,
+        display_filename: bool,
+    ) -> Self {
         let content = file_content
             .iter()
             .map(|fc| {
@@ -22,6 +27,7 @@ impl TaskList {
                     fc.clone(),
                     !config.tasks_config.use_american_format,
                     config.tasks_config.pretty_symbols.clone(),
+                    max_width,
                     display_filename,
                     config.tasks_config.show_relative_due_dates,
                 )

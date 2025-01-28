@@ -243,7 +243,7 @@ impl ExplorerTab<'_> {
         // If we have tasks, then render a TaskList widget
         match self.entries_right_view.first() {
             Some(VaultData::Task(_) | VaultData::Header(_, _, _)) => {
-                TaskList::new(&self.config, &self.entries_right_view, false).render(
+                TaskList::new(&self.config, &self.entries_right_view, area.width, false).render(
                     area,
                     frame.buffer_mut(),
                     &mut self.task_list_widget_state,

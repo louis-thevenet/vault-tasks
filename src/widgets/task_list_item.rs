@@ -20,6 +20,7 @@ pub struct TaskListItem {
     symbols: PrettySymbolsConfig,
     not_american_format: bool,
     show_relative_due_dates: bool,
+    max_width: u16,
     display_filename: bool,
     header_style: Style,
 }
@@ -33,14 +34,16 @@ impl TaskListItem {
         item: VaultData,
         not_american_format: bool,
         symbols: PrettySymbolsConfig,
+        max_width: u16,
         display_filename: bool,
         show_relative_due_dates: bool,
     ) -> Self {
-        let height = Self::compute_height(&item);
+        let height = Self::compute_height(&item, max_width);
         Self {
             item,
             height,
             not_american_format,
+            max_width,
             display_filename,
             symbols,
             header_style: Style::default(),
@@ -49,9 +52,25 @@ impl TaskListItem {
     }
     fn task_to_paragraph(&self, area: Rect, task: &Task) -> (Rc<[Rect]>, Paragraph<'_>) {
         let mut lines = vec![];
+        let mut data_line = vec![];
+
         let rat_skin = RatSkin::default();
+
         let state = task.state.display(self.symbols.clone());
-        let title = Span::styled(format!("{state} {}", task.name), Style::default());
+        let title_parsed = rat_skin.parse(
+            RatSkin::parse_text(&(state.clone() + " " + &task.name)),
+            self.max_width,
+        );
+        let binding = Line::raw(state);
+        let title = match title_parsed.first() {
+            Some(t) => {
+                lines.append(&mut title_parsed[1..].to_vec());
+
+                t
+            }
+            None => &binding,
+        };
+
         let surrounding_block =
             Block::default()
                 .borders(Borders::ALL)
@@ -60,8 +79,6 @@ impl TaskListItem {
                 } else {
                     Line::from("")
                 });
-
-        let mut data_line = vec![];
 
         if task.is_today {
             data_line.push(Span::raw(format!("{} ", self.symbols.today_tag)));
@@ -108,18 +125,16 @@ impl TaskListItem {
             lines.push(Line::from(Span::styled(tag_line, Color::DarkGray)));
         }
         if let Some(description) = task.description.clone() {
-            let text = rat_skin.parse(RatSkin::parse_text(&description), 80);
+            let text = rat_skin.parse(RatSkin::parse_text(&description), self.max_width);
             lines = [lines, text].concat();
-            // for l in description.lines() {
-            //     lines.push(Line::from(Span::styled(l.to_string(), Color::Gray)));
-            // }
         }
         let mut constraints = vec![Constraint::Length((lines.len()).try_into().unwrap())];
 
         for st in &task.subtasks {
-            constraints.push(Constraint::Length(Self::compute_height(&VaultData::Task(
-                st.clone(),
-            ))));
+            constraints.push(Constraint::Length(Self::compute_height(
+                &VaultData::Task(st.clone()),
+                self.max_width - 2, // -2 for borders
+            )));
         }
 
         let layout = Layout::default()
@@ -130,20 +145,27 @@ impl TaskListItem {
         (
             layout,
             if lines.is_empty() && task.subtasks.is_empty() {
-                Paragraph::new(title).block(surrounding_block)
+                Paragraph::new(title.clone()).block(surrounding_block)
             } else {
                 Paragraph::new(Text::from(lines)).block(surrounding_block.title_top(title.clone()))
             },
         )
     }
-    fn compute_height(item: &VaultData) -> u16 {
+    fn compute_height(item: &VaultData, max_width: u16) -> u16 {
         match &item {
             VaultData::Directory(_, _) => 1,
             VaultData::Header(_, _, children) => {
-                children.iter().map(Self::compute_height).sum::<u16>() + 1 // name in block (border only on top)
+                children
+                    .iter()
+                    .map(|c| Self::compute_height(c, max_width))
+                    .sum::<u16>()
+                    + 1 // name in block (border only on top)
             }
             VaultData::Task(task) => {
                 let mut count: u16 = 2; // block
+                if task.name.len() >= max_width as usize {
+                    count += (2 + task.name.len() as u16) / max_width; // add 2 for task state
+                }
                 if let Some(d) = &task.description {
                     count += u16::try_from(d.split('\n').count()).unwrap_or_else(|e| {
                         error!("Could not convert description length to u16 :{e}");
@@ -157,7 +179,7 @@ impl TaskListItem {
                     count += 1;
                 }
                 for sb in &task.subtasks {
-                    count += Self::compute_height(&VaultData::Task(sb.clone()));
+                    count += Self::compute_height(&VaultData::Task(sb.clone()), max_width - 2);
                 }
                 count.max(3) // If count == 2 then we add task name will be in the block
                              // Else name goes in block title
@@ -185,7 +207,10 @@ impl Widget for TaskListItem {
 
                 let mut constraints = vec![];
                 for child in children {
-                    constraints.push(Constraint::Length(Self::compute_height(child)));
+                    constraints.push(Constraint::Length(Self::compute_height(
+                        child,
+                        self.max_width - indent[0].width,
+                    )));
                 }
                 let layout = Layout::default()
                     .direction(Direction::Vertical)
@@ -198,6 +223,7 @@ impl Widget for TaskListItem {
                         child.clone(),
                         self.not_american_format,
                         self.symbols.clone(),
+                        self.max_width - indent[0].width,
                         self.display_filename,
                         self.show_relative_due_dates,
                     )
@@ -214,6 +240,7 @@ impl Widget for TaskListItem {
                         VaultData::Task(sb.clone()),
                         self.not_american_format,
                         self.symbols.clone(),
+                        self.max_width - 2, // surrounding block
                         false,
                         self.show_relative_due_dates,
                     )
