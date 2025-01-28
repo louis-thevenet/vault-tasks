@@ -204,7 +204,8 @@ impl Widget for TaskListItem {
                         .parse(RatSkin::parse_text(name), area.width)
                         .first()
                         .unwrap()
-                        .clone(),
+                        .clone()
+                        .style(self.header_style),
                 );
 
                 let indent = Layout::new(
