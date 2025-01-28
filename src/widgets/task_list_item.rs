@@ -13,6 +13,8 @@ use crate::core::{
     PrettySymbolsConfig,
 };
 
+const HEADER_INDENT_RATIO: u16 = 3;
+
 #[derive(Clone)]
 pub struct TaskListItem {
     item: VaultData,
@@ -65,7 +67,6 @@ impl TaskListItem {
         let title = match title_parsed.first() {
             Some(t) => {
                 lines.append(&mut title_parsed[1..].to_vec());
-
                 t
             }
             None => &binding,
@@ -157,14 +158,14 @@ impl TaskListItem {
             VaultData::Header(_, _, children) => {
                 children
                     .iter()
-                    .map(|c| Self::compute_height(c, max_width))
+                    .map(|c| Self::compute_height(c, max_width * (100 - HEADER_INDENT_RATIO) / 100))
                     .sum::<u16>()
                     + 1 // name in block (border only on top)
             }
             VaultData::Task(task) => {
                 let mut count: u16 = 2; // block
-                if task.name.len() >= max_width as usize {
-                    count += (2 + task.name.len() as u16) / max_width; // add 2 for task state
+                if 2 + task.name.len() >= max_width as usize {
+                    count += (2 + task.name.len() as u16) / max_width;
                 }
                 if let Some(d) = &task.description {
                     count += u16::try_from(d.split('\n').count()).unwrap_or_else(|e| {
@@ -181,8 +182,8 @@ impl TaskListItem {
                 for sb in &task.subtasks {
                     count += Self::compute_height(&VaultData::Task(sb.clone()), max_width - 2);
                 }
-                count.max(3) // If count == 2 then we add task name will be in the block
-                             // Else name goes in block title
+                count.max(3) // If count == 2 then task name will go directly inside a block
+                             // Else task name will be the block's title and content will go inside
             }
         }
     }
@@ -201,7 +202,10 @@ impl Widget for TaskListItem {
 
                 let indent = Layout::new(
                     Direction::Horizontal,
-                    vec![Constraint::Percentage(3), Constraint::Percentage(97)],
+                    vec![
+                        Constraint::Percentage(HEADER_INDENT_RATIO),
+                        Constraint::Percentage(100 - HEADER_INDENT_RATIO),
+                    ],
                 )
                 .split(area);
 
