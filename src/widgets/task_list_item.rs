@@ -153,6 +153,7 @@ impl TaskListItem {
         )
     }
     fn compute_height(item: &VaultData, max_width: u16) -> u16 {
+        let rat_skin = RatSkin::default();
         match &item {
             VaultData::Directory(_, _) => 1,
             VaultData::Header(_, _, children) => {
@@ -168,7 +169,8 @@ impl TaskListItem {
                     count += (2 + task.name.len() as u16) / max_width;
                 }
                 if let Some(d) = &task.description {
-                    count += u16::try_from(d.split('\n').count()).unwrap_or_else(|e| {
+                    let parsed_desc = rat_skin.parse(RatSkin::parse_text(d), max_width);
+                    count += u16::try_from(parsed_desc.len()).unwrap_or_else(|e| {
                         error!("Could not convert description length to u16 :{e}");
                         0
                     });
@@ -193,12 +195,17 @@ impl Widget for TaskListItem {
     where
         Self: Sized,
     {
+        let rat_skin = RatSkin::default();
         match &self.item {
             VaultData::Directory(name, _) => error!("TaskList widget received a directory: {name}"),
             VaultData::Header(_level, name, children) => {
-                let surrounding_block = Block::default()
-                    .borders(Borders::TOP)
-                    .title(Span::styled(name.to_string(), self.header_style));
+                let surrounding_block = Block::default().borders(Borders::TOP).title(
+                    rat_skin
+                        .parse(RatSkin::parse_text(name), area.width)
+                        .first()
+                        .unwrap()
+                        .clone(),
+                );
 
                 let indent = Layout::new(
                     Direction::Horizontal,
