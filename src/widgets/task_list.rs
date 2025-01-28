@@ -195,8 +195,9 @@ mod tests {
         // We don't want tests to be time dependent
         config.tasks_config.show_relative_due_dates = false;
 
-        let task_list = TaskList::new(&config, &[test_vault], true);
-        let mut terminal = Terminal::new(TestBackend::new(40, 40)).unwrap();
+        let max_width = 40;
+        let task_list = TaskList::new(&config, &[test_vault], max_width, true);
+        let mut terminal = Terminal::new(TestBackend::new(max_width, 40)).unwrap();
         terminal
             .draw(|frame| {
                 frame.render_stateful_widget(task_list, frame.area(), &mut ScrollViewState::new());
