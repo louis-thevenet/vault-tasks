@@ -252,3 +252,81 @@ impl Widget for TaskListItem {
         };
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        core::{
+            task::{DueDate, State, Task},
+            vault_data::VaultData,
+        },
+        widgets::task_list_item::TaskListItem,
+    };
+    use chrono::NaiveDate;
+    use insta::assert_snapshot;
+    use ratatui::{backend::TestBackend, Terminal};
+
+    use crate::config::Config;
+
+    #[test]
+    fn test_task_list_item() {
+        let test_task = VaultData::Task(Task {
+            name: "task with a very long title that should wrap to the next line".to_string(),
+            state: State::Done,
+            tags: Some(vec![String::from("tag"), String::from("tag2")]),
+            priority: 5,
+            due_date: DueDate::DayTime(
+                NaiveDate::from_ymd_opt(2016, 7, 8)
+                    .unwrap()
+                    .and_hms_opt(9, 10, 11)
+                    .unwrap(),
+            ),
+            subtasks: vec![
+                Task {
+                    name: "subtask with another long title that should wrap around".to_string(),
+                    description: Some("test\ndesc".to_string()),
+                    ..Default::default()
+                },
+                Task {
+                    name: "subtask test".to_string(),
+                    tags: Some(vec![String::from("tag"), String::from("tag2")]),
+                    ..Default::default()
+                },
+                Task {
+                    name: "subtask test with a long title 123456789 1 2 3".to_string(),
+                    priority: 5,
+                    due_date: DueDate::DayTime(
+                        NaiveDate::from_ymd_opt(2016, 7, 8)
+                            .unwrap()
+                            .and_hms_opt(9, 10, 11)
+                            .unwrap(),
+                    ),
+                    description: Some("test\ndesc".to_string()),
+                    ..Default::default()
+                },
+            ],
+            ..Default::default()
+        });
+        let mut config = Config::default();
+
+        // We don't want tests to be time dependent
+        config.tasks_config.show_relative_due_dates = false;
+
+        let max_width = 40;
+        let task_list_item = TaskListItem::new(
+            test_task,
+            false,
+            config.tasks_config.pretty_symbols,
+            max_width,
+            false,
+            false,
+        );
+        let mut terminal = Terminal::new(TestBackend::new(max_width, 40)).unwrap();
+        terminal
+            .draw(|frame| {
+                frame.render_widget(task_list_item, frame.area());
+            })
+            .unwrap();
+        assert_snapshot!(terminal.backend());
+    }
+}
