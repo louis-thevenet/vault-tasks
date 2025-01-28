@@ -105,7 +105,7 @@ mod tests {
     use crate::{config::Config, widgets::task_list::TaskList};
 
     #[test]
-    fn test_render_search_bar() {
+    fn test_task_list() {
         let test_vault = VaultData::Header(
             0,
             "Test".to_string(),
