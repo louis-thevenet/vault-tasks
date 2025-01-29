@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.8.1...v0.9.0) (2025-01-29)
+
+
+### Features
+
+* wrapping for title and display nice markdown ([#39](https://github.com/louis-thevenet/vault-tasks/issues/39)) ([09a134e](https://github.com/louis-thevenet/vault-tasks/commit/09a134e767209eb8850caa9b8f130d6754622ddc))
+
 ## [0.8.1](https://github.com/louis-thevenet/vault-tasks/compare/v0.8.0...v0.8.1) (2025-01-10)
 
 
