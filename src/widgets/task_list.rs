@@ -14,7 +14,12 @@ pub struct TaskList {
 }
 
 impl TaskList {
-    pub fn new(config: &Config, file_content: &[VaultData], display_filename: bool) -> Self {
+    pub fn new(
+        config: &Config,
+        file_content: &[VaultData],
+        max_width: u16,
+        display_filename: bool,
+    ) -> Self {
         let content = file_content
             .iter()
             .map(|fc| {
@@ -22,6 +27,7 @@ impl TaskList {
                     fc.clone(),
                     !config.tasks_config.use_american_format,
                     config.tasks_config.pretty_symbols.clone(),
+                    max_width,
                     display_filename,
                     config.tasks_config.show_relative_due_dates,
                 )
@@ -99,7 +105,7 @@ mod tests {
     use crate::{config::Config, widgets::task_list::TaskList};
 
     #[test]
-    fn test_render_search_bar() {
+    fn test_task_list() {
         let test_vault = VaultData::Header(
             0,
             "Test".to_string(),
@@ -189,8 +195,9 @@ mod tests {
         // We don't want tests to be time dependent
         config.tasks_config.show_relative_due_dates = false;
 
-        let task_list = TaskList::new(&config, &[test_vault], true);
-        let mut terminal = Terminal::new(TestBackend::new(40, 40)).unwrap();
+        let max_width = 40;
+        let task_list = TaskList::new(&config, &[test_vault], max_width, true);
+        let mut terminal = Terminal::new(TestBackend::new(max_width, 40)).unwrap();
         terminal
             .draw(|frame| {
                 frame.render_stateful_widget(task_list, frame.area(), &mut ScrollViewState::new());

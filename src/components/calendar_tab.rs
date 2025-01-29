@@ -182,7 +182,7 @@ impl CalendarTab<'_> {
         } else {
             &vec![]
         };
-        self.entries_list = TaskList::new(&self.config, tasks_to_preview, true);
+        self.entries_list = TaskList::new(&self.config, tasks_to_preview, 200, true);
         self.task_list_widget_state.scroll_to_top(); // reset view
         self.tasks_to_events(self.tasks.clone().get(index_closest_task));
     }

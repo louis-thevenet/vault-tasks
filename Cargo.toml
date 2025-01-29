@@ -47,6 +47,7 @@ notify-rust = "4.11.3"
 lexical-sort = "0.3.1"
 winnow = "0.6.20"
 time = "0.3.37"
+ratskin = "0.2.0"
 
 [dev-dependencies]
 insta = {version = "1.41.1", features = ["yaml"]}
