@@ -33,6 +33,7 @@ I also spend most of my writing time in the terminal (Helix) and do not rely on 
   - special _today_ tag and regular tags
   - descriptions
   - priority
+- Parses Markdown in titles and descriptions
 - Navigate vault
 - Search through tasks (sort and filter)
 - Calendar view and timeline
