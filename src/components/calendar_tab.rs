@@ -1,7 +1,7 @@
 use std::collections::hash_map::Entry;
 
 use ::time::{Date, OffsetDateTime};
-use chrono::{Datelike, Duration, NaiveDate, NaiveTime};
+use chrono::{Datelike, NaiveDate, NaiveTime, TimeDelta};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
@@ -136,10 +136,10 @@ impl CalendarTab<'_> {
     fn updated_date(&mut self) {
         // Find a task to preview
         let mut index_closest_task = 0;
-        let mut best = Duration::max_value();
+        let mut best = TimeDelta::MAX;
         for (i, task) in self.tasks.iter().enumerate() {
             let d = match task.due_date {
-                DueDate::NoDate => Duration::max_value(),
+                DueDate::NoDate => TimeDelta::MAX,
                 DueDate::Day(naive_date) => NaiveDate::from_ymd_opt(
                     self.selected_date.year(),
                     self.selected_date.month() as u32,

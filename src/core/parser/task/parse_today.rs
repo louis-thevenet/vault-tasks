@@ -1,12 +1,12 @@
 use winnow::{
     combinator::{alt, preceded},
-    PResult, Parser,
+    Parser, Result,
 };
 
 use super::token::Token;
 
 /// Parses a `Token::TodayFlag` of the form of the form "@t", @tdy", "@tod" or "@today".
-pub fn parse_today(input: &mut &str) -> PResult<Token> {
+pub fn parse_today(input: &mut &str) -> Result<Token> {
     preceded('@', alt(("today", "tod", "tdy", "t"))).parse_next(input)?;
     Ok(Token::TodayFlag)
 }

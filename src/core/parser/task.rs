@@ -18,7 +18,7 @@ use tracing::error;
 use winnow::{
     combinator::{alt, fail, repeat},
     token::any,
-    PResult, Parser,
+    Parser, Result,
 };
 
 use crate::core::{
@@ -27,7 +27,7 @@ use crate::core::{
 };
 
 /// Parses a `Token` from an input string.FileEntry
-fn parse_token(input: &mut &str, config: &TasksConfig) -> PResult<Token> {
+fn parse_token(input: &mut &str, config: &TasksConfig) -> Result<Token> {
     alt((
         |input: &mut &str| parse_naive_date(input, config.use_american_format),
         parse_naive_time,
@@ -54,7 +54,7 @@ fn parse_token(input: &mut &str, config: &TasksConfig) -> PResult<Token> {
 ///
 /// Will return an error if the task can't be parsed.
 #[allow(clippy::module_name_repetitions)]
-pub fn parse_task(input: &mut &str, filename: String, config: &TasksConfig) -> PResult<Task> {
+pub fn parse_task(input: &mut &str, filename: String, config: &TasksConfig) -> Result<Task> {
     let task_state = match parse_task_state(input, &config.task_state_markers)? {
         Token::State(state) => Ok(state),
         _ => fail(input),
