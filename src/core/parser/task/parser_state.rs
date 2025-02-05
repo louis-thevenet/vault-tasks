@@ -1,7 +1,7 @@
 use winnow::{
     combinator::{delimited, preceded},
     token::any,
-    PResult, Parser,
+    Parser, Result,
 };
 
 use crate::core::{task::State, TaskMarkerConfig};
@@ -9,7 +9,7 @@ use crate::core::{task::State, TaskMarkerConfig};
 use super::token::Token;
 
 /// Parses a `TaskState` from an input string.
-pub fn parse_task_state(input: &mut &str, task_marker_config: &TaskMarkerConfig) -> PResult<Token> {
+pub fn parse_task_state(input: &mut &str, task_marker_config: &TaskMarkerConfig) -> Result<Token> {
     match preceded("- ", delimited("[", any, "]")).parse_next(input) {
         Ok(c) => {
             if c == task_marker_config.todo {

@@ -4,15 +4,15 @@ use tracing::error;
 use winnow::{
     ascii::digit1,
     combinator::{alt, separated},
-    error::{ErrMode, ErrorKind, ParserError},
+    error::ParserError,
     token::take_while,
-    PResult, Parser,
+    Parser, Result,
 };
 
 use super::token::Token;
 
 /// Parses a literal day name (or its abbreviation) from an input string.
-fn parse_literal_day<'a>(input: &mut &'a str) -> PResult<&'a str> {
+fn parse_literal_day<'a>(input: &mut &'a str) -> Result<&'a str> {
     let days = (
         "monday",
         "tuesday",
@@ -43,7 +43,7 @@ fn calculate_in_n_days(n: u32) -> NaiveDate {
 /// Parses a `NaiveDate` from a literal day name
 /// Day names can be abreviated.
 /// If sucessful, returns a `NaiveDate` representing the next occurence of that day in the future (not including today).
-fn parse_naive_date_from_literal_day(input: &mut &str) -> PResult<Token> {
+fn parse_naive_date_from_literal_day(input: &mut &str) -> Result<Token> {
     let output = parse_literal_day.parse_next(input)?;
     let day: u32 = match &output[0..3] {
         "mon" => 1,
@@ -70,7 +70,7 @@ fn parse_naive_date_from_literal_day(input: &mut &str) -> PResult<Token> {
 }
 
 /// Parses `("day", "week", "month", "year", "weekend", "we")` as a string from an input string.
-fn parse_literal_generic<'a>(input: &mut &'a str) -> PResult<&'a str> {
+fn parse_literal_generic<'a>(input: &mut &'a str) -> Result<&'a str> {
     let generics = (
         "days", "day", "d", "weeks", "week", "w", "months", "month", "m", "years", "year", "y",
     );
@@ -79,7 +79,7 @@ fn parse_literal_generic<'a>(input: &mut &'a str) -> PResult<&'a str> {
 
 /// Parses a `NaiveDate` from an integer + a generic duration in `("day", "week", "month", "year", "weekend", "we")`
 /// If sucessful, returns a `NaiveDate` representing the start of the next generic duration found. "Next week" -> "Next Monday"
-fn parse_naive_date_from_generic_name(input: &mut &str) -> PResult<Token> {
+fn parse_naive_date_from_generic_name(input: &mut &str) -> Result<Token> {
     let number: u64 = digit1.parse_to().parse_next(input)?;
     let duration = parse_literal_generic.parse_next(input)?;
 
@@ -117,13 +117,13 @@ fn parse_naive_date_from_generic_name(input: &mut &str) -> PResult<Token> {
 }
 
 /// Parses `("tmr", "tomorrow", "today", "tdy", "tod")` as a string from an input string.
-fn parse_adverb<'a>(input: &mut &'a str) -> PResult<&'a str> {
+fn parse_adverb<'a>(input: &mut &'a str) -> Result<&'a str> {
     alt(("tmr", "tomorrow", "today", "tdy", "tod")).parse_next(input)
 }
 
 /// Parses a `NaiveDate` from an adverb in  `("tmr", "tomorrow", "today", "tdy", "tod")`
 /// If sucessful, returns a `NaiveDate` representing today's or tomorrow's date
-fn parse_naive_date_from_adverb(input: &mut &str) -> PResult<Token> {
+fn parse_naive_date_from_adverb(input: &mut &str) -> Result<Token> {
     let output = parse_adverb.parse_next(input)?;
     let now = chrono::Local::now();
     match output {
@@ -132,13 +132,13 @@ fn parse_naive_date_from_adverb(input: &mut &str) -> PResult<Token> {
         "tmr" | "tomorrow" => Ok(Token::DueDate(
             now.date_naive().checked_add_days(Days::new(1)).unwrap(),
         )),
-        _ => Err(ErrMode::from_error_kind(input, ErrorKind::Assert)),
+        _ => Err(ParserError::from_input(input)),
     }
 }
 
 /// Parses a `NaiveDate` from a `yyyy/mm/dd` string.
 /// Can change convention with  =`american_format` flag.
-fn parse_naive_date_from_numeric_format(input: &mut &str, american_format: bool) -> PResult<Token> {
+fn parse_naive_date_from_numeric_format(input: &mut &str, american_format: bool) -> Result<Token> {
     let mut tokens: Vec<u32> =
         separated(2..=3, take_while(1.., '0'..='9').parse_to::<u32>(), '/').parse_next(input)?;
 
@@ -152,12 +152,7 @@ fn parse_naive_date_from_numeric_format(input: &mut &str, american_format: bool)
     }
     #[allow(clippy::cast_possible_wrap)]
     NaiveDate::from_ymd_opt(tokens[0] as i32, tokens[1], tokens[2]).map_or_else(
-        || {
-            Err(ParserError::from_error_kind(
-                input,
-                winnow::error::ErrorKind::Token,
-            ))
-        },
+        || Err(ParserError::from_input(input)),
         |date| Ok(Token::DueDate(date)),
     )
 }
@@ -169,7 +164,7 @@ fn parse_naive_date_from_numeric_format(input: &mut &str, american_format: bool)
 /// - "tomorrow", "today"
 ///
 /// Supports abbreviations
-pub fn parse_naive_date(input: &mut &str, american_format: bool) -> PResult<Token> {
+pub fn parse_naive_date(input: &mut &str, american_format: bool) -> Result<Token> {
     alt((
         (|input: &mut &str| parse_naive_date_from_numeric_format(input, american_format)),
         parse_naive_date_from_literal_day,

@@ -1,12 +1,12 @@
 use std::iter::Peekable;
 
-use color_eyre::{eyre::bail, Result};
+use color_eyre::eyre::bail;
 use tracing::{debug, error};
 use winnow::{
     ascii::{space0, space1},
     combinator::{alt, preceded, repeat},
     token::{take_till, take_while},
-    PResult, Parser,
+    Parser, Result,
 };
 
 use crate::{core::task::Task, core::vault_data::VaultData, core::TasksConfig};
@@ -31,11 +31,11 @@ pub struct ParserFileEntry<'a> {
 }
 
 impl ParserFileEntry<'_> {
-    fn parse_indent(input: &mut &str) -> PResult<usize> {
+    fn parse_indent(input: &mut &str) -> Result<usize> {
         let indent_length: String = repeat(1.., " ").parse_next(input)?;
         Ok(indent_length.len())
     }
-    fn parse_task(&self, input: &mut &str) -> PResult<FileToken> {
+    fn parse_task(&self, input: &mut &str) -> Result<FileToken> {
         let indent_length = Self::parse_indent(input).unwrap_or(0);
 
         let mut task_parser =
@@ -43,7 +43,7 @@ impl ParserFileEntry<'_> {
         let task_res = task_parser.parse_next(input)?;
         Ok(FileToken::Task(task_res, indent_length))
     }
-    fn parse_header(input: &mut &str) -> PResult<FileToken> {
+    fn parse_header(input: &mut &str) -> Result<FileToken> {
         let header_depth: String = repeat(1.., "#").parse_next(input)?;
         let header_content = preceded(space0, take_till(1.., |c| c == '\n')).parse_next(input)?;
 
@@ -52,7 +52,7 @@ impl ParserFileEntry<'_> {
             header_depth.len(),
         )))
     }
-    fn parse_description(input: &mut &str) -> PResult<FileToken> {
+    fn parse_description(input: &mut &str) -> Result<FileToken> {
         let indent_length = space1.map(|s: &str| s.len()).parse_next(input)?;
         let desc_content = take_till(1.., |c| c == '\n').parse_next(input)?;
         Ok(FileToken::Description(
@@ -60,7 +60,7 @@ impl ParserFileEntry<'_> {
             indent_length,
         ))
     }
-    fn parse_file_tag(input: &mut &str) -> PResult<FileToken> {
+    fn parse_file_tag(input: &mut &str) -> Result<FileToken> {
         let tag = preceded(
             '#',
             take_while(1.., ('_', '0'..='9', 'A'..='Z', 'a'..='z', '0'..='9')),
@@ -73,7 +73,7 @@ impl ParserFileEntry<'_> {
         task: Task,
         header_depth: usize,
         indent_length: usize,
-    ) -> Result<()> {
+    ) -> color_eyre::Result<()> {
         fn append_task_aux(
             file_entry: &mut VaultData,
             task_to_insert: Task,
@@ -81,7 +81,7 @@ impl ParserFileEntry<'_> {
             target_header_depth: usize,
             current_task_depth: usize,
             target_task_depth: usize,
-        ) -> Result<()> {
+        ) -> color_eyre::Result<()> {
             match file_entry {
                 VaultData::Header(_, _, header_children) => {
                     match current_header_depth.cmp(&target_header_depth) {
@@ -229,7 +229,7 @@ impl ParserFileEntry<'_> {
         desc: String,
         target_header_depth: usize,
         target_task_depth: usize,
-    ) -> Result<()> {
+    ) -> color_eyre::Result<()> {
         fn append_description_aux(
             file_entry: &mut VaultData,
             desc: String,
@@ -237,7 +237,7 @@ impl ParserFileEntry<'_> {
             target_header_depth: usize,
             current_task_depth: usize,
             target_task_depth: usize,
-        ) -> Result<()> {
+        ) -> color_eyre::Result<()> {
             match file_entry {
                 VaultData::Header(_, _, header_children) => {
                     match current_header_depth.cmp(&target_header_depth) {
@@ -293,7 +293,7 @@ impl ParserFileEntry<'_> {
                         task: &mut Task,
                         current_level: usize,
                         target_level: usize,
-                    ) -> Result<()> {
+                    ) -> color_eyre::Result<()> {
                         if current_level == target_level {
                             match &mut task.description {
                                 Some(d) => {

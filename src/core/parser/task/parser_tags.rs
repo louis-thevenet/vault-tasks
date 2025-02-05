@@ -1,9 +1,9 @@
-use winnow::{combinator::preceded, token::take_while, PResult, Parser};
+use winnow::{combinator::preceded, token::take_while, Parser, Result};
 
 use super::token::Token;
 
 /// Parses tags of the form "#tag".
-pub fn parse_tag(input: &mut &str) -> PResult<Token> {
+pub fn parse_tag(input: &mut &str) -> Result<Token> {
     let tag = preceded(
         '#',
         take_while(1.., ('_', '0'..='9', 'A'..='Z', 'a'..='z', '0'..='9')),
