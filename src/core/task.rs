@@ -81,7 +81,7 @@ impl Display for DueDate {
 
 impl DueDate {
     #[must_use]
-    pub fn to_display_format(&self, due_date_symbol: String, not_american_format: bool) -> String {
+    pub fn to_display_format(&self, due_date_symbol: &str, not_american_format: bool) -> String {
         if matches!(self, Self::NoDate) {
             String::new()
         } else {

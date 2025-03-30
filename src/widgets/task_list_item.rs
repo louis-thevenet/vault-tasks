@@ -87,7 +87,7 @@ impl TaskListItem {
 
         let due_date_str = task
             .due_date
-            .to_display_format(self.symbols.due_date.clone(), self.not_american_format);
+            .to_display_format(&self.symbols.due_date, self.not_american_format);
 
         if !due_date_str.is_empty() {
             data_line.push(Span::from(format!("{due_date_str} ")));
