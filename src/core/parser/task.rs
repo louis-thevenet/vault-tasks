@@ -1,3 +1,4 @@
+mod parse_completion;
 mod parse_today;
 mod parser_due_date;
 mod parser_priorities;
@@ -7,6 +8,7 @@ mod parser_time;
 mod token;
 
 use chrono::NaiveDateTime;
+use parse_completion::parse_completion;
 use parse_today::parse_today;
 use parser_due_date::parse_naive_date;
 use parser_priorities::parse_priority;
@@ -34,6 +36,7 @@ fn parse_token(input: &mut &str, config: &TasksConfig) -> Result<Token> {
         parse_tag,
         |input: &mut &str| parse_task_state(input, &config.task_state_markers),
         parse_priority,
+        parse_completion,
         parse_today,
         |input: &mut &str| {
             let res = repeat(0.., any)
@@ -92,6 +95,7 @@ pub fn parse_task(input: &mut &str, filename: String, config: &TasksConfig) -> R
                 }
             }
             Ok(Token::TodayFlag) => task.is_today = true,
+            Ok(Token::CompletionPercentage(c)) => task.completion = Some(c),
             Err(error) => error!("Error: {error:?}"),
         }
     }
@@ -175,6 +179,7 @@ mod test {
             line_number: 1,
             filename: String::new(),
             is_today: false,
+            completion: None,
         };
         assert_eq!(res, expected);
     }

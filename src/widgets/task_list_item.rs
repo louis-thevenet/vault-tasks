@@ -21,6 +21,7 @@ pub struct TaskListItem {
     pub height: u16,
     symbols: PrettySymbolsConfig,
     not_american_format: bool,
+    completion_bar_length: usize,
     show_relative_due_dates: bool,
     max_width: u16,
     display_filename: bool,
@@ -39,6 +40,8 @@ impl TaskListItem {
         max_width: u16,
         display_filename: bool,
         show_relative_due_dates: bool,
+
+        completion_bar_length: usize,
     ) -> Self {
         let height = Self::compute_height(&item, max_width);
         Self {
@@ -50,8 +53,10 @@ impl TaskListItem {
             symbols,
             header_style: Style::default(),
             show_relative_due_dates,
+            completion_bar_length,
         }
     }
+    #[allow(clippy::too_many_lines)]
     fn task_to_paragraph(&self, area: Rect, task: &Task) -> (Rc<[Rect]>, Paragraph<'_>) {
         let mut lines = vec![];
         let mut data_line = vec![];
@@ -59,10 +64,8 @@ impl TaskListItem {
         let rat_skin = RatSkin::default();
 
         let state = task.state.display(self.symbols.clone());
-        let title_parsed = rat_skin.parse(
-            RatSkin::parse_text(&(state.clone() + " " + &task.name)),
-            self.max_width,
-        );
+        let title = state.clone() + " " + &task.name;
+        let title_parsed = rat_skin.parse(RatSkin::parse_text(&title), self.max_width);
         let binding = Line::raw(state);
         let title = match title_parsed.first() {
             Some(t) => {
@@ -99,6 +102,15 @@ impl TaskListItem {
                     ));
                 }
             }
+        }
+        if let Some(bar) = task.get_completion_bar(
+            self.completion_bar_length,
+            &(
+                self.symbols.progress_bar_false.clone(),
+                self.symbols.progress_bar_true.clone(),
+            ),
+        ) {
+            data_line.push(Span::raw(bar));
         }
         if task.priority > 0 {
             data_line.push(Span::raw(format!(
@@ -238,6 +250,7 @@ impl Widget for TaskListItem {
                         self.max_width - indent[0].width,
                         self.display_filename,
                         self.show_relative_due_dates,
+                        self.completion_bar_length,
                     )
                     .header_style(self.header_style);
                     sb_widget.render(layout[i], buf);
@@ -255,6 +268,7 @@ impl Widget for TaskListItem {
                         self.max_width - 2, // surrounding block
                         false,
                         self.show_relative_due_dates,
+                        self.completion_bar_length,
                     )
                     .header_style(self.header_style);
 
@@ -287,6 +301,7 @@ mod tests {
             state: State::Done,
             tags: Some(vec![String::from("tag"), String::from("tag2")]),
             priority: 5,
+            completion: Some(60),
             due_date: DueDate::DayTime(
                 NaiveDate::from_ymd_opt(2016, 7, 8)
                     .unwrap()
@@ -324,7 +339,7 @@ mod tests {
         // We don't want tests to be time dependent
         config.tasks_config.show_relative_due_dates = false;
 
-        let max_width = 40;
+        let max_width = 50;
         let task_list_item = TaskListItem::new(
             test_task,
             false,
@@ -332,6 +347,7 @@ mod tests {
             max_width,
             false,
             false,
+            config.tasks_config.completion_bar_length,
         );
         let mut terminal = Terminal::new(TestBackend::new(max_width, 40)).unwrap();
         terminal

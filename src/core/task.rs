@@ -165,6 +165,7 @@ pub struct Task {
     pub line_number: usize,
     pub name: String,
     pub priority: usize,
+    pub completion: Option<usize>,
     pub state: State,
     pub tags: Option<Vec<String>>,
     pub is_today: bool,
@@ -183,6 +184,7 @@ impl Default for Task {
             subtasks: vec![],
             filename: String::new(),
             is_today: false,
+            completion: None,
         }
     }
 }
@@ -205,13 +207,22 @@ impl fmt::Display for Task {
 
         if !due_date_str.is_empty() {
             data_line.push_str(&format!(
-                "{} {due_date_str} ({})",
+                "{} {due_date_str} ({}) ",
                 default_symbols.due_date,
                 self.due_date.get_relative_str().unwrap_or_default()
             ));
         }
         if self.priority > 0 {
             data_line.push_str(&format!("{}{} ", default_symbols.priority, self.priority));
+        }
+        if let Some(bar) = self.get_completion_bar(
+            5,
+            &(
+                default_symbols.progress_bar_false,
+                default_symbols.progress_bar_true,
+            ),
+        ) {
+            data_line.push_str(&bar);
         }
         if !data_line.is_empty() {
             writeln!(f, "{data_line}")?;
@@ -241,6 +252,21 @@ impl fmt::Display for Task {
     }
 }
 impl Task {
+    pub fn get_completion_bar(&self, length: usize, symbols: &(String, String)) -> Option<String> {
+        self.completion?;
+        let percentage = self.completion.unwrap();
+        let progress_bar = (1..=length)
+            .map(|c| {
+                if c * (100 / length) <= percentage {
+                    symbols.1.clone()
+                } else {
+                    symbols.0.clone()
+                }
+            })
+            .collect::<String>();
+
+        Some(format!("[{progress_bar} {percentage}%] "))
+    }
     pub fn get_fixed_attributes(&self, config: &TasksConfig, indent_length: usize) -> String {
         let indent = " ".repeat(indent_length);
 
@@ -255,6 +281,11 @@ impl Task {
             format!("p{} ", self.priority)
         } else {
             String::new()
+        };
+
+        let completion = match self.completion {
+            Some(c) => format!("c{c} "),
+            None => String::new(),
         };
 
         let mut due_date = self.due_date.to_string_format(!config.use_american_format);
@@ -277,8 +308,8 @@ impl Task {
         };
 
         let res = format!(
-            "{}- [{}] {} {}{}{}{}",
-            indent, state_str, self.name, due_date, priority, tags_str, today_tag
+            "{}- [{}] {} {}{}{}{}{}",
+            indent, state_str, self.name, due_date, completion, priority, tags_str, today_tag
         );
         res.trim_end().to_string()
     }

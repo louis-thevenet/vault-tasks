@@ -171,6 +171,7 @@ ignored = []
 # vault_path= "./test-vault" # default vault path when none is provided
 explorer_default_search_string = "- [ ] "
 filter_default_search_string = ""
+completion_bar_length = 5
 
 task_state_markers.todo = ' '
 task_state_markers.done = 'x'
@@ -185,6 +186,8 @@ task_state_markers.canceled = '-'
 # pretty_symbols.due_date="@"
 # pretty_symbols.priority="!"
 # pretty_symbols.today_tag="+"
+# pretty_symbols.progress_bar_true="="
+# pretty_symbols.progress_bar_false=" "
 
 pretty_symbols.task_done="✅"
 pretty_symbols.task_todo="❌"
@@ -193,6 +196,8 @@ pretty_symbols.task_canceled="🚫"
 pretty_symbols.due_date="📅"
 pretty_symbols.priority="❗"
 pretty_symbols.today_tag="☀️"
+pretty_symbols.progress_bar_true="🟩"
+pretty_symbols.progress_bar_false="⬜️"
 
 [[time_management_methods_settings.FlowTime]]
 name = "Break Factor"

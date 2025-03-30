@@ -11,4 +11,5 @@ pub enum Token {
     Tag(String),
     State(State),
     TodayFlag,
+    CompletionPercentage(usize),
 }

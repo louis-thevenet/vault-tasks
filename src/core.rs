@@ -44,6 +44,8 @@ pub struct PrettySymbolsConfig {
     pub due_date: String,
     pub priority: String,
     pub today_tag: String,
+    pub progress_bar_true: String,
+    pub progress_bar_false: String,
 }
 impl Default for PrettySymbolsConfig {
     fn default() -> Self {
@@ -55,6 +57,8 @@ impl Default for PrettySymbolsConfig {
             due_date: String::from("📅"),
             priority: String::from("❗"),
             today_tag: String::from("☀️"),
+            progress_bar_true: String::from("🟩"),
+            progress_bar_false: String::from("⬜️"),
         }
     }
 }
@@ -72,6 +76,8 @@ pub struct TasksConfig {
     pub use_american_format: bool,
     #[serde(default)]
     pub show_relative_due_dates: bool,
+    #[serde(default)]
+    pub completion_bar_length: usize,
     #[serde(default)]
     pub vault_path: PathBuf,
     #[serde(default)]

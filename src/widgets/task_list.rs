@@ -30,6 +30,7 @@ impl TaskList {
                     max_width,
                     display_filename,
                     config.tasks_config.show_relative_due_dates,
+                    config.tasks_config.completion_bar_length,
                 )
                 .header_style(
                     *config
