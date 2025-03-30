@@ -21,7 +21,7 @@ test-vault
 
 I made this tool because I wanted to integrate my task system directly inside my Second Brain.
 
-Markdown tasks are very easy to integrate with knowledge and projects.
+Markdown tasks are very easy to integrate with knowledge/projects and are source-control-friendly.
 
 I also spend most of my writing time in the terminal (Helix) and do not rely on heavy external software.
 
@@ -31,13 +31,11 @@ I also spend most of my writing time in the terminal (Helix) and do not rely on 
   - Subtasks
   - Fixed and relative dates
   - special _today_ tag and regular tags
-  - descriptions
-  - priority
-- Parses Markdown in titles and descriptions
+  - descriptions, priority, completion percentage
 - Navigate vault
+- Edit tasks or open in default editor
 - Search through tasks (sort and filter)
 - Calendar view and timeline
-- Edit tasks or open in default editor
 - Time Management tab (Pomodoro & Flowtime)
 
 ## Planned Features
@@ -86,7 +84,7 @@ See `vault-tasks --help` for basic usage.
       A description
       of this task
   - [x] A subtask today @today
-  - [/] Another subtask 10/23 @today
+  - [/] Another subtask 10/23 @today c50
     Partly done
   - [-] This one is canceled
 ```
@@ -95,6 +93,7 @@ See `vault-tasks --help` for basic usage.
 | ------------------------------------------ | ----------------------------------------------------------------- |
 | `- [ ]` (`- [x]`, ...)                     | declares a task and sets its state                                |
 | `p1` (`p10`, ...)                          | sets the priority                                                 |
+| `c50` (`c99`, `c150`, ...)                 | Sets the completion percentage                                    |
 | `#tag`                                     | is a tag, a task can have zero or more tags                       |
 | `@today` (`@tod`, `@t`)                    | is a special tag that will mark the task as part of today's tasks |
 | `23/10` (`2024/23/10`)                     | sets the due date with a literal date                             |
@@ -242,32 +241,30 @@ Example output:
 vault-tasks -v ./README.md stdout
 ./README.md
 ‾‾‾‾‾‾‾‾‾‾‾
-        README.md
-        ‾‾‾‾‾‾‾‾‾
-                Vault-tasks
-                ‾‾‾‾‾‾‾‾‾‾‾
-                        Usage
-                        ‾‾‾‾‾
-                                Writing tasks
-                                ‾‾‾‾‾‾‾‾‾‾‾‾‾
-                                        ❌ An example task
-                                        📅 2024-12-22 (tomorrow)❗1
-                                        #tag
-                                        A description
-                                        of this task
+	README.md
+	‾‾‾‾‾‾‾‾‾
+		Vault-tasks
+		‾‾‾‾‾‾‾‾‾‾‾
+			Usage
+			‾‾‾‾‾
+				Writing tasks
+				‾‾‾‾‾‾‾‾‾‾‾‾‾
+					❌ An example task
+					📅 2025-03-31 (tomorrow) ❗1
+					#tag
+					A description
+					of this task
 
-                                                ✅ A subtask
-                                                ☀️ 📅 2024-12-21 (today)
-
-
-                                                ⏳ Another subtask
-                                                ☀️ 📅 2024-10-23 (2 months ago)
-                                                Partly done
+						✅ A subtask
+						☀️ 📅 2025-03-30 (today)
 
 
-                                                🚫 This one is canceled
+						⏳ Another subtask
+						☀️ 📅 2025-10-23 (in 7 months) [🟩🟩⬜️⬜️⬜️ 50%]
+						Partly done
 
 
+						🚫 This one is canceled
 ```
 
 ## Configuration
