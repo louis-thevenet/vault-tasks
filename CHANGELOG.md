@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.9.0...v0.10.0) (2025-03-30)
+
+
+### Features
+
+* add a completion percentage to tasks displayed as a progression bar ([a8f916b](https://github.com/louis-thevenet/vault-tasks/commit/a8f916b43de07b33f2a0993f7c4d664fed619f37))
+
 ## [0.9.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.8.1...v0.9.0) (2025-01-29)
 
 
