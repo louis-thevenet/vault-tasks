@@ -3,7 +3,7 @@ Output ./demo_explorer.gif
 # Output ./demo_explorer.webm
 # Output ./frames/
 
-Set Shell zsh
+Set Shell fish
 Set Theme "Builtin Solarized Light"
 Set TypingSpeed 80ms
 Set FontSize 22

@@ -1,7 +1,7 @@
 Output ./demo_time.gif
 # Output ./demo_time.mp4
 
-Set Shell zsh
+Set Shell fish
 Set Theme "Builtin Solarized Light"
 Set TypingSpeed 80ms
 Set FontSize 22
