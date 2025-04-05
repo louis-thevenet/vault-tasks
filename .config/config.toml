@@ -173,11 +173,6 @@ explorer_default_search_string = "- [ ] "
 filter_default_search_string = ""
 completion_bar_length = 5
 
-task_state_markers.todo = ' '
-task_state_markers.done = 'x'
-task_state_markers.incomplete = '/'
-task_state_markers.canceled = '-'
-
 # Nice if your terminal font doesn't have emojis
 # pretty_symbols.task_done="[x]"
 # pretty_symbols.task_todo="[ ]"
@@ -189,15 +184,20 @@ task_state_markers.canceled = '-'
 # pretty_symbols.progress_bar_true="="
 # pretty_symbols.progress_bar_false=" "
 
-pretty_symbols.task_done="✅"
-pretty_symbols.task_todo="❌"
-pretty_symbols.task_incomplete="⏳"
-pretty_symbols.task_canceled="🚫"
-pretty_symbols.due_date="📅"
-pretty_symbols.priority="❗"
-pretty_symbols.today_tag="☀️"
-pretty_symbols.progress_bar_true="🟩"
-pretty_symbols.progress_bar_false="⬜️"
+pretty_symbols.task_done = "✅"
+pretty_symbols.task_todo = "❌"
+pretty_symbols.task_incomplete = "⏳"
+pretty_symbols.task_canceled = "🚫"
+pretty_symbols.due_date = "📅"
+pretty_symbols.priority = "❗"
+pretty_symbols.today_tag = "☀️"
+pretty_symbols.progress_bar_true = "🟩"
+pretty_symbols.progress_bar_false = "⬜️"
+
+task_state_markers.todo = ' '
+task_state_markers.done = 'x'
+task_state_markers.incomplete = '/'
+task_state_markers.canceled = '-'
 
 [[time_management_methods_settings.FlowTime]]
 name = "Break Factor"
@@ -212,7 +212,6 @@ hint = "Whether to wait for user input to enter new segments or not"
 
 [time_management_methods_settings.FlowTime.value]
 Bool = false
-
 
 [[time_management_methods_settings.Pomodoro]]
 name = "Focus Time"
@@ -236,6 +235,7 @@ hint = "Whether to wait for user input to enter new segments or not"
 
 [time_management_methods_settings.Pomodoro.value]
 Bool = false
+
 [[time_management_methods_settings.Pomodoro]]
 name = "Long Break Time"
 hint = ""
