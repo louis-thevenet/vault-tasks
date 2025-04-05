@@ -574,6 +574,7 @@ pub enum MethodsAvailable {
 #[derive(Debug, Clone, Deserialize)]
 /// Represents every value a method setting can be.
 pub enum MethodSettingsValue {
+    Bool(bool),
     Duration(Duration),
     Int(u32),
 }
@@ -587,6 +588,7 @@ impl Display for MethodSettingsValue {
                     chrono::Duration::from_std(*duration).unwrap_or_default(),
                 ),
                 MethodSettingsValue::Int(n) => n.to_string(),
+                MethodSettingsValue::Bool(b) => b.to_string(),
             }
         )
     }
@@ -616,6 +618,9 @@ impl MethodSettingsEntry {
                 .to_std()?,
             ),
             MethodSettingsValue::Int(_) => MethodSettingsValue::Int(input.parse::<u32>()?),
+            MethodSettingsValue::Bool(_) => {
+                MethodSettingsValue::Bool(input.to_lowercase() == "true")
+            }
         };
         Ok(Self {
             name: self.name.clone(),

@@ -206,6 +206,14 @@ hint = "Break time is (focus time) / (break factor)"
 [time_management_methods_settings.FlowTime.value]
 Int = 5
 
+[[time_management_methods_settings.FlowTime]]
+name = "Auto Skip"
+hint = "Whether to wait for user input to enter new segments or not"
+
+[time_management_methods_settings.FlowTime.value]
+Bool = false
+
+
 [[time_management_methods_settings.Pomodoro]]
 name = "Focus Time"
 hint = ""
@@ -222,6 +230,12 @@ hint = ""
 secs = 300
 nanos = 0
 
+[[time_management_methods_settings.Pomodoro]]
+name = "Auto Skip"
+hint = "Whether to wait for user input to enter new segments or not"
+
+[time_management_methods_settings.Pomodoro.value]
+Bool = false
 [[time_management_methods_settings.Pomodoro]]
 name = "Long Break Time"
 hint = ""

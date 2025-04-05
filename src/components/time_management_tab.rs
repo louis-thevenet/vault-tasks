@@ -46,7 +46,7 @@ pub struct TimeManagementTab<'a> {
     edit_setting_bar: InputBar<'a>,
     // Whether the help panel is open or not
     show_help: bool,
-    help_menu_wigdet: HelpMenu<'a>,
+    help_menu_widget: HelpMenu<'a>,
 }
 impl TimeManagementTab<'_> {
     pub fn new() -> Self {
@@ -86,17 +86,23 @@ impl TimeManagementTab<'_> {
     }
 
     /// Skips to the next segment using the `TimeManagementEngine`.
-    fn time_management_method_switch(&mut self, notify: bool) -> Result<()> {
+    fn time_management_method_switch(&mut self, from_clock: bool) -> Result<()> {
         let time_spent = match self.timer_state.get_time_spent() {
             Ok(d) => d,
             Err(e) => bail!("{e}"),
         };
-        let (to_spend, notification_body) = match self.tm_engine.switch(time_spent) {
-            State::Focus(d) => (d, "Time to focus!"),
-            State::Break(d) => (d, "Time for a break!"),
-        };
-        self.timer_state = TimerState::new(to_spend);
-        if notify
+        let (to_spend, notification_body, frozen) =
+            match self.tm_engine.switch(from_clock, time_spent) {
+                State::Focus(d) => (d, "Time to focus!", false),
+                State::Break(d) => (d, "Time for a break!", false),
+                State::Frozen(_) => (None, "Segment ended", true),
+            };
+        if frozen {
+            self.timer_state = TimerState::Frozen;
+        } else {
+            self.timer_state = TimerState::new(to_spend);
+        }
+        if from_clock
             && Notification::new()
                 .summary("VaultTasks")
                 .body(notification_body)
@@ -128,14 +134,20 @@ impl TimeManagementTab<'_> {
     }
     fn find_settings_int(&self, method: MethodsAvailable, key: &str) -> u32 {
         match self.find_settings_value(method, key) {
-            MethodSettingsValue::Duration(_duration) => 0,
             MethodSettingsValue::Int(n) => n,
+            _ => 0,
         }
     }
     fn find_settings_duration(&self, method: MethodsAvailable, key: &str) -> Duration {
         match self.find_settings_value(method, key) {
             MethodSettingsValue::Duration(duration) => duration,
-            MethodSettingsValue::Int(_n) => Duration::ZERO,
+            _ => Duration::ZERO,
+        }
+    }
+    fn find_settings_bool(&self, method: MethodsAvailable, key: &str) -> bool {
+        match self.find_settings_value(method, key) {
+            MethodSettingsValue::Bool(b) => b,
+            _ => false,
         }
     }
     /// Updates `TImeManagementEngine` to the new selected method.
@@ -145,6 +157,7 @@ impl TimeManagementTab<'_> {
         {
             match MethodsAvailable::from_repr(i) {
                 Some(MethodsAvailable::Pomodoro) => Box::new(Pomodoro::new(
+                    self.find_settings_bool(MethodsAvailable::Pomodoro, "Auto Skip"),
                     self.find_settings_duration(MethodsAvailable::Pomodoro, "Focus Time"),
                     self.find_settings_int(MethodsAvailable::Pomodoro, "Long Break Interval")
                         as usize,
@@ -153,6 +166,7 @@ impl TimeManagementTab<'_> {
                 )),
                 Some(MethodsAvailable::FlowTime) => Box::new(
                     FlowTime::new(
+                        self.find_settings_bool(MethodsAvailable::FlowTime, "Auto Skip"),
                         self.find_settings_int(MethodsAvailable::FlowTime, "Break Factor"),
                     )
                     .unwrap(),
@@ -186,7 +200,7 @@ impl Component for TimeManagementTab<'_> {
     fn register_config_handler(&mut self, config: Config) -> Result<()> {
         self.config = config;
         self.methods_list_state.select(Some(0));
-        self.help_menu_wigdet = HelpMenu::new(Mode::TimeManagement, &self.config);
+        self.help_menu_widget = HelpMenu::new(Mode::TimeManagement, &self.config);
         if self.config.time_management_methods_settings.is_empty() {
             error!("Time management settings are empty");
         } else {
@@ -258,8 +272,8 @@ impl Component for TimeManagementTab<'_> {
             }
         } else if self.show_help {
             match action {
-                Action::ViewUp | Action::Up => self.help_menu_wigdet.scroll_up(),
-                Action::ViewDown | Action::Down => self.help_menu_wigdet.scroll_down(),
+                Action::ViewUp | Action::Up => self.help_menu_widget.scroll_up(),
+                Action::ViewDown | Action::Down => self.help_menu_widget.scroll_down(),
                 Action::Help | Action::Escape | Action::Enter => {
                     self.show_help = !self.show_help;
                 }
@@ -334,10 +348,10 @@ impl Component for TimeManagementTab<'_> {
         Self::render_footer(areas.footer, frame);
         if self.show_help {
             debug!("showing help");
-            self.help_menu_wigdet.clone().render(
+            self.help_menu_widget.clone().render(
                 area,
                 frame.buffer_mut(),
-                &mut self.help_menu_wigdet.state,
+                &mut self.help_menu_widget.state,
             );
         }
         Ok(())

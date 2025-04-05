@@ -6,6 +6,7 @@ pub struct TimerWidget;
 
 #[derive(Default, Clone)]
 pub enum TimerState {
+    Frozen,
     ClockDown {
         started_at: NaiveTime,
         stop_at: NaiveTime,
@@ -76,6 +77,7 @@ impl TimerState {
                 }
             }
             TimerState::NotInitialized => TimerState::NotInitialized,
+            TimerState::Frozen => TimerState::Frozen,
         }
     }
     pub fn get_time_spent(&self) -> Result<Duration, chrono::OutOfRangeError> {
@@ -90,7 +92,7 @@ impl TimerState {
                 stop_at: _,
                 paused_at: _,
             } => (now - *started_at).to_std(),
-            TimerState::NotInitialized => Ok(Duration::ZERO),
+            TimerState::NotInitialized | Self::Frozen => Ok(Duration::ZERO),
         }
     }
     /// Returns true if the current time finished
@@ -105,7 +107,7 @@ impl TimerState {
                 started_at: _,
                 paused_at: _,
             } => false,
-            TimerState::NotInitialized => false,
+            TimerState::NotInitialized | Self::Frozen => false,
         }
     }
 }
@@ -159,6 +161,7 @@ impl StatefulWidget for TimerWidget {
                     Self::format_time_delta(remaining)
                 }
             }
+            TimerState::Frozen => "Waiting for input".to_string(),
         };
 
         // let [area] = Layout::vertical([Constraint::Length(2 + 3)]).areas(area);
@@ -186,7 +189,8 @@ impl StatefulWidget for TimerWidget {
                 started_at: _,
                 paused_at: _,
             }
-            | TimerState::NotInitialized => 1.0,
+            | TimerState::NotInitialized
+            | TimerState::Frozen => 1.0,
         };
         Gauge::default()
             .block(Block::bordered())
