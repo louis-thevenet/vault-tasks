@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.10.0...v0.11.0) (2025-04-05)
+
+
+### Features
+
+* **time_management:** add config option to wait for input before skipping to new segment ([b9eef0b](https://github.com/louis-thevenet/vault-tasks/commit/b9eef0b504c8faeb46c830125b2a83c7b8111621))
+
 ## [0.10.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.9.0...v0.10.0) (2025-03-30)
 
 
