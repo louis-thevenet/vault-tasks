@@ -69,6 +69,8 @@
 "<c>" = "MarkCancel"
 "<i>" = "MarkIncomplete"
 "<r>" = "ReloadVault"
+"<+>" = "IncreaseCompletion"
+"<->" = "DecreaseCompletion"
 # Scrolling
 "<Ctrl-u>" = "ViewUp"
 "<Ctrl-k>" = "ViewUp"

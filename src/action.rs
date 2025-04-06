@@ -53,6 +53,8 @@ pub enum Action {
     MarkDone,
     MarkCancel,
     MarkIncomplete,
+    IncreaseCompletion,
+    DecreaseCompletion,
     Focus(Mode),
 }
 impl PartialOrd for Action {

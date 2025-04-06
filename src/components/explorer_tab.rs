@@ -309,6 +309,33 @@ impl ExplorerTab<'_> {
         }
         Err(eyre!("No selected task"))
     }
+
+    #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+    fn edit_selected_task_completion(&mut self, action: &Action) -> Result<()> {
+        if let Some(mut task) = self.get_selected_task() {
+            let length = self.config.tasks_config.completion_bar_length as isize;
+            let diff = match action {
+                Action::IncreaseCompletion => length,
+                Action::DecreaseCompletion => -length,
+                _ => return Err(eyre!("Invalid state")),
+            };
+            task.completion = match task.completion {
+                Some(c) => {
+                    let res = c as isize + diff;
+                    if res == 0 {
+                        None
+                    } else {
+                        Some(res.unsigned_abs())
+                    }
+                }
+                None if diff > 0 => Some(diff.unsigned_abs()),
+                None => None,
+            };
+            task.fix_task_attributes(&self.config.tasks_config, &self.get_current_path_to_file())?;
+            return Ok(());
+        }
+        Err(eyre!("No selected task"))
+    }
 }
 
 impl Component for ExplorerTab<'_> {
@@ -445,6 +472,11 @@ impl Component for ExplorerTab<'_> {
                 // Search bar
                 Action::Search => {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
+                }
+                Action::IncreaseCompletion | Action::DecreaseCompletion => {
+                    if self.edit_selected_task_completion(&action).is_ok() {
+                        return Ok(Some(Action::ReloadVault));
+                    }
                 }
                 Action::MarkDone => {
                     if self.edit_selected_task_state(State::Done).is_ok() {
