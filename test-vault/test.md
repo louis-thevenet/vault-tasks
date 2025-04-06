@@ -16,12 +16,12 @@
     println!("What are we coding ?")
     ```
 
-- [ ] Test a
+- [ ] Test a c10
 
-  - [ ] Test b
-    - [ ] Test c
+  - [ ] Test b c40
+    - [ ] Test c c10
 
-- [ ] Test to do
+- [ ] Test to do c15
 - [x] Test done
 - [-] Test canceled
 - [/] Test incomplete
