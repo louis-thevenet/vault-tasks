@@ -57,7 +57,7 @@ pub struct ExplorerTab<'a> {
     search_bar_widget: InputBar<'a>,
     task_list_widget_state: ScrollViewState,
     show_help: bool,
-    help_menu_wigdet: HelpMenu<'a>,
+    help_menu_widget: HelpMenu<'a>,
     edit_task_bar: InputBar<'a>,
 }
 
@@ -130,7 +130,7 @@ impl ExplorerTab<'_> {
     }
     pub(super) fn build_list(
         entries_to_display: Vec<String>,
-        surrouding_block: Block<'_>,
+        surrounding_block: Block<'_>,
         highlighted_style: Style,
     ) -> ListView<'_, Paragraph<'_>> {
         let item_count = entries_to_display.len();
@@ -144,7 +144,7 @@ impl ExplorerTab<'_> {
             (item, main_axis_size)
         });
 
-        ListView::new(builder, item_count).block(surrouding_block)
+        ListView::new(builder, item_count).block(surrounding_block)
     }
     fn path_to_paragraph(&self) -> Paragraph {
         Paragraph::new(
@@ -347,7 +347,7 @@ impl Component for ExplorerTab<'_> {
     fn register_config_handler(&mut self, config: Config) -> Result<()> {
         self.task_mgr = TaskManager::load_from_config(&config.tasks_config)?;
         self.config = config;
-        self.help_menu_wigdet = HelpMenu::new(Mode::Explorer, &self.config);
+        self.help_menu_widget = HelpMenu::new(Mode::Explorer, &self.config);
         self.search_bar_widget.input = self.search_bar_widget.input.clone().with_value(
             self.config
                 .tasks_config
@@ -458,8 +458,8 @@ impl Component for ExplorerTab<'_> {
             }
         } else if self.show_help {
             match action {
-                Action::ViewUp | Action::Up => self.help_menu_wigdet.scroll_up(),
-                Action::ViewDown | Action::Down => self.help_menu_wigdet.scroll_down(),
+                Action::ViewUp | Action::Up => self.help_menu_widget.scroll_up(),
+                Action::ViewDown | Action::Down => self.help_menu_widget.scroll_down(),
                 Action::Help | Action::Escape | Action::Enter => {
                     self.show_help = !self.show_help;
                 }
@@ -590,10 +590,10 @@ impl Component for ExplorerTab<'_> {
 
         // Help Menu
         if self.show_help {
-            self.help_menu_wigdet.clone().render(
+            self.help_menu_widget.clone().render(
                 area,
                 frame.buffer_mut(),
-                &mut self.help_menu_wigdet.state,
+                &mut self.help_menu_widget.state,
             );
         }
         if self.edit_task_bar.is_focused {

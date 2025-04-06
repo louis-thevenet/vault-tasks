@@ -48,7 +48,7 @@ pub struct FilterTab<'a> {
     task_list_widget_state: ScrollViewState,
     /// Whether the help panel is open or not
     show_help: bool,
-    help_menu_wigdet: HelpMenu<'a>,
+    help_menu_widget: HelpMenu<'a>,
     sorting_mode: SortingMode,
 }
 
@@ -154,7 +154,7 @@ impl Component for FilterTab<'_> {
                 .filter_default_search_string
                 .clone(),
         );
-        self.help_menu_wigdet = HelpMenu::new(Mode::Filter, &self.config);
+        self.help_menu_widget = HelpMenu::new(Mode::Filter, &self.config);
         self.update_matching_entries();
         Ok(())
     }
@@ -189,8 +189,8 @@ impl Component for FilterTab<'_> {
             }
         } else if self.show_help {
             match action {
-                Action::ViewUp | Action::Up => self.help_menu_wigdet.scroll_up(),
-                Action::ViewDown | Action::Down => self.help_menu_wigdet.scroll_down(),
+                Action::ViewUp | Action::Up => self.help_menu_widget.scroll_up(),
+                Action::ViewDown | Action::Down => self.help_menu_widget.scroll_down(),
                 Action::Help | Action::Escape | Action::Enter => {
                     self.show_help = !self.show_help;
                 }
@@ -241,7 +241,7 @@ impl Component for FilterTab<'_> {
             frame.set_cursor_position((
                 // Put cursor past the end of the input text
                 areas.search.x.saturating_add(
-                    ((self.input_bar_widget.input.visual_cursor()).max(scroll) - scroll) as u16,
+                    (self.input_bar_widget.input.visual_cursor().max(scroll) - scroll) as u16,
                 ) + 1,
                 // Move one line down, from the border to the input line
                 areas.search.y + 1,
@@ -290,10 +290,10 @@ impl Component for FilterTab<'_> {
         );
         if self.show_help {
             debug!("showing help");
-            self.help_menu_wigdet.clone().render(
+            self.help_menu_widget.clone().render(
                 area,
                 frame.buffer_mut(),
-                &mut self.help_menu_wigdet.state,
+                &mut self.help_menu_widget.state,
             );
         }
         Ok(())

@@ -51,7 +51,7 @@ pub struct CalendarTab<'a> {
     task_list_widget_state: ScrollViewState,
     // Whether the help panel is open or not
     show_help: bool,
-    help_menu_wigdet: HelpMenu<'a>,
+    help_menu_widget: HelpMenu<'a>,
 }
 impl Default for CalendarTab<'_> {
     fn default() -> Self {
@@ -60,7 +60,7 @@ impl Default for CalendarTab<'_> {
             config: Config::default(),
             is_focused: false,
             show_help: false,
-            help_menu_wigdet: HelpMenu::default(),
+            help_menu_widget: HelpMenu::default(),
             tasks: vec![],
             task_mgr: TaskManager::default(),
             task_list_widget_state: ScrollViewState::new(),
@@ -330,7 +330,7 @@ impl Component for CalendarTab<'_> {
 
         self.update_tasks();
         self.updated_date();
-        self.help_menu_wigdet = HelpMenu::new(Mode::Calendar, &self.config);
+        self.help_menu_widget = HelpMenu::new(Mode::Calendar, &self.config);
         Ok(())
     }
 
@@ -352,8 +352,8 @@ impl Component for CalendarTab<'_> {
             }
         } else if self.show_help {
             match action {
-                Action::ViewUp | Action::Up => self.help_menu_wigdet.scroll_up(),
-                Action::ViewDown | Action::Down => self.help_menu_wigdet.scroll_down(),
+                Action::ViewUp | Action::Up => self.help_menu_widget.scroll_up(),
+                Action::ViewDown | Action::Down => self.help_menu_widget.scroll_down(),
                 Action::Help | Action::Escape | Action::Enter => {
                     self.show_help = !self.show_help;
                 }
@@ -460,10 +460,10 @@ impl Component for CalendarTab<'_> {
         Self::render_footer(areas.footer, frame);
         // Help
         if self.show_help {
-            self.help_menu_wigdet.clone().render(
+            self.help_menu_widget.clone().render(
                 area,
                 frame.buffer_mut(),
-                &mut self.help_menu_wigdet.state,
+                &mut self.help_menu_widget.state,
             );
         }
         Ok(())
