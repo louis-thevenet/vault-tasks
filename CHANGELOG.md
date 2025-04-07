@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.11.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.10.0...v0.11.0) (2025-04-07)
+
+
+### Features
+
+* **time_management:** add config option to wait for input before skipping to new segment ([b9eef0b](https://github.com/louis-thevenet/vault-tasks/commit/b9eef0b504c8faeb46c830125b2a83c7b8111621))
+* **tui:** add keybinds to increase/decrease completion from vault-tasks ([888e62e](https://github.com/louis-thevenet/vault-tasks/commit/888e62e75d2e12d7f9788c7e22baeba2721e4e49))
+
+
+### Bug Fixes
+
+* **tui:** wrong task widget height when only completion was set ([64fc87a](https://github.com/louis-thevenet/vault-tasks/commit/64fc87a87446beb94165ae3c5220012e3553062b))
+
 ## [0.10.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.9.0...v0.10.0) (2025-03-30)
 
 
