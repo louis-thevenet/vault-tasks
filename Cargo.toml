@@ -41,7 +41,7 @@ color-eyre = "0.6.3"
 serde = {version = "1.0.219", features = ["derive"]}
 tracing = "0.1.41"
 pretty_assertions = "1.4.1"
-strum = {version = "0.26.3", features = ["derive"]}
+strum = {version = "0.27.1", features = ["derive"]}
 strum_macros = "0.27.1"
 notify-rust = "4.11.5"
 lexical-sort = "0.3.1"
