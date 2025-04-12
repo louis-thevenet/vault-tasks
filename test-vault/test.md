@@ -45,3 +45,7 @@
 - [ ] 15 c150
 - [ ] 16 c160
 - [ ] 17 c170
+
+- [ ] fully featured task 2025/04/12 c50 p50 #tag1 #tag2 @today
+      description
+  - [ ] subtask

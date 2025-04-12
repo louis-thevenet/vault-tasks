@@ -278,20 +278,17 @@ impl Task {
         };
 
         let priority = if self.priority > 0 {
-            format!("p{} ", self.priority)
+            format!("p{}", self.priority)
         } else {
             String::new()
         };
 
         let completion = match self.completion {
-            Some(c) => format!("c{c} "),
+            Some(c) => format!("c{c}"),
             None => String::new(),
         };
 
-        let mut due_date = self.due_date.to_string_format(!config.use_american_format);
-        if !due_date.is_empty() {
-            due_date.push(' ');
-        }
+        let due_date = self.due_date.to_string_format(!config.use_american_format);
 
         let tags_str = self.tags.as_ref().map_or_else(String::new, |tags| {
             tags.clone()
@@ -302,14 +299,27 @@ impl Task {
         });
 
         let today_tag = if self.is_today {
-            String::from(" @today")
+            String::from("@today")
         } else {
             String::new()
         };
 
         let res = format!(
-            "{}- [{}] {} {}{}{}{}{}",
-            indent, state_str, self.name, due_date, completion, priority, tags_str, today_tag
+            "{}- [{}] {}",
+            indent,
+            state_str,
+            [
+                self.name.clone(),
+                due_date,
+                completion,
+                priority,
+                tags_str,
+                today_tag
+            ]
+            .into_iter()
+            .filter(|s| !String::is_empty(s))
+            .collect::<Vec<String>>()
+            .join(" ")
         );
         res.trim_end().to_string()
     }
