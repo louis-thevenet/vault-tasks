@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.11.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.10.0...v0.11.0) (2025-04-13)
+
+
+### Features
+
+* **core:** don't parse tasks in comments and code blocks ([54c9a04](https://github.com/louis-thevenet/vault-tasks/commit/54c9a041e50491af34842fb0b3421cb9c4a01807))
+* **time_management:** add config option to wait for input before skipping to new segment ([b9eef0b](https://github.com/louis-thevenet/vault-tasks/commit/b9eef0b504c8faeb46c830125b2a83c7b8111621))
+* **tui:** add keybinds to increase/decrease completion from vault-tasks ([888e62e](https://github.com/louis-thevenet/vault-tasks/commit/888e62e75d2e12d7f9788c7e22baeba2721e4e49))
+
+
+### Bug Fixes
+
+* **core:** remove extra whitespace added to tasks with [@today](https://github.com/today) ([10e7869](https://github.com/louis-thevenet/vault-tasks/commit/10e78695b8ed835753d6ab4901c22d1a117b20d0))
+* **tui:** wrong task widget height when only completion was set ([64fc87a](https://github.com/louis-thevenet/vault-tasks/commit/64fc87a87446beb94165ae3c5220012e3553062b))
+
 ## [0.10.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.9.0...v0.10.0) (2025-03-30)
 
 
