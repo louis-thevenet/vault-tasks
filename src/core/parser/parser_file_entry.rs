@@ -4,8 +4,8 @@ use color_eyre::eyre::bail;
 use tracing::{debug, error};
 use winnow::{
     ascii::{space0, space1},
-    combinator::{alt, preceded, repeat},
-    token::{take_till, take_while},
+    combinator::{alt, delimited, preceded, repeat},
+    token::{any, take_till, take_until, take_while},
     Parser, Result,
 };
 
@@ -22,6 +22,16 @@ enum FileToken {
     Task(Task, usize),
     /// A tag found outside a task in the file
     FileTag(String),
+    // Full comment
+    FullComment,
+    /// New comment
+    StartOfComment,
+    /// A comment was closed
+    EndOfComment,
+    /// New code block
+    StartOfCodeBlock,
+    /// A code block was closed
+    EndOfCodeBlock,
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -68,6 +78,27 @@ impl ParserFileEntry<'_> {
         .parse_next(input)?;
         Ok(FileToken::FileTag(tag.to_owned()))
     }
+
+    fn parse_start_of_comment(input: &mut &str) -> Result<FileToken> {
+        preceded::<_, _, (), _, _, _>(alt(("<--", "<!--")), repeat(0.., any)).parse_next(input)?;
+        Ok(FileToken::StartOfComment)
+    }
+    fn parse_end_of_comment(input: &mut &str) -> Result<FileToken> {
+        take_until(0.., "-->").parse_next(input)?;
+        Ok(FileToken::EndOfComment)
+    }
+    fn parse_full_comment(input: &mut &str) -> Result<FileToken> {
+        delimited(alt(("<!--", "<--")), take_until(0.., "-->"), "-->").parse_next(input)?;
+        Ok(FileToken::FullComment)
+    }
+    fn parse_start_of_code_block(input: &mut &str) -> Result<FileToken> {
+        preceded::<_, _, (), _, _, _>("```", repeat(0.., any)).parse_next(input)?;
+        Ok(FileToken::StartOfCodeBlock)
+    }
+    fn parse_end_of_code_block(input: &mut &str) -> Result<FileToken> {
+        take_until(0.., "````").parse_next(input)?;
+        Ok(FileToken::EndOfCodeBlock)
+    }
     fn insert_task_at(
         file_entry: &mut VaultData,
         task: Task,
@@ -104,7 +135,7 @@ impl ParserFileEntry<'_> {
                                         );
                                     }
                                 }
-                                bail!("Cound't find correct parent task to insert task {}", task_to_insert.name)
+                                bail!("Couldn't find correct parent task to insert task {}", task_to_insert.name)
                             }
                         }
                         std::cmp::Ordering::Less => {
@@ -121,7 +152,7 @@ impl ParserFileEntry<'_> {
                                     );
                                 }
                             }
-                                bail!("Cound't find correct parent header to insert task {}", task_to_insert.name)
+                                bail!("Couldn't find correct parent header to insert task {}", task_to_insert.name)
                         }
                     }
                 }
@@ -295,16 +326,13 @@ impl ParserFileEntry<'_> {
                         target_level: usize,
                     ) -> color_eyre::Result<()> {
                         if current_level == target_level {
-                            match &mut task.description {
-                                Some(d) => {
-                                    d.push('\n');
-                                    d.push_str(&description);
-                                    Ok(())
-                                }
-                                None => {
-                                    task.description = Some(description.clone());
-                                    Ok(())
-                                }
+                            if let Some(d) = &mut task.description {
+                                d.push('\n');
+                                d.push_str(&description);
+                                Ok(())
+                            } else {
+                                task.description = Some(description.clone());
+                                Ok(())
                             }
                         } else if let Some(task) = task.subtasks.last_mut() {
                             insert_desc_task(description, task, current_level + 1, target_level)
@@ -331,16 +359,24 @@ impl ParserFileEntry<'_> {
     }
 
     /// Recursively parses the input file passed as a string.
+    #[allow(clippy::too_many_lines)]
     fn parse_file_aux<'a, I>(
         &self,
         mut input: Peekable<I>,
         file_entry: &mut VaultData,
         file_tags: &mut Vec<String>,
         header_depth: usize,
+        comment_depth: usize,
+        code_block: bool,
     ) where
         I: Iterator<Item = (usize, &'a str)>,
     {
         let mut parser = alt((
+            Self::parse_full_comment,
+            Self::parse_start_of_comment,
+            Self::parse_end_of_comment,
+            Self::parse_start_of_code_block,
+            Self::parse_end_of_code_block,
             Self::parse_file_tag,
             Self::parse_header,
             |input: &mut &str| self.parse_task(input),
@@ -353,51 +389,154 @@ impl ParserFileEntry<'_> {
         }
 
         let (line_number, mut line) = line_opt.unwrap();
+        if code_block {
+            match parser.parse_next(&mut line) {
+                Ok(FileToken::EndOfCodeBlock | FileToken::StartOfCodeBlock) => self.parse_file_aux(
+                    input,
+                    file_entry,
+                    file_tags,
+                    header_depth,
+                    comment_depth,
+                    false,
+                ),
 
-        match parser.parse_next(&mut line) {
-            Ok(FileToken::Task(mut task, indent_length)) => {
-                task.line_number = line_number + 1; // line 1 was element 0 of iterator
-                if Self::insert_task_at(
+                _ => {
+                    self.parse_file_aux(
+                        input,
+                        file_entry,
+                        file_tags,
+                        header_depth,
+                        comment_depth,
+                        code_block,
+                    );
+                }
+            }
+        } else if comment_depth > 0 {
+            match parser.parse_next(&mut line) {
+                Ok(FileToken::StartOfComment) => self.parse_file_aux(
+                    input,
                     file_entry,
-                    task,
+                    file_tags,
                     header_depth,
-                    indent_length / self.config.indent_length,
-                )
-                .is_err()
-                {
-                    error!("Failed to insert task");
-                }
-                self.parse_file_aux(input, file_entry, file_tags, header_depth);
-            }
-            Ok(FileToken::Header((header, new_depth))) => {
-                Self::insert_header_at(
+                    comment_depth + 1,
+                    false,
+                ),
+
+                Ok(FileToken::EndOfComment) => self.parse_file_aux(
+                    input,
                     file_entry,
-                    VaultData::Header(new_depth, header, vec![]),
-                    new_depth - 1,
-                    0,
-                );
-                self.parse_file_aux(input, file_entry, file_tags, new_depth);
-            }
-            Ok(FileToken::Description(description, indent_length)) => {
-                if Self::append_description(
-                    file_entry,
-                    description.clone(),
+                    file_tags,
                     header_depth,
-                    indent_length / self.config.indent_length,
-                )
-                .is_err()
-                {
-                    error!("Failed to insert description {description}");
+                    comment_depth.saturating_sub(1),
+                    false,
+                ),
+
+                _ => {
+                    self.parse_file_aux(
+                        input,
+                        file_entry,
+                        file_tags,
+                        header_depth,
+                        comment_depth,
+                        false,
+                    );
                 }
-                self.parse_file_aux(input, file_entry, file_tags, header_depth);
             }
-            Ok(FileToken::FileTag(tag)) => {
-                if !file_tags.contains(&tag) {
-                    file_tags.push(tag);
+        } else {
+            match parser.parse_next(&mut line) {
+                Ok(FileToken::Task(mut task, indent_length)) => {
+                    task.line_number = line_number + 1; // line 1 was element 0 of iterator
+                    if Self::insert_task_at(
+                        file_entry,
+                        task,
+                        header_depth,
+                        indent_length / self.config.indent_length,
+                    )
+                    .is_err()
+                    {
+                        error!("Failed to insert task");
+                    }
+                    self.parse_file_aux(
+                        input,
+                        file_entry,
+                        file_tags,
+                        header_depth,
+                        comment_depth,
+                        false,
+                    );
                 }
-                self.parse_file_aux(input, file_entry, file_tags, header_depth);
+                Ok(FileToken::Header((header, new_depth))) => {
+                    Self::insert_header_at(
+                        file_entry,
+                        VaultData::Header(new_depth, header, vec![]),
+                        new_depth - 1,
+                        0,
+                    );
+                    self.parse_file_aux(
+                        input,
+                        file_entry,
+                        file_tags,
+                        new_depth,
+                        comment_depth,
+                        false,
+                    );
+                }
+                Ok(FileToken::Description(description, indent_length)) => {
+                    if Self::append_description(
+                        file_entry,
+                        description.clone(),
+                        header_depth,
+                        indent_length / self.config.indent_length,
+                    )
+                    .is_err()
+                    {
+                        error!("Failed to insert description {description}");
+                    }
+                    self.parse_file_aux(
+                        input,
+                        file_entry,
+                        file_tags,
+                        header_depth,
+                        comment_depth,
+                        false,
+                    );
+                }
+                Ok(FileToken::FileTag(tag)) => {
+                    if !file_tags.contains(&tag) {
+                        file_tags.push(tag);
+                    }
+                    self.parse_file_aux(
+                        input,
+                        file_entry,
+                        file_tags,
+                        header_depth,
+                        comment_depth,
+                        false,
+                    );
+                }
+                Ok(FileToken::StartOfComment) => {
+                    self.parse_file_aux(input, file_entry, file_tags, header_depth, 1, false);
+                    // We started from 0 here
+                }
+                Ok(FileToken::EndOfComment) => {
+                    debug!("A EndOfComment was parsed but no comment was open");
+                    self.parse_file_aux(input, file_entry, file_tags, header_depth, 0, false);
+                    // we're still at 0
+                }
+                Ok(FileToken::StartOfCodeBlock | FileToken::EndOfCodeBlock) => {
+                    self.parse_file_aux(input, file_entry, file_tags, header_depth, 0, true);
+                }
+                Err(_) | Ok(FileToken::FullComment) => {
+                    self.parse_file_aux(
+                        input,
+                        file_entry,
+                        file_tags,
+                        header_depth,
+                        comment_depth,
+                        false,
+                    );
+                }
             }
-            Err(_) => self.parse_file_aux(input, file_entry, file_tags, header_depth),
         }
     }
 
@@ -429,7 +568,14 @@ impl ParserFileEntry<'_> {
         let mut res = VaultData::Header(0, filename.to_owned(), vec![]);
         let mut file_tags = vec![];
         self.filename = filename.to_string();
-        self.parse_file_aux(lines.enumerate().peekable(), &mut res, &mut file_tags, 0);
+        self.parse_file_aux(
+            lines.enumerate().peekable(),
+            &mut res,
+            &mut file_tags,
+            0,
+            0,
+            false,
+        );
 
         if self.config.file_tags_propagation {
             file_tags.iter().for_each(|t| add_global_tag(&mut res, t));
@@ -541,7 +687,7 @@ mod tests {
                 ),
             ],
         );
-        parser.parse_file_aux(input, &mut res, &mut vec![], 0);
+        parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
         assert_eq!(res, expected);
 
         let expected_after_cleaning = VaultData::Header(
@@ -637,7 +783,7 @@ mod tests {
                 ],
             )],
         );
-        parser.parse_file_aux(input, &mut res, &mut vec![], 0);
+        parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
         assert_eq!(res, expected);
     }
     #[test]
@@ -667,7 +813,7 @@ mod tests {
             config: &config,
             filename: String::new(),
         };
-        parser.parse_file_aux(input, &mut res, &mut vec![], 0);
+        parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
         add_global_tag(&mut res, &String::from("test"));
         assert_snapshot!(res);
     }
@@ -709,7 +855,7 @@ mod tests {
                 ],
             )],
         );
-        parser.parse_file_aux(input, &mut res, &mut vec![], 0);
+        parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
         assert_eq!(res, expected);
     }
     #[test]
@@ -760,7 +906,7 @@ mod tests {
                 )],
             )],
         );
-        parser.parse_file_aux(input, &mut res, &mut vec![], 0);
+        parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
         println!("{res:#?}");
         assert_eq!(res, expected);
     }
@@ -798,7 +944,57 @@ mod tests {
             config: &config,
             filename: String::new(),
         };
-        parser.parse_file_aux(input, &mut res, &mut vec![], 0);
+        parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
+        assert_snapshot!(res);
+    }
+    #[test]
+    fn test_commented_task() {
+        let input = r"# 1 Header
+<!-- one line comment to be sure -->
+<!--
+- [ ] This task is commented out
+-->
+
+- [ ] This one is not
+"
+        .split('\n')
+        .enumerate()
+        .peekable();
+
+        let config = TasksConfig {
+            indent_length: 2,
+            ..Default::default()
+        };
+        let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
+        let parser = ParserFileEntry {
+            config: &config,
+            filename: String::new(),
+        };
+        parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
+        assert_snapshot!(res);
+    }
+    #[test]
+    fn test_code_block_task() {
+        let input = r"# 1 Header
+```
+- [ ] This task is in a code block
+```
+- [ ] This one is not
+"
+        .split('\n')
+        .enumerate()
+        .peekable();
+
+        let config = TasksConfig {
+            indent_length: 2,
+            ..Default::default()
+        };
+        let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
+        let parser = ParserFileEntry {
+            config: &config,
+            filename: String::new(),
+        };
+        parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
         assert_snapshot!(res);
     }
 }

@@ -46,6 +46,35 @@
 - [ ] 16 c160
 - [ ] 17 c170
 
-- [ ] fully featured task 2025/04/12 c50 p50 #tag1 #tag2 @today
+- [ ] fully 2025/04/12 c50 p50 #tag1 #tag2 @today
       description
+
   - [ ] subtask
+
+<!--
+- [ ] This task is commented out today
+    - [ ] subtask
+-->
+
+<!-- - [ ] This line doesn't start with `- [ ]` so it would not be a task anyway-->
+
+```markdown
+- [ ] A task in a code block
+      Shouldn't see this
+```
+
+<!-- - [ ] This line doesn't start with `- [ ]` so it would not be a task anyway-->
+
+```markdown
+<!--
+- [ ] Commented task in a code block
+   Shouldn't see this
+-->
+```
+
+- [ ] task123465
+
+- [ ] This task should have a code block in its description
+  ```
+  Some code
+  ```
