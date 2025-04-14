@@ -45,7 +45,7 @@ strum = {version = "0.27.1", features = ["derive"]}
 strum_macros = "0.27.1"
 notify-rust = "4.11.5"
 lexical-sort = "0.3.1"
-winnow = "0.7.4"
+winnow = "0.7.6"
 time = "0.3.40"
 ratskin = "0.2.0"
 
