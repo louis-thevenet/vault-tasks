@@ -1,4 +1,4 @@
-Output ./demo_filter.gif
+# Output ./demo_filter.gif
 # Output ./demo_filter.mp4
 
 Set Shell fish
@@ -13,32 +13,11 @@ Type "vault-tasks -c ../.config/ -v ../test-vault filter"
 Enter
 Show
 
-Sleep 3s
-Type "#tobuy 09/29"
-Enter
+Type "inc"
+Sleep 1
 
-Sleep 1.5s
-# Scroll
-Ctrl+J
-Sleep 300ms
-Ctrl+J
-Sleep 300ms
-Ctrl+J
-Sleep 300ms
-Ctrl+J
-Sleep 300ms
-Ctrl+J
-Sleep 300ms
-Ctrl+J
-Sleep 300ms
-Ctrl+J
-Sleep 300ms
-Ctrl+J
-Sleep 300ms
-Ctrl+J
-
-Sleep 4s
-
+Screenshot demo_filter_view.png
+Type "aaa" # so that the screenshot is actually produced
 
 # Stop vault-tasks
 Ctrl+c

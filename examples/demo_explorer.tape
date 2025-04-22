@@ -5,7 +5,7 @@ Output ./demo_explorer.gif
 
 Set Shell fish
 Set Theme "Builtin Solarized Light"
-Set TypingSpeed 80ms
+Set TypingSpeed 150ms
 Set FontSize 22
 Set Width 1800
 Set Height 1000
@@ -15,12 +15,22 @@ Type "vault-tasks -c ../.config/ -v ../test-vault explorer"
 Enter
 Show
 
-# First entry
-Sleep 3s
+# First entry is `dir`
 Down
+# Physics
+Sleep 3s
 
-# Second entry
-Sleep 1.5s
+Down
+# Vault-tasks
+Sleep 3s
+
+# Search bar
+Type "s"
+Backspace@0.5s 6
+Enter
+# Now we see every tasks
+Down
+Down # Back to #3
 
 # Scroll
 Ctrl+J
@@ -40,29 +50,25 @@ Sleep 300ms
 Ctrl+J
 Sleep 300ms
 Ctrl+J
-
 Sleep 2s
 
-# Search bar
-Type "s"
-Backspace 6
+Up@0.5s 2
+Enter@0.5s 
+Down
+Sleep 1.5s
+
+Up@0.5s
 Enter
-
-Sleep 2s
-
-Down 4
-Enter@1s 3
-
-# Deep into 5th entry
-Sleep 2s
+Down
+Sleep 1.5s
+Down
+Sleep 1.5s
 
 # open in editor and mark tasks done
 Type "o"
 Sleep 1s
 
-Type "4"
-Down
-Type "7xs- \[ "
+Type "/- \[ "
 Enter
 Type ";"
 Sleep 1s
