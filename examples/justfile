@@ -3,5 +3,7 @@ make-all-vhs:
     vhs < ./demo_filter.tape
     vhs < ./demo_calendar.tape
     vhs < ./demo_time.tape
+    vhs < ./demo_readme.tape
     git checkout HEAD -- ../test-vault # it is edited during explorer demo
+    git checkout HEAD -- ../README.md # it is edited during explorer demo
 

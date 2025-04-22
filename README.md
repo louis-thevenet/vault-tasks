@@ -7,15 +7,22 @@ It will parse any Markdown file or vault and display the tasks it contains.
 ## Demo using `./test-vault`
 
 ```
-test-vault
-├── chocolate_lava_cake.md
-├── daily_workout.md
-├── diy_bookshelf.md
-├── study_plan.md
+./test-vault
+├── dir
+│   ├── subdir
+│   │   ├── test_1.md
+│   │   ├── test_2.md
+│   │   └── test_3.md
+│   └── test_0.md
+├── example_physics_class.md
+├── example_vault-tasks_project.md
 └── test.md
 ```
 
-![Demo](./examples/demo_full.gif)
+![Demo explorer](./examples/demo_explorer.gif)
+![Demo filter](./examples/demo_filter_view.png)
+![Demo calendar](./examples/demo_calendar_view.png)
+![Demo time](./examples/demo_time_view.png)
 
 ## Why
 
@@ -173,7 +180,7 @@ Check the key map within the app with `?`
 | `enter`   | Focus/Unfocus search bar |
 | `Shift-s` | Change sorting mode      |
 
-![](./examples/demo_filter.gif)
+![](./examples/demo_filter_view.png)
 
 #### Calendar Tab
 
@@ -196,7 +203,7 @@ Check the key map within the app with `?`
 | --- | ---------- |
 | `t` | Goto Today |
 
-![](./examples/demo_calendar.gif)
+![](./examples/demo_calendar_view.png)
 
 #### Time Management Tab
 
@@ -217,7 +224,7 @@ Check the key map within the app with `?`
 | `shift-tab` | Previous time management technique |
 | `tab`       | Next time management technique     |
 
-![](./examples/demo_time.gif)
+![](./examples/demo_time_view.png)
 
 ### Modes
 
