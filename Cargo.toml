@@ -3,12 +3,12 @@ name = "vault-tasks"
 path = "src/main.rs"
 
 [build-dependencies]
-anyhow = "1.0.97"
-vergen-gix = {version = "1.0.6", features = ["build", "cargo"]}
+anyhow = "1.0.98"
+vergen-gix = {version = "1.0.9", features = ["build", "cargo"]}
 
 [dependencies]
 better-panic = "0.3.0"
-clap = {version = "4.5.32", features = [
+clap = {version = "4.5.37", features = [
   "derive",
   "cargo",
   "wrap_help",
@@ -23,34 +23,34 @@ directories = "6.0.0"
 futures = "0.3.31"
 human-panic = "2.0.2"
 lazy_static = "1.5.0"
-libc = "0.2.171"
+libc = "0.2.172"
 ratatui = {version = "0.29.0", features = ["serde", "macros", "widget-calendar"]}
 signal-hook = "0.3.17"
 strip-ansi-escapes = "0.2.1"
-tokio = {version = "1.44.1", features = ["full"]}
-tokio-util = "0.7.14"
+tokio = {version = "1.44.2", features = ["full"]}
+tokio-util = "0.7.15"
 tracing-error = "0.2.1"
 tracing-subscriber = {version = "0.3.19", features = ["env-filter", "serde"]}
-chrono = {version="0.4.40"}
+chrono = {version="0.4.41"}
 tui-widget-list = "0.13.2"
 tui-input = "0.11.1"
 edit = "0.1.5"
-tui-scrollview = "=0.5.0"
-toml = "0.8.20"
+tui-scrollview = "=0.5.1"
+toml = "0.8.22"
 color-eyre = "0.6.3"
 serde = {version = "1.0.219", features = ["derive"]}
 tracing = "0.1.41"
 pretty_assertions = "1.4.1"
-strum = {version = "0.26.3", features = ["derive"]}
-strum_macros = "0.26.4"
-notify-rust = "4.11.5"
+strum = {version = "0.27.1", features = ["derive"]}
+strum_macros = "0.27.1"
+notify-rust = "4.11.7"
 lexical-sort = "0.3.1"
-winnow = "0.7.4"
-time = "0.3.40"
+winnow = "0.7.9"
+time = "0.3.41"
 ratskin = "0.2.0"
 
 [dev-dependencies]
-insta = {version = "1.42.2", features = ["yaml"]}
+insta = {version = "1.43.0", features = ["yaml"]}
 
 [package]
 name = "vault-tasks"
@@ -58,7 +58,7 @@ description = "TUI Markdown Task Manager"
 build = "build.rs"
 categories = ["command-line-utilities", "visualization"]
 keywords = ["markdown", "task-manager", "productivity", "tui", "obsidian"]
-version = "0.10.0"
+version = "0.11.0"
 edition = "2021"
 repository = "https://github.com/louis-thevenet/vault-tasks"
 authors = ["Louis Thevenet <louis.tvnt@gmail.com>"]
