@@ -31,7 +31,7 @@ tokio = {version = "1.44.2", features = ["full"]}
 tokio-util = "0.7.15"
 tracing-error = "0.2.1"
 tracing-subscriber = {version = "0.3.19", features = ["env-filter", "serde"]}
-chrono = {version="0.4.40"}
+chrono = {version="0.4.41"}
 tui-widget-list = "0.13.2"
 tui-input = "0.11.1"
 edit = "0.1.5"
