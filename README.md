@@ -49,7 +49,7 @@ I also spend most of my writing time in the terminal (Helix) and do not rely on 
 
 ## Planned Features
 
-- `new` action in Explorer Tab to create a new child on selected entry
+I'm planning a big refactor this summer. I'm currently gathering ideas and critics from my personal use to improve vault-tasks. If you're using it and want to contribute by requesting a feature or a change, don't hesitate to open an issue or contact me.
 
 ## Installation
 
