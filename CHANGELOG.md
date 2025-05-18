@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/louis-thevenet/vault-tasks/compare/v0.11.0...v0.11.1) (2025-05-18)
+
+
+### Bug Fixes
+
+* calendar view didn't display all day's tasks when time was also set ([f071cd0](https://github.com/louis-thevenet/vault-tasks/commit/f071cd0b3c9d4398c4115c3b0c495f254288bab4))
+
 ## [0.11.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.10.0...v0.11.0) (2025-04-13)
 
 
