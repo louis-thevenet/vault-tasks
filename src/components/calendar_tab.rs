@@ -134,6 +134,9 @@ impl CalendarTab<'_> {
         self.tasks.sort_by(SortingMode::cmp_due_date);
     }
     fn updated_date(&mut self) {
+        if self.tasks.is_empty() {
+            return;
+        }
         // Find a task to preview
         let mut index_closest_task = 0;
         let mut best = TimeDelta::MAX;
@@ -164,25 +167,38 @@ impl CalendarTab<'_> {
             }
         }
 
+        let previewed_date = match self.tasks[index_closest_task].due_date {
+            DueDate::NoDate => return, // return early since there is no task with date information
+            DueDate::Day(naive_date) => naive_date,
+            DueDate::DayTime(naive_date_time) => naive_date_time.date(),
+        };
+
         // Build preview task list
         let tasks_to_preview = if self.tasks.get(index_closest_task).is_some() {
-            &filter_to_vec(
-                &self.task_mgr.tasks,
-                &Filter::new(
-                    Task {
-                        due_date: self.tasks[index_closest_task].due_date.clone(),
-                        ..Default::default()
-                    },
-                    None,
-                ),
-            )
-            .iter()
-            .map(|t| VaultData::Task(t.clone()))
-            .collect::<Vec<VaultData>>()
+            self.tasks
+                .iter()
+                .filter_map(|t| match t.due_date {
+                    DueDate::NoDate => None,
+                    DueDate::Day(naive_date) => {
+                        if naive_date == previewed_date {
+                            Some(VaultData::Task(t.clone()))
+                        } else {
+                            None
+                        }
+                    }
+                    DueDate::DayTime(naive_date_time) => {
+                        if naive_date_time.date() == previewed_date {
+                            Some(VaultData::Task(t.clone()))
+                        } else {
+                            None
+                        }
+                    }
+                })
+                .collect::<Vec<VaultData>>()
         } else {
-            &vec![]
+            vec![]
         };
-        self.entries_list = TaskList::new(&self.config, tasks_to_preview, 200, true);
+        self.entries_list = TaskList::new(&self.config, &tasks_to_preview, 200, true);
         self.task_list_widget_state.scroll_to_top(); // reset view
         self.tasks_to_events(self.tasks.clone().get(index_closest_task));
     }
