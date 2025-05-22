@@ -48,6 +48,7 @@ pub struct CalendarTab<'a> {
     entries_list: TaskList,
     events: CalendarEventStore,
     selected_date: Date,
+    previewed_date: Option<Date>,
     task_list_widget_state: ScrollViewState,
     // Whether the help panel is open or not
     show_help: bool,
@@ -57,6 +58,7 @@ impl Default for CalendarTab<'_> {
     fn default() -> Self {
         Self {
             selected_date: OffsetDateTime::now_local().unwrap().date(),
+            previewed_date: None,
             config: Config::default(),
             is_focused: false,
             show_help: false,
@@ -198,6 +200,7 @@ impl CalendarTab<'_> {
         } else {
             vec![]
         };
+        self.previewed_date = Some(Self::naive_date_to_date(previewed_date));
         self.entries_list = TaskList::new(&self.config, &tasks_to_preview, 200, true);
         self.task_list_widget_state.scroll_to_top(); // reset view
         self.tasks_to_events(self.tasks.clone().get(index_closest_task));
@@ -460,10 +463,9 @@ impl Component for CalendarTab<'_> {
         Self::render_legend(&areas, frame);
 
         // Date
-        self.selected_date
-            .to_span()
-            .bold()
-            .render(areas.date, frame.buffer_mut());
+        if let Some(d) = self.previewed_date {
+            d.to_span().bold().render(areas.date, frame.buffer_mut());
+        }
 
         // Timeline
         self.entries_list.clone().render(
