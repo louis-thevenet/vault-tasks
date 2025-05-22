@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.2](https://github.com/louis-thevenet/vault-tasks/compare/v0.11.1...v0.11.2) (2025-05-22)
+
+
+### Bug Fixes
+
+* **calendar:** print previewed date instead of selected date ([f245e43](https://github.com/louis-thevenet/vault-tasks/commit/f245e4362af0c6449450d2172b11eb4e227df1bb))
+
 ## [0.11.1](https://github.com/louis-thevenet/vault-tasks/compare/v0.11.0...v0.11.1) (2025-05-18)
 
 
