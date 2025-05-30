@@ -37,14 +37,23 @@ impl Default for TaskMarkerConfig {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct PrettySymbolsConfig {
+    #[serde(default)]
     pub task_done: String,
+    #[serde(default)]
     pub task_todo: String,
+    #[serde(default)]
     pub task_incomplete: String,
+    #[serde(default)]
     pub task_canceled: String,
+    #[serde(default)]
     pub due_date: String,
+    #[serde(default)]
     pub priority: String,
+    #[serde(default)]
     pub today_tag: String,
+    #[serde(default)]
     pub progress_bar_true: String,
+    #[serde(default)]
     pub progress_bar_false: String,
 }
 impl Default for PrettySymbolsConfig {
