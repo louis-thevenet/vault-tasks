@@ -76,34 +76,41 @@ impl Config {
         let default_config: Self = Self::default();
 
         let data_dir = get_data_dir();
-        let config_dir = args.config_path.clone().unwrap_or_else(get_config_dir);
+        let config_path = args.config_path.clone().unwrap_or_else(get_config_dir);
 
-        let mut builder = config::Config::builder()
-            .set_default("data_dir", data_dir.to_str().unwrap())?
-            .set_default("config_dir", config_dir.to_str().unwrap())?;
+        // A config file was provided
+        let builder = if config_path.is_file() {
+            config::Config::builder()
+                .set_default("data_dir", data_dir.to_str().unwrap())?
+                .add_source(config::File::from(config_path))
+        } else {
+            let mut builder = config::Config::builder()
+                .set_default("data_dir", data_dir.to_str().unwrap())?
+                .set_default("config_dir", config_path.to_str().unwrap())?;
 
-        let config_files = [
-            ("config.json5", config::FileFormat::Json5),
-            ("config.json", config::FileFormat::Json),
-            ("config.yaml", config::FileFormat::Yaml),
-            ("config.toml", config::FileFormat::Toml),
-            ("config.ini", config::FileFormat::Ini),
-        ];
-        let mut found_config = false;
-        for (file, format) in &config_files {
-            let source = config::File::from(config_dir.join(file))
-                .format(*format)
-                .required(false);
-            builder = builder.add_source(source);
-            if config_dir.join(file).exists() {
-                found_config = true;
+            let config_files = [
+                ("config.json5", config::FileFormat::Json5),
+                ("config.json", config::FileFormat::Json),
+                ("config.yaml", config::FileFormat::Yaml),
+                ("config.toml", config::FileFormat::Toml),
+                ("config.ini", config::FileFormat::Ini),
+            ];
+            let mut found_config = false;
+            for (file, format) in &config_files {
+                let source = config::File::from(config_path.join(file))
+                    .format(*format)
+                    .required(false);
+                builder = builder.add_source(source);
+                if config_path.join(file).exists() {
+                    found_config = true;
+                }
             }
-        }
-
-        if !found_config && !cfg!(test) {
-            info!(
-                "No configuration file found.\nCreate one at {config_dir:?} or generate one using `vault-tasks generate-config`");
-        }
+            if !found_config && !cfg!(test) {
+                info!(
+                    "No configuration file found.\nCreate one at {config_path:?} or generate one using `vault-tasks generate-config`");
+            }
+            builder
+        };
 
         let mut cfg: Self = builder.build()?.try_deserialize()?;
 
