@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.11.2](https://github.com/louis-thevenet/vault-tasks/compare/v0.11.1...v0.11.2) (2025-05-30)
+
+
+### Bug Fixes
+
+* **calendar:** print previewed date instead of selected date ([f245e43](https://github.com/louis-thevenet/vault-tasks/commit/f245e4362af0c6449450d2172b11eb4e227df1bb))
+* **config:** --config flag not always registering the provided file/path ([d231d46](https://github.com/louis-thevenet/vault-tasks/commit/d231d46ffb1d1083205386b466820be8144cabd8))
+* **config:** pretty symbols did not fall back to default when deserializing config ([1a2dc32](https://github.com/louis-thevenet/vault-tasks/commit/1a2dc32cafd7f518120049c7915e772180f328db))
+* **tasks:** improve relative dates generation ([b48af62](https://github.com/louis-thevenet/vault-tasks/commit/b48af62fcd4fb7a2d4f4ab5f0a1479202292e123))
+
 ## [0.11.1](https://github.com/louis-thevenet/vault-tasks/compare/v0.11.0...v0.11.1) (2025-05-18)
 
 
