@@ -171,7 +171,7 @@ impl Config {
             .is_some_and(str::is_empty)
         {
             return Err(ConfigError::Message(
-                "No vault path provided and no default path set in config".to_string(),
+                "No vault path provided (use `--vault-path <PATH>`) and no default path set in config file".to_string(),
             ));
         }
         if !self.tasks_config.vault_path.exists() && !cfg!(test) {
