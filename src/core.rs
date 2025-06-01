@@ -161,60 +161,6 @@ impl TaskManager {
             }
         }
     }
-    /// Follows a path and returns every `VaultData` that are on the target layer, discarding every children.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the path can't be resolved.
-    pub fn get_path_layer_entries(&self, path: &[String]) -> Result<Vec<VaultData>> {
-        Ok(self
-            .get_explorer_entries(path)?
-            .iter()
-            .map(|vd| match vd {
-                VaultData::Directory(name, _) => VaultData::Directory(name.clone(), vec![]),
-                VaultData::Header(level, name, _) => {
-                    VaultData::Header(*level, name.clone(), vec![])
-                }
-                VaultData::Task(t) => {
-                    let mut t = t.clone();
-                    t.subtasks = vec![];
-                    VaultData::Task(t)
-                }
-            })
-            .collect::<Vec<VaultData>>())
-    }
-
-    /// Recursively calls `Task.fix_task_attributes` on every task from the vault.
-    fn rewrite_vault_tasks(config: &TasksConfig, tasks: &VaultData) -> Result<()> {
-        fn explore_tasks_rec(
-            config: &TasksConfig,
-            filename: &mut PathBuf,
-            file_entry: &VaultData,
-        ) -> Result<()> {
-            match file_entry {
-                VaultData::Header(_, _, children) => {
-                    children
-                        .iter()
-                        .try_for_each(|c| explore_tasks_rec(config, filename, c))?;
-                }
-                VaultData::Task(task) => {
-                    task.fix_task_attributes(config, filename)?;
-                    task.subtasks
-                        .iter()
-                        .try_for_each(|t| t.fix_task_attributes(config, filename))?;
-                }
-                VaultData::Directory(dir_name, children) => {
-                    let mut filename = filename.clone();
-                    filename.push(dir_name);
-                    children
-                        .iter()
-                        .try_for_each(|c| explore_tasks_rec(config, &mut filename.clone(), c))?;
-                }
-            }
-            Ok(())
-        }
-        explore_tasks_rec(config, &mut PathBuf::new(), tasks)
-    }
 
     /// Follows the `selected_header_path` to retrieve the correct `VaultData`.
     /// Then returns every `VaultData` objects on the same layer.
@@ -272,17 +218,66 @@ impl TaskManager {
         }
     }
 
-    /// Follows the `selected_header_path` to retrieve the correct `VaultData`.
-    /// Returns a vector of `VaultData` with the items to display in TUI, preserving the recursive nature.
-    /// `task_preview_offset`: add offset to return a task instead of one of its subtasks
+    /// Same as `get_explorer_entries`, but discards any children of the entries.
     ///
     /// # Errors
-    /// Will return an error if
-    /// - vault is empty or the first layer is not a `VaultData::Directory`
-    /// - the path can't be resolved in the vault data
+    ///
+    /// This function will return an error if the path can't be resolved.
+    pub fn get_explorer_entries_without_children(&self, path: &[String]) -> Result<Vec<VaultData>> {
+        Ok(self
+            .get_explorer_entries(path)? // Get the entries at the path
+            .iter() // Discard every children
+            .map(|vd| match vd {
+                VaultData::Directory(name, _) => VaultData::Directory(name.clone(), vec![]),
+                VaultData::Header(level, name, _) => {
+                    VaultData::Header(*level, name.clone(), vec![])
+                }
+                VaultData::Task(t) => {
+                    let mut t = t.clone();
+                    t.subtasks = vec![]; // Discard subtasks
+                    VaultData::Task(t)
+                }
+            })
+            .collect::<Vec<VaultData>>())
+    }
+
+    /// Recursively calls `Task.fix_task_attributes` on every task from the vault.
+    fn rewrite_vault_tasks(config: &TasksConfig, tasks: &VaultData) -> Result<()> {
+        fn explore_tasks_rec(
+            config: &TasksConfig,
+            filename: &mut PathBuf,
+            file_entry: &VaultData,
+        ) -> Result<()> {
+            match file_entry {
+                VaultData::Header(_, _, children) => {
+                    children
+                        .iter()
+                        .try_for_each(|c| explore_tasks_rec(config, filename, c))?;
+                }
+                VaultData::Task(task) => {
+                    task.fix_task_attributes(config, filename)?;
+                    task.subtasks
+                        .iter()
+                        .try_for_each(|t| t.fix_task_attributes(config, filename))?;
+                }
+                VaultData::Directory(dir_name, children) => {
+                    let mut filename = filename.clone();
+                    filename.push(dir_name);
+                    children
+                        .iter()
+                        .try_for_each(|c| explore_tasks_rec(config, &mut filename.clone(), c))?;
+                }
+            }
+            Ok(())
+        }
+        explore_tasks_rec(config, &mut PathBuf::new(), tasks)
+    }
+
+    /// Retrieves the `VaultData` at the given `path`, and returns every entries on the same layer.
+    /// The `task_preview_offset` allows to retrieve the task itself (if it is a task) or its subtasks.
     pub fn get_vault_data_from_path(
         &self,
-        selected_header_path: &[String],
+        path: &[String],
         task_preview_offset: usize,
     ) -> Result<Vec<VaultData>> {
         fn aux(
@@ -291,6 +286,7 @@ impl TaskManager {
             path_index: usize,
             task_preview_offset: usize,
         ) -> Result<Vec<VaultData>> {
+            // Remaining path is empty?
             if path_index == selected_header_path.len() {
                 Ok(vec![file_entry])
             } else {
@@ -298,6 +294,7 @@ impl TaskManager {
                     VaultData::Directory(name, children) | VaultData::Header(_, name, children) => {
                         if name == selected_header_path[path_index] {
                             let mut res = vec![];
+                            // Look for the child that matches the path
                             for child in children {
                                 if let Ok(mut found) = aux(
                                     child,
@@ -306,10 +303,12 @@ impl TaskManager {
                                     task_preview_offset,
                                 ) {
                                     res.append(&mut found);
+                                    // I'm tempted to break here but we might have multiple entries with the same name
                                 }
                             }
                             Ok(res)
                         } else {
+                            // Either it's the first layer and the path is wrong or we recursively called on the wrong entry which is impossible
                             bail!("Couldn't find corresponding entry");
                         }
                     }
@@ -348,7 +347,7 @@ impl TaskManager {
         match filtered_tasks {
             Some(VaultData::Directory(_, entries)) => {
                 for entry in entries {
-                    if let Ok(res) = aux(entry, selected_header_path, 0, task_preview_offset) {
+                    if let Ok(res) = aux(entry, path, 0, task_preview_offset) {
                         return Ok(res);
                     }
                 }

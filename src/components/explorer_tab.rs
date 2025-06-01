@@ -74,21 +74,23 @@ impl ExplorerTab<'_> {
             // Vault root
             self.entries_left_view = vec![];
         } else {
-            self.entries_left_view = match self
-                .task_mgr
-                .get_path_layer_entries(&self.current_path[0..self.current_path.len() - 1])
-            {
+            self.entries_left_view = match self.task_mgr.get_explorer_entries_without_children(
+                &self.current_path[0..self.current_path.len() - 1],
+            ) {
                 Ok(res) => Self::vault_data_to_entry_list(&res),
                 Err(e) => vec![(String::from(WARNING_EMOJI), (e.to_string()))],
             };
         }
-        self.entries_center_view = match self.task_mgr.get_path_layer_entries(&self.current_path) {
+        self.entries_center_view = match self
+            .task_mgr
+            .get_explorer_entries_without_children(&self.current_path)
+        {
             Ok(res) => Self::vault_data_to_entry_list(&res),
             Err(_e) => {
                 // If no entries are found, go to parent object
                 while self
                     .task_mgr
-                    .get_path_layer_entries(&self.current_path)
+                    .get_explorer_entries_without_children(&self.current_path)
                     .is_err()
                     && !self.current_path.is_empty()
                 {
@@ -97,7 +99,7 @@ impl ExplorerTab<'_> {
                 Self::vault_data_to_entry_list(
                     &self
                         .task_mgr
-                        .get_path_layer_entries(&self.current_path)
+                        .get_explorer_entries_without_children(&self.current_path)
                         .unwrap_or_default(),
                 )
             }
@@ -254,7 +256,7 @@ impl ExplorerTab<'_> {
                 Self::apply_prefixes(&Self::vault_data_to_entry_list(
                     &self
                         .task_mgr
-                        .get_path_layer_entries(
+                        .get_explorer_entries_without_children(
                             &self
                                 .get_preview_path()
                                 .unwrap_or_else(|_| self.current_path.clone()),
