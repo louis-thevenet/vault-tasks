@@ -275,65 +275,56 @@ impl TaskManager {
     /// Retrieves the `VaultData` at the given `path`, and returns the entries to display.
     ///
     /// If the path ends with a task, the `task_preview_offset` parameter determines whether the function should return the task itself or its content (subtasks) as with directories and headers.
-    pub fn get_vault_data_from_path(&self, path: &[String]) -> Result<Vec<VaultData>> {
+    pub fn get_vault_data_from_path(&self, path: &[String]) -> Result<VaultData> {
         /// Recursively searches for the entry in the vault.
         /// `path_index` is the index of the current path element we are looking for.
         fn aux(
             file_entry: VaultData,
             selected_header_path: &[String],
             path_index: usize,
-        ) -> Result<Vec<VaultData>> {
+        ) -> Result<VaultData> {
             // Remaining path is empty?
             if path_index == selected_header_path.len() {
-                Ok(vec![file_entry])
+                Ok(file_entry)
             } else {
                 match &file_entry {
                     // Both variants are very similar
                     VaultData::Header(_, name, children) | VaultData::Directory(name, children) => {
                         if *name == selected_header_path[path_index] {
-                            let mut res = vec![];
                             if path_index + 1 == selected_header_path.len() {
-                                res.push(file_entry.clone());
-                            } else {
-                                // Look for the child that matches the path
-                                for child in children {
-                                    if let Ok(mut found) =
-                                        aux(child.clone(), selected_header_path, path_index + 1)
-                                    {
-                                        res.append(&mut found);
-                                        // I'm tempted to break here but we might have multiple entries with the same name
-                                    }
+                                return Ok(file_entry.clone());
+                            }
+                            // Look for the child that matches the path
+                            for child in children {
+                                if let Ok(found) =
+                                    aux(child.clone(), selected_header_path, path_index + 1)
+                                {
+                                    return Ok(found);
+                                    // I'm tempted to break here but we might have multiple entries with the same name
                                 }
                             }
-                            Ok(res)
-                        } else {
-                            // Either it's the first layer and the path is wrong or we recursively called on the wrong entry which is impossible
-                            bail!("Couldn't find corresponding entry");
                         }
+                        // Either it's the first layer and the path is wrong or we recursively called on the wrong entry which is impossible
+                        bail!("Couldn't find corresponding entry");
                     }
                     VaultData::Task(task) => {
                         if task.name == selected_header_path[path_index] {
-                            let mut res = vec![];
-
                             // If we are at the end of the path, we return the task itself
                             // This depends on the `task_preview_offset` parameter
                             if path_index + 1 == selected_header_path.len() {
-                                res.push(VaultData::Task(task.clone()));
-                            } else {
-                                for child in &task.subtasks {
-                                    if let Ok(mut found) = aux(
-                                        VaultData::Task(child.clone()),
-                                        selected_header_path,
-                                        path_index + 1,
-                                    ) {
-                                        res.append(&mut found);
-                                    }
+                                return Ok(file_entry.clone());
+                            }
+                            for child in &task.subtasks {
+                                if let Ok(found) = aux(
+                                    VaultData::Task(child.clone()),
+                                    selected_header_path,
+                                    path_index + 1,
+                                ) {
+                                    return Ok(found);
                                 }
                             }
-                            Ok(res)
-                        } else {
-                            bail!("Couldn't find corresponding entry");
                         }
+                        bail!("Couldn't find corresponding entry");
                     }
                 }
             }
@@ -348,7 +339,6 @@ impl TaskManager {
             Some(VaultData::Directory(_, entries)) => {
                 for entry in entries {
                     if let Ok(res) = aux(entry, path, 0) {
-                        // debug_assert!(res.len() <= 1, "Found multiple entries for the same path");
                         return Ok(res);
                     }
                 }
@@ -478,11 +468,11 @@ mod tests {
 
         let path = vec![String::from("Test"), String::from("1"), String::from("2")];
         let res = task_mgr.get_vault_data_from_path(&path).unwrap();
-        assert_eq!(vec![expected_header], res);
+        assert_eq!(expected_header, res);
 
         let path = vec![String::from("Test"), String::from("1.2"), String::from("4")];
         let res = task_mgr.get_vault_data_from_path(&path).unwrap();
         let expected_header = VaultData::Header(2, "4".to_string(), expected_tasks.clone());
-        assert_eq!(vec![expected_header], res);
+        assert_eq!(expected_header, res);
     }
 }

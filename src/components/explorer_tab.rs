@@ -124,7 +124,7 @@ impl ExplorerTab<'_> {
         };
 
         self.entries_right_view = match self.task_mgr.get_vault_data_from_path(&path_to_preview) {
-            Ok(res) => res,
+            Ok(res) => vec![res],
             Err(e) => vec![VaultData::Directory(e.to_string(), vec![])],
         };
         self.task_list_widget_state.scroll_up();
@@ -396,9 +396,11 @@ impl Component for ExplorerTab<'_> {
                     // We're already sure it exists since we entered the task editing mode
                     if let VaultData::Task(task) = self
                         .task_mgr
-                        .get_vault_data_from_path(&self.current_path)
-                        .unwrap()[self.state_center_view.selected.unwrap_or_default()]
-                    .clone()
+                        .get_vault_data_from_path(
+                            &self.get_preview_path().unwrap_or(self.current_path.clone()),
+                        )
+                        .unwrap()
+                        .clone()
                     {
                         // Get input
                         let mut input = self.edit_task_bar.input.value();

@@ -120,13 +120,8 @@ impl ExplorerTab<'_> {
         };
         debug!("Getting selected task from current path: {:?}", path);
 
-        let Ok(entries) = self.task_mgr.get_vault_data_from_path(&path) else {
+        let Ok(entry) = self.task_mgr.get_vault_data_from_path(&path) else {
             error!("Error while collecting tasks from path");
-            return None;
-        };
-
-        let Some(entry) = entries.first() else {
-            error!("No entries found in path: {:?}", path);
             return None;
         };
 
