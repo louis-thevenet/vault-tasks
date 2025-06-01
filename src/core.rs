@@ -272,12 +272,10 @@ impl TaskManager {
         }
         explore_tasks_rec(config, &mut PathBuf::new(), tasks)
     }
-
     /// Retrieves the `VaultData` at the given `path`, and returns the entries to display.
     ///
-    ///  We want to display it the in the Explorer Preview instead of displaying its content as with headers or directories, so we use an offset to return the task the path points to instead of its subtasks.
-    /// The offset is set to false when we want to retrieve the task for editing for example.
-    pub fn get_vault_data_from_path(
+    /// If the path ends with a task, the `task_preview_offset` parameter determines whether the function should return the task itself or its content (subtasks) as with directories and headers.
+    fn get_vault_data_from_path_offset(
         &self,
         path: &[String],
         task_preview_offset: bool,
@@ -368,6 +366,14 @@ impl TaskManager {
                 bail!("Empty Vault")
             }
         }
+    }
+
+    pub fn get_vault_data_from_path(&self, path: &[String]) -> Result<Vec<VaultData>> {
+        Self::get_vault_data_from_path_offset(self, path, false)
+    }
+    /// Retrieves the `VaultData` at the given `path`, and returns the entries to display.
+    pub fn get_vault_data_from_path_to_preview(&self, path: &[String]) -> Result<Vec<VaultData>> {
+        Self::get_vault_data_from_path_offset(self, path, true)
     }
 
     /// Whether the path resolves to something that can be entered or not.
@@ -497,7 +503,7 @@ mod tests {
         };
 
         let path = vec![String::from("Test"), String::from("1"), String::from("2")];
-        let res = task_mgr.get_vault_data_from_path(&path, false).unwrap();
+        let res = task_mgr.get_vault_data_from_path(&path).unwrap();
         assert_eq!(vec![expected_header], res);
 
         let path = vec![
@@ -506,7 +512,7 @@ mod tests {
             String::from("2"),
             String::from("3"),
         ];
-        let res = task_mgr.get_vault_data_from_path(&path, false).unwrap();
+        let res = task_mgr.get_vault_data_from_path(&path).unwrap();
         assert_eq!(expected_tasks, res);
     }
 }

@@ -111,10 +111,7 @@ impl ExplorerTab<'_> {
         path
     }
     pub(super) fn get_selected_task(&self) -> Option<Task> {
-        let Ok(entries) = self
-            .task_mgr
-            .get_vault_data_from_path(&self.current_path, false)
-        else {
+        let Ok(entries) = self.task_mgr.get_vault_data_from_path(&self.current_path) else {
             error!("Error while collecting tasks from path");
             return None;
         };
