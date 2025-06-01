@@ -123,10 +123,7 @@ impl ExplorerTab<'_> {
             return;
         };
 
-        self.entries_right_view = match self
-            .task_mgr
-            .get_vault_data_from_path_offset(&path_to_preview)
-        {
+        self.entries_right_view = match self.task_mgr.get_vault_data_from_path(&path_to_preview) {
             Ok(res) => res,
             Err(e) => vec![VaultData::Directory(e.to_string(), vec![])],
         };
@@ -399,7 +396,7 @@ impl Component for ExplorerTab<'_> {
                     // We're already sure it exists since we entered the task editing mode
                     if let VaultData::Task(task) = self
                         .task_mgr
-                        .get_vault_data_from_path_offset(&self.current_path)
+                        .get_vault_data_from_path(&self.current_path)
                         .unwrap()[self.state_center_view.selected.unwrap_or_default()]
                     .clone()
                     {

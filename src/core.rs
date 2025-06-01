@@ -275,7 +275,7 @@ impl TaskManager {
     /// Retrieves the `VaultData` at the given `path`, and returns the entries to display.
     ///
     /// If the path ends with a task, the `task_preview_offset` parameter determines whether the function should return the task itself or its content (subtasks) as with directories and headers.
-    pub fn get_vault_data_from_path_offset(&self, path: &[String]) -> Result<Vec<VaultData>> {
+    pub fn get_vault_data_from_path(&self, path: &[String]) -> Result<Vec<VaultData>> {
         /// Recursively searches for the entry in the vault.
         /// `path_index` is the index of the current path element we are looking for.
         fn aux(
@@ -512,7 +512,7 @@ mod tests {
         };
 
         let path = vec![String::from("Test"), String::from("1"), String::from("2")];
-        let res = task_mgr.get_vault_data_from_path_offset(&path).unwrap();
+        let res = task_mgr.get_vault_data_from_path(&path).unwrap();
         assert_eq!(vec![expected_header], res);
 
         let path = vec![
@@ -521,7 +521,7 @@ mod tests {
             String::from("2"),
             String::from("3"),
         ];
-        let res = task_mgr.get_vault_data_from_path_offset(&path).unwrap();
+        let res = task_mgr.get_vault_data_from_path(&path).unwrap();
         assert_eq!(expected_tasks, res);
     }
 }

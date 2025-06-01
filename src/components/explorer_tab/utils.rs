@@ -7,7 +7,7 @@ use color_eyre::eyre::bail;
 use color_eyre::Result;
 use std::cmp::Ordering;
 use std::path::PathBuf;
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 impl ExplorerTab<'_> {
     pub(super) fn apply_prefixes(entries: &[(String, String)]) -> Vec<String> {
@@ -111,20 +111,27 @@ impl ExplorerTab<'_> {
         path
     }
     pub(super) fn get_selected_task(&self) -> Option<Task> {
-        let Ok(entries) = self
-            .task_mgr
-            .get_vault_data_from_path_offset(&self.current_path)
-        else {
+        let path = match self.get_preview_path() {
+            Ok(path) => path,
+            Err(e) => {
+                error!("Error while getting path for selected task: {}", e);
+                return None;
+            }
+        };
+        debug!("Getting selected task from current path: {:?}", path);
+
+        let Ok(entries) = self.task_mgr.get_vault_data_from_path(&path) else {
             error!("Error while collecting tasks from path");
             return None;
         };
-        if entries.len() <= self.state_center_view.selected.unwrap_or_default() {
-            error!("No task selected: Index of selected entry > list of entries");
+
+        let Some(entry) = entries.first() else {
+            error!("No entries found in path: {:?}", path);
             return None;
-        }
-        let entry = entries[self.state_center_view.selected.unwrap_or_default()].clone();
+        };
+
         if let VaultData::Task(task) = entry {
-            Some(task)
+            Some(task.clone())
         } else {
             info!("Selected object is not a Task");
             None
