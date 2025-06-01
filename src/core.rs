@@ -288,31 +288,8 @@ impl TaskManager {
                 Ok(vec![file_entry])
             } else {
                 match &file_entry {
-                    // No offset for directories? TODO: unify these behaviors
-                    VaultData::Directory(name, children) => {
-                        if *name == selected_header_path[path_index] {
-                            let mut res = vec![];
-                            if path_index == selected_header_path.len() {
-                                res.push(file_entry.clone());
-                            } else {
-                                // Look for the child that matches the path
-                                for child in children {
-                                    if let Ok(mut found) =
-                                        aux(child.clone(), selected_header_path, path_index + 1)
-                                    {
-                                        res.append(&mut found);
-                                        // I'm tempted to break here but we might have multiple entries with the same name
-                                    }
-                                }
-                            }
-                            Ok(res)
-                        } else {
-                            // Either it's the first layer and the path is wrong or we recursively called on the wrong entry which is impossible
-                            bail!("Couldn't find corresponding entry");
-                        }
-                    }
-
-                    VaultData::Header(_, name, children) => {
+                    // Both variants are very similar
+                    VaultData::Header(_, name, children) | VaultData::Directory(name, children) => {
                         if *name == selected_header_path[path_index] {
                             let mut res = vec![];
                             if path_index + 1 == selected_header_path.len() {
@@ -371,6 +348,7 @@ impl TaskManager {
             Some(VaultData::Directory(_, entries)) => {
                 for entry in entries {
                     if let Ok(res) = aux(entry, path, 0) {
+                        // debug_assert!(res.len() <= 1, "Found multiple entries for the same path");
                         return Ok(res);
                     }
                 }
@@ -468,7 +446,7 @@ mod tests {
                 ..Default::default()
             }),
         ];
-        let expected_header = VaultData::Header(3, "3".to_string(), expected_tasks.clone());
+        let expected_header = VaultData::Header(2, "2".to_string(), vec![]);
         let input = VaultData::Directory(
             "test".to_owned(),
             vec![VaultData::Header(
@@ -478,27 +456,14 @@ mod tests {
                     VaultData::Header(
                         1,
                         "1".to_string(),
-                        vec![VaultData::Header(
-                            2,
-                            "2".to_string(),
-                            vec![expected_header.clone()],
-                        )],
+                        vec![VaultData::Header(2, "2".to_string(), vec![])],
                     ),
                     VaultData::Header(
                         1,
                         "1.2".to_string(),
                         vec![
                             VaultData::Header(3, "3".to_string(), vec![]),
-                            VaultData::Header(
-                                2,
-                                "4".to_string(),
-                                vec![VaultData::Task(Task {
-                                    name: "test".to_string(),
-                                    line_number: 8,
-                                    description: Some("test\ndesc".to_string()),
-                                    ..Default::default()
-                                })],
-                            ),
+                            VaultData::Header(2, "4".to_string(), expected_tasks.clone()),
                         ],
                     ),
                 ],
@@ -515,13 +480,9 @@ mod tests {
         let res = task_mgr.get_vault_data_from_path(&path).unwrap();
         assert_eq!(vec![expected_header], res);
 
-        let path = vec![
-            String::from("Test"),
-            String::from("1"),
-            String::from("2"),
-            String::from("3"),
-        ];
+        let path = vec![String::from("Test"), String::from("1.2"), String::from("4")];
         let res = task_mgr.get_vault_data_from_path(&path).unwrap();
-        assert_eq!(expected_tasks, res);
+        let expected_header = VaultData::Header(2, "4".to_string(), expected_tasks.clone());
+        assert_eq!(vec![expected_header], res);
     }
 }
