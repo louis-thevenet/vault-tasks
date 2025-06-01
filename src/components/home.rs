@@ -2,7 +2,7 @@ use super::Component;
 use crate::{action::Action, app::Mode, config::Config, tui::Tui};
 use color_eyre::Result;
 use ratatui::{prelude::*, widgets::Tabs};
-use strum::{Display, EnumIter, FromRepr, IntoEnumIterator};
+use strum::{Display, EnumCount, EnumIter, FromRepr, IntoEnumIterator};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::error;
 
@@ -101,7 +101,7 @@ impl Component for Home {
     }
 }
 
-#[derive(Default, Clone, Copy, Display, FromRepr, EnumIter)]
+#[derive(Default, Clone, Copy, Display, FromRepr, EnumIter, EnumCount)]
 enum SelectedTab {
     #[default]
     #[strum(to_string = "Explorer")]
@@ -115,17 +115,17 @@ enum SelectedTab {
 }
 
 impl SelectedTab {
-    /// Get the previous tab, if there is no previous tab return the current tab.
+    /// Get the previous tab, wrapping around if there is no previous tab.
     fn previous(self) -> Self {
         let current_index: usize = self as usize;
-        let previous_index = current_index.saturating_sub(1);
+        let previous_index = current_index.wrapping_sub(1) % Self::COUNT;
         Self::from_repr(previous_index).unwrap_or(self)
     }
 
-    /// Get the next tab, if there is no next tab return the current tab.
+    /// Get the next tab, wrapping around if there is no next tab.
     fn next(self) -> Self {
         let current_index = self as usize;
-        let next_index = current_index.saturating_add(1);
+        let next_index = current_index.wrapping_add(1) % Self::COUNT;
         Self::from_repr(next_index).unwrap_or(self)
     }
     fn title(self) -> Line<'static> {
