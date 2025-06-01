@@ -273,18 +273,22 @@ impl TaskManager {
         explore_tasks_rec(config, &mut PathBuf::new(), tasks)
     }
 
-    /// Retrieves the `VaultData` at the given `path`, and returns every entries on the same layer.
-    /// The `task_preview_offset` allows to retrieve the task itself (if it is a task) or its subtasks.
+    /// Retrieves the `VaultData` at the given `path`, and returns the entries to display.
+    ///
+    ///  We want to display it the in the Explorer Preview instead of displaying its content as with headers or directories, so we use an offset to return the task the path points to instead of its subtasks.
+    /// The offset is set to false when we want to retrieve the task for editing for example.
     pub fn get_vault_data_from_path(
         &self,
         path: &[String],
-        task_preview_offset: usize,
+        task_preview_offset: bool,
     ) -> Result<Vec<VaultData>> {
+        /// Recursively searches for the entry in the vault.
+        /// `path_index` is the index of the current path element we are looking for.
         fn aux(
             file_entry: VaultData,
             selected_header_path: &[String],
             path_index: usize,
-            task_preview_offset: usize,
+            task_preview_offset: bool,
         ) -> Result<Vec<VaultData>> {
             // Remaining path is empty?
             if path_index == selected_header_path.len() {
@@ -316,7 +320,11 @@ impl TaskManager {
                         if task.name == selected_header_path[path_index] {
                             let mut res = vec![];
 
-                            if path_index + task_preview_offset == selected_header_path.len() {
+                            // If we are at the end of the path, we return the task itself
+                            // This depends on the `task_preview_offset` parameter
+                            if path_index + usize::from(task_preview_offset)
+                                == selected_header_path.len()
+                            {
                                 res.push(VaultData::Task(task));
                             } else {
                                 for child in task.subtasks {
@@ -489,7 +497,7 @@ mod tests {
         };
 
         let path = vec![String::from("Test"), String::from("1"), String::from("2")];
-        let res = task_mgr.get_vault_data_from_path(&path, 0).unwrap();
+        let res = task_mgr.get_vault_data_from_path(&path, false).unwrap();
         assert_eq!(vec![expected_header], res);
 
         let path = vec![
@@ -498,7 +506,7 @@ mod tests {
             String::from("2"),
             String::from("3"),
         ];
-        let res = task_mgr.get_vault_data_from_path(&path, 0).unwrap();
+        let res = task_mgr.get_vault_data_from_path(&path, false).unwrap();
         assert_eq!(expected_tasks, res);
     }
 }
