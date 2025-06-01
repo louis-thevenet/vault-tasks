@@ -74,21 +74,23 @@ impl ExplorerTab<'_> {
             // Vault root
             self.entries_left_view = vec![];
         } else {
-            self.entries_left_view = match self
-                .task_mgr
-                .get_path_layer_entries(&self.current_path[0..self.current_path.len() - 1])
-            {
+            self.entries_left_view = match self.task_mgr.get_explorer_entries_without_children(
+                &self.current_path[0..self.current_path.len() - 1],
+            ) {
                 Ok(res) => Self::vault_data_to_entry_list(&res),
                 Err(e) => vec![(String::from(WARNING_EMOJI), (e.to_string()))],
             };
         }
-        self.entries_center_view = match self.task_mgr.get_path_layer_entries(&self.current_path) {
+        self.entries_center_view = match self
+            .task_mgr
+            .get_explorer_entries_without_children(&self.current_path)
+        {
             Ok(res) => Self::vault_data_to_entry_list(&res),
             Err(_e) => {
                 // If no entries are found, go to parent object
                 while self
                     .task_mgr
-                    .get_path_layer_entries(&self.current_path)
+                    .get_explorer_entries_without_children(&self.current_path)
                     .is_err()
                     && !self.current_path.is_empty()
                 {
@@ -97,7 +99,7 @@ impl ExplorerTab<'_> {
                 Self::vault_data_to_entry_list(
                     &self
                         .task_mgr
-                        .get_path_layer_entries(&self.current_path)
+                        .get_explorer_entries_without_children(&self.current_path)
                         .unwrap_or_default(),
                 )
             }
@@ -121,9 +123,8 @@ impl ExplorerTab<'_> {
             return;
         };
 
-        self.entries_right_view = match self.task_mgr.get_vault_data_from_path(&path_to_preview, 1)
-        {
-            Ok(res) => res,
+        self.entries_right_view = match self.task_mgr.get_vault_data_from_path(&path_to_preview) {
+            Ok(res) => vec![res],
             Err(e) => vec![VaultData::Directory(e.to_string(), vec![])],
         };
         self.task_list_widget_state.scroll_up();
@@ -254,7 +255,7 @@ impl ExplorerTab<'_> {
                 Self::apply_prefixes(&Self::vault_data_to_entry_list(
                     &self
                         .task_mgr
-                        .get_path_layer_entries(
+                        .get_explorer_entries_without_children(
                             &self
                                 .get_preview_path()
                                 .unwrap_or_else(|_| self.current_path.clone()),
@@ -395,9 +396,11 @@ impl Component for ExplorerTab<'_> {
                     // We're already sure it exists since we entered the task editing mode
                     if let VaultData::Task(task) = self
                         .task_mgr
-                        .get_vault_data_from_path(&self.current_path, 0)
-                        .unwrap()[self.state_center_view.selected.unwrap_or_default()]
-                    .clone()
+                        .get_vault_data_from_path(
+                            &self.get_preview_path().unwrap_or(self.current_path.clone()),
+                        )
+                        .unwrap()
+                        .clone()
                     {
                         // Get input
                         let mut input = self.edit_task_bar.input.value();

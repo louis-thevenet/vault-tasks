@@ -541,7 +541,7 @@ impl ParserFileEntry<'_> {
     }
 
     /// Removes any empty headers from a `FileEntry`
-    fn clean_file_entry(file_entry: &mut VaultData) -> Option<&VaultData> {
+    fn clean_file_entry(file_entry: &mut VaultData) -> Option<VaultData> {
         match file_entry {
             VaultData::Header(_, _, children) | VaultData::Directory(_, children) => {
                 let mut actual_children = vec![];
@@ -553,13 +553,12 @@ impl ParserFileEntry<'_> {
                 }
                 *children = actual_children;
                 if children.is_empty() {
-                    None
-                } else {
-                    Some(file_entry)
+                    return None;
                 }
             }
-            VaultData::Task(_) => Some(file_entry),
+            VaultData::Task(_) => (),
         }
+        Some(file_entry.to_owned())
     }
 
     pub fn parse_file(&mut self, filename: &str, input: &&str) -> Option<VaultData> {
@@ -581,12 +580,7 @@ impl ParserFileEntry<'_> {
             file_tags.iter().for_each(|t| add_global_tag(&mut res, t));
         }
 
-        // Filename is changed from Header to Directory variant at the end
-        if let Some(VaultData::Header(_, name, children)) = Self::clean_file_entry(&mut res) {
-            Some(VaultData::Directory(name.clone(), children.clone()))
-        } else {
-            None
-        }
+        Self::clean_file_entry(&mut res)
     }
 }
 

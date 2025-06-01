@@ -7,7 +7,7 @@ use color_eyre::eyre::bail;
 use color_eyre::Result;
 use std::cmp::Ordering;
 use std::path::PathBuf;
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 impl ExplorerTab<'_> {
     pub(super) fn apply_prefixes(entries: &[(String, String)]) -> Vec<String> {
@@ -19,15 +19,15 @@ impl ExplorerTab<'_> {
 
     fn vault_data_to_prefix_name(vd: &VaultData) -> (String, String) {
         match vd {
-            VaultData::Directory(name, _) => (
+            VaultData::Directory(name, _) => (DIRECTORY_EMOJI.to_owned(), name.clone()),
+            VaultData::Header(level, name, _) => (
                 if name.contains(".md") {
                     FILE_EMOJI.to_owned()
                 } else {
-                    DIRECTORY_EMOJI.to_owned()
+                    "#".repeat(*level).clone()
                 },
                 name.clone(),
             ),
-            VaultData::Header(level, name, _) => ("#".repeat(*level).clone(), name.clone()),
             VaultData::Task(task) => (task.state.to_string(), task.name.clone()),
         }
     }
@@ -111,20 +111,22 @@ impl ExplorerTab<'_> {
         path
     }
     pub(super) fn get_selected_task(&self) -> Option<Task> {
-        let Ok(entries) = self
-            .task_mgr
-            .get_vault_data_from_path(&self.current_path, 0)
-        else {
+        let path = match self.get_preview_path() {
+            Ok(path) => path,
+            Err(e) => {
+                error!("Error while getting path for selected task: {}", e);
+                return None;
+            }
+        };
+        debug!("Getting selected task from current path: {:?}", path);
+
+        let Ok(entry) = self.task_mgr.get_vault_data_from_path(&path) else {
             error!("Error while collecting tasks from path");
             return None;
         };
-        if entries.len() <= self.state_center_view.selected.unwrap_or_default() {
-            error!("No task selected: Index of selected entry > list of entries");
-            return None;
-        }
-        let entry = entries[self.state_center_view.selected.unwrap_or_default()].clone();
+
         if let VaultData::Task(task) = entry {
-            Some(task)
+            Some(task.clone())
         } else {
             info!("Selected object is not a Task");
             None
