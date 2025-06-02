@@ -8,7 +8,7 @@ vergen-gix = {version = "1.0.9", features = ["build", "cargo"]}
 
 [dependencies]
 better-panic = "0.3.0"
-clap = {version = "4.5.38", features = [
+clap = {version = "4.5.39", features = [
   "derive",
   "cargo",
   "wrap_help",
