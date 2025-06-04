@@ -1,11 +1,16 @@
 use color_eyre::{eyre::bail, Result};
 use serde::Deserialize;
+use task::Task;
 
-use std::{collections::HashSet, fmt::Display, path::PathBuf};
+use std::{
+    collections::HashSet,
+    fmt::Display,
+    path::{Path, PathBuf},
+};
 use vault_data::VaultData;
 
 use filter::{filter, Filter};
-use tracing::error;
+use tracing::{debug, error};
 use vault_parser::VaultParser;
 
 pub mod filter;
@@ -90,6 +95,8 @@ pub struct TasksConfig {
     #[serde(default)]
     pub vault_path: PathBuf,
     #[serde(default)]
+    pub tasks_drop_file: String,
+    #[serde(default)]
     pub explorer_default_search_string: String,
     #[serde(default)]
     pub filter_default_search_string: String,
@@ -101,6 +108,7 @@ pub struct TasksConfig {
 
 pub struct TaskManager {
     pub tasks: VaultData,
+    config: TasksConfig,
     pub tags: HashSet<String>,
     pub current_filter: Option<Filter>,
 }
@@ -110,6 +118,7 @@ impl Default for TaskManager {
             tasks: VaultData::Directory("Empty Vault".to_owned(), vec![]),
             tags: HashSet::new(),
             current_filter: None,
+            config: TasksConfig::default(),
         }
     }
 }
@@ -131,6 +140,7 @@ impl TaskManager {
     ///
     /// This function will return an error if the vault can't be parsed, or if tasks can't be fixed (relative dates are replaced by fixed dates for example).
     pub fn reload(&mut self, config: &TasksConfig) -> Result<()> {
+        self.config = config.clone();
         let vault_parser = VaultParser::new(config.clone());
         let tasks = vault_parser.scan_vault()?;
 
@@ -397,6 +407,109 @@ impl TaskManager {
         entries
             .iter()
             .any(|e| aux(e.clone(), selected_header_path, 0))
+    }
+
+    pub fn add_task(&mut self, task_desc: &str, path: &[String]) -> Result<()> {
+        /// Recursively searches for the entry in the vault.
+        /// `path_index` is the index of the current path element we are looking for.
+        fn aux(
+            file_entry: &mut VaultData,
+            selected_header_path: &[String],
+            path_index: usize,
+            new_task: Task,
+        ) -> Result<()> {
+            match file_entry {
+                VaultData::Directory(name, children) => {
+                    debug!(
+                        "checking {name} against {}",
+                        selected_header_path[path_index]
+                    );
+                    if *name == selected_header_path[path_index] {
+                        if path_index + 1 == selected_header_path.len() {
+                            bail!("Tried to add the new task to a directory.")
+                        }
+                        // Look for the child that matches the path
+                        for child in children {
+                            if let Ok(()) = aux(
+                                child,
+                                selected_header_path,
+                                path_index + 1,
+                                new_task.clone(),
+                            ) {
+                                return Ok(());
+                                // I'm tempted to break here but we might have multiple entries with the same name
+                            }
+                        }
+                    }
+                    // Either it's the first layer and the path is wrong or we recursively called on the wrong entry which is impossible
+                    bail!("Couldn't find corresponding entry");
+                }
+                VaultData::Header(_, name, children) => {
+                    debug!(
+                        "checking {name} against {}",
+                        selected_header_path[path_index]
+                    );
+                    if *name == selected_header_path[path_index] {
+                        if path_index + 1 == selected_header_path.len() {
+                            debug! {"Adding task to {name} at index {path_index}"
+                            };
+
+                            children.push(VaultData::Task(new_task.clone()));
+                            return Ok(());
+                        }
+                        // Look for the child that matches the path
+                        for child in children {
+                            if let Ok(()) = aux(
+                                child,
+                                selected_header_path,
+                                path_index + 1,
+                                new_task.clone(),
+                            ) {
+                                return Ok(());
+                                // I'm tempted to break here but we might have multiple entries with the same name
+                            }
+                        }
+                    }
+                    // Either it's the first layer and the path is wrong or we recursively called on the wrong entry which is impossible
+                    bail!("Couldn't find corresponding entry");
+                }
+                VaultData::Task(task) => {
+                    if task.name == selected_header_path[path_index] {
+                        if path_index + 1 == selected_header_path.len() {
+                            task.subtasks.push(new_task);
+                            return Ok(());
+                        }
+                        for child in &task.subtasks {
+                            if let Ok(()) = aux(
+                                &mut VaultData::Task(child.clone()),
+                                selected_header_path,
+                                path_index + 1,
+                                new_task.clone(),
+                            ) {
+                                return Ok(());
+                            }
+                        }
+                    }
+                    bail!("Couldn't find corresponding entry");
+                }
+            }
+        }
+        let vault_parser = VaultParser::new(self.config.clone());
+        let filename = path
+            .iter()
+            .find(|f| {
+                Path::new(f)
+                    .extension()
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
+            })
+            .unwrap();
+        let task = vault_parser.parse_single_task(task_desc, filename)?;
+
+        debug!("{task:?}");
+        // aux(&mut self.tasks, path, 0, task.clone())
+        //     .and_then(|()| Self::rewrite_vault_tasks(&self.config, &self.tasks))
+        aux(&mut self.tasks, path, 0, task.clone());
+        Self::rewrite_vault_tasks(&self.config, &self.tasks)
     }
 }
 impl Display for TaskManager {

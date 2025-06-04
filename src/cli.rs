@@ -4,7 +4,7 @@ use clap::{ArgAction, Parser, Subcommand};
 
 use crate::config::{get_config_dir, get_data_dir};
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[command(author, version = version(), about)]
 pub struct Cli {
     /// Vault to open (can be a single file or a directory)
@@ -44,6 +44,13 @@ pub enum Commands {
     GenerateConfig { path: Option<PathBuf> },
     /// Write tasks to STDOUT
     Stdout,
+    /// Creates a new task
+    #[command(alias = "task")]
+    NewTask {
+        description: String,
+        #[arg(short, long, value_name = "PATH")]
+        path: Option<String>,
+    },
 }
 
 const VERSION_MESSAGE: &str = env!("CARGO_PKG_VERSION");

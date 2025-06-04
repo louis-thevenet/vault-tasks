@@ -346,6 +346,9 @@ impl Task {
     }
 
     pub fn fix_task_attributes(&self, config: &TasksConfig, path: &PathBuf) -> Result<()> {
+        if !path.is_file() {
+            bail!("Tried to fix tasks attributes but {path:?} is not a file");
+        }
         let content = read_to_string(path.clone())?;
         let mut lines = content.split('\n').collect::<Vec<&str>>();
 

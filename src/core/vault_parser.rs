@@ -7,7 +7,7 @@ use tracing::{debug, info};
 
 use crate::core::{parser::parser_file_entry::ParserFileEntry, TasksConfig};
 
-use super::vault_data::VaultData;
+use super::{task::Task, vault_data::VaultData};
 
 pub struct VaultParser {
     config: TasksConfig,
@@ -23,6 +23,31 @@ impl VaultParser {
         info!("Scanning {:?}", self.config.vault_path);
         self.scan(&self.config.vault_path, &mut tasks)?;
         Ok(tasks)
+    }
+    pub fn parse_single_task(&self, task: &str, filename: &str) -> Result<Task> {
+        let mut parser = ParserFileEntry {
+            config: &self.config,
+            filename: filename.to_string(),
+        };
+        debug!("{task}");
+        match parser.parse_file(filename, &task) {
+            Some(VaultData::Task(_)) => {
+                bail!("Failed to parse task: {task}, should have been a header then the task")
+            }
+
+            Some(VaultData::Header(_, _, content)) => {
+                // Files are always parsed as Headers
+                if content.len() != 1 {
+                    bail!("Expected single task in header, got: {content:?}");
+                } else if let Some(VaultData::Task(t)) = content.first() {
+                    Ok(t.clone())
+                } else {
+                    bail!("Expected task in header, got: {content:?}");
+                }
+            }
+
+            _ => bail!("Failed to parse task: {task}"),
+        }
     }
 
     fn scan(&self, path: &Path, tasks: &mut VaultData) -> Result<()> {
