@@ -40,7 +40,11 @@ impl VaultParser {
                 if content.len() != 1 {
                     bail!("Expected single task in header, got: {content:?}");
                 } else if let Some(VaultData::Task(t)) = content.first() {
-                    Ok(t.clone())
+                    let res = Task {
+                        line_number: None, // Explicitly set to None, as it's not from a file
+                        ..t.clone()
+                    };
+                    Ok(res)
                 } else {
                     bail!("Expected task in header, got: {content:?}");
                 }
