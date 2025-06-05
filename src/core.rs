@@ -259,10 +259,14 @@ impl TaskManager {
             file_entry: &VaultData,
         ) -> Result<()> {
             match file_entry {
-                VaultData::Header(_, _, children) => {
+                VaultData::Header(level, name, children) => {
+                    let mut filename = filename.clone();
+                    if *level == 0 {
+                        filename.push(name);
+                    }
                     children
                         .iter()
-                        .try_for_each(|c| explore_tasks_rec(config, filename, c))?;
+                        .try_for_each(|c| explore_tasks_rec(config, &mut filename, c))?;
                 }
                 VaultData::Task(task) => {
                     task.fix_task_attributes(config, filename)?;

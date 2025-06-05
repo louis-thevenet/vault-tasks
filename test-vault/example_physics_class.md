@@ -11,14 +11,14 @@ Thanks chat GPT.
 
 Entropy is a fundamental concept in thermodynamics that quantifies the amount of disorder or randomness in a system. It reflects the number of microscopic configurations that correspond to a thermodynamic system's macroscopic state.
 
-- [x] Review the definition of entropy in the textbook (Chapter 1) #reading p2
+- [x] Review the definition of entropy in the textbook (Chapter 1) p2 #reading
       From Chapter 1, section 1.3. Statistical mechanics perspective
 
   - [x] Read section 1.3 on statistical interpretation
   - [x] Highlight key formulas
   - [x] Take notes in margin
 
-- [x] Summarize the key points about entropy in your own words #revision p3
+- [x] Summarize the key points about entropy in your own words p3 #revision
       Turn notes into a summary paragraph
   - [x] Write a paragraph summary
   - [x] Compare entropy in gases vs solids
@@ -37,7 +37,7 @@ The second law states that the total entropy of an isolated system can never dec
   - [x] Gas expansion in vacuum
   - [x] Heat transfer between bodies
 
-- [ ] Create a diagram showing entropy increase in a closed system #visual c60 p1 friday
+- [ ] Create a diagram showing entropy increase in a closed system 2025/06/06 c60 p1 #visual
       Use drawing software and add a caption
   - [ ] Sketch on paper
   - [/] Redraw neatly in drawing software c60
@@ -51,7 +51,7 @@ The second law states that the total entropy of an isolated system can never dec
 
 Entropy has practical implications in various fields, including information theory, cosmology, and chemical reactions.
 
-- [ ] Research how entropy applies to information theory #research c20 p2 tomorrow
+- [ ] Research how entropy applies to information theory 2025/06/06 c20 p2 #research
       Add at least one quote or diagram
 
   - [ ] Look up Shannon entropy
@@ -67,28 +67,22 @@ Entropy has practical implications in various fields, including information theo
 
 ## 📝 Homework Tasks
 
-- [ ] Complete problem set 4 on entropy #homework p1 2025/04/25
+- [ ] Complete problem set 4 on entropy 2025/04/25 p1 #homework
       Includes multiple choice and theory questions
 
   - [ ] Do questions 1–3
   - [ ] Do questions 4–6 (challenging)
   - [ ] Review with classmate
 
-- [ ] Prepare a 5-minute presentation on entropy for next class #presentation p2 monday
+- [ ] Prepare a 5-minute presentation on entropy for next class 2025/06/09 p2 #presentation
       Slides + dry run + timer
 
   - [ ] Create slides
   - [ ] Practice once
   - [ ] Time the presentation
 
-- [ ] Quiz on entropy concepts scheduled #quiz 2025/04/29
+- [ ] Quiz on entropy concepts scheduled 2025/04/29 #quiz
       Closed book format
   - [ ] Review notes
   - [ ] Solve past quiz
   - [ ] Make a cheat sheet (if allowed)
-
----
-
-## 🗂️ Tags
-
-#physics #entropy #thermodynamics #homework #chemistry #research #presentation #reading #revision #visual #examples
