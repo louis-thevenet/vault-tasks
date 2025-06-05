@@ -535,19 +535,19 @@ mod tests {
         let expected_tasks = vec![
             VaultData::Task(Task {
                 name: "test".to_string(),
-                line_number: 8,
+                line_number: Some(8),
                 description: Some("test\ndesc".to_string()),
                 ..Default::default()
             }),
             VaultData::Task(Task {
                 name: "test".to_string(),
-                line_number: 8,
+                line_number: Some(8),
                 description: Some("test\ndesc".to_string()),
                 ..Default::default()
             }),
             VaultData::Task(Task {
                 name: "test".to_string(),
-                line_number: 8,
+                line_number: Some(8),
                 description: Some("test\ndesc".to_string()),
                 ..Default::default()
             }),

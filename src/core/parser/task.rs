@@ -155,7 +155,7 @@ mod test {
             due_date: DueDate::Day(NaiveDate::from_ymd_opt(year, 10, 15).unwrap()),
             priority: 0,
             state: State::Done,
-            line_number: 1,
+            line_number: Some(1),
             ..Default::default()
         };
         assert_eq!(res, expected);
@@ -176,7 +176,7 @@ mod test {
             due_date: DueDate::NoDate,
             priority: 0,
             state: State::ToDo,
-            line_number: 1,
+            line_number: Some(1),
             filename: String::new(),
             is_today: false,
             completion: None,
