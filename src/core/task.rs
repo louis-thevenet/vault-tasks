@@ -384,8 +384,10 @@ impl Task {
                 info!("Wrote to {path:?} at line {}", line_number);
             }
         } else {
+            debug!("Creating a new task at end of file {}", path.display());
             let fixed_line = self.get_fixed_attributes(config, 0);
             lines.push(fixed_line);
+            lines.push(String::new()); // Empty line
         }
         let mut file = File::create(path)?;
         file.write_all(lines.join("\n").as_bytes())?;
