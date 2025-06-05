@@ -507,13 +507,12 @@ impl TaskManager {
                     .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
             })
             .unwrap();
-        let task = vault_parser.parse_single_task(task_desc, filename)?;
-
-        debug!("{task:?}");
-        // aux(&mut self.tasks, path, 0, task.clone())
-        //     .and_then(|()| Self::rewrite_vault_tasks(&self.config, &self.tasks))
-        aux(&mut self.tasks, path, 0, task.clone());
-        Self::rewrite_vault_tasks(&self.config, &self.tasks)
+        vault_parser
+            .parse_single_task(task_desc, filename)
+            .and_then(|task| {
+                aux(&mut self.tasks, path, 0, task.clone())
+                    .and_then(|()| Self::rewrite_vault_tasks(&self.config, &self.tasks))
+            })
     }
 }
 impl Display for TaskManager {
