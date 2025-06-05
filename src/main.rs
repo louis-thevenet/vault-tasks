@@ -2,7 +2,7 @@ use core::TaskManager;
 
 use clap::Parser;
 use cli::Cli;
-use color_eyre::{owo_colors::OwoColorize, Result};
+use color_eyre::Result;
 use config::Config;
 use tracing::debug;
 
@@ -38,14 +38,10 @@ async fn main() -> Result<()> {
         }
         Some(cli::Commands::NewTask {
             description: task,
-            path: path_opt,
+            filename: file_opt,
         }) => {
             let mut task_mgr = TaskManager::load_from_config(&config.tasks_config)?;
-            let mut path = path_opt
-                .unwrap_or(config.tasks_config.tasks_drop_file)
-                .split('/')
-                .map(str::to_owned)
-                .collect::<Vec<String>>();
+            let path = file_opt.unwrap_or(config.tasks_config.tasks_drop_file);
 
             debug!("Adding new task: {} to path: {:?}", task, path);
             task_mgr.add_task(&task, &path)

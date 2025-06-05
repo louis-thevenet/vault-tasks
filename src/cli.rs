@@ -48,8 +48,8 @@ pub enum Commands {
     #[command(alias = "task")]
     NewTask {
         description: String,
-        #[arg(short, long, value_name = "PATH")]
-        path: Option<String>,
+        #[arg(short, long, value_name = "FILENAME")]
+        filename: Option<String>,
     },
 }
 
