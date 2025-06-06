@@ -1,11 +1,16 @@
 use color_eyre::{eyre::bail, Result};
 use serde::Deserialize;
+use task::Task;
 
-use std::{collections::HashSet, fmt::Display, path::PathBuf};
+use std::{
+    collections::HashSet,
+    fmt::Display,
+    path::{Path, PathBuf},
+};
 use vault_data::VaultData;
 
 use filter::{filter, Filter};
-use tracing::error;
+use tracing::{debug, error};
 use vault_parser::VaultParser;
 
 pub mod filter;
@@ -90,6 +95,8 @@ pub struct TasksConfig {
     #[serde(default)]
     pub vault_path: PathBuf,
     #[serde(default)]
+    pub tasks_drop_file: String,
+    #[serde(default)]
     pub explorer_default_search_string: String,
     #[serde(default)]
     pub filter_default_search_string: String,
@@ -101,6 +108,7 @@ pub struct TasksConfig {
 
 pub struct TaskManager {
     pub tasks: VaultData,
+    config: TasksConfig,
     pub tags: HashSet<String>,
     pub current_filter: Option<Filter>,
 }
@@ -110,6 +118,7 @@ impl Default for TaskManager {
             tasks: VaultData::Directory("Empty Vault".to_owned(), vec![]),
             tags: HashSet::new(),
             current_filter: None,
+            config: TasksConfig::default(),
         }
     }
 }
@@ -131,6 +140,7 @@ impl TaskManager {
     ///
     /// This function will return an error if the vault can't be parsed, or if tasks can't be fixed (relative dates are replaced by fixed dates for example).
     pub fn reload(&mut self, config: &TasksConfig) -> Result<()> {
+        self.config = config.clone();
         let vault_parser = VaultParser::new(config.clone());
         let tasks = vault_parser.scan_vault()?;
 
@@ -249,10 +259,14 @@ impl TaskManager {
             file_entry: &VaultData,
         ) -> Result<()> {
             match file_entry {
-                VaultData::Header(_, _, children) => {
+                VaultData::Header(level, name, children) => {
+                    let mut filename = filename.clone();
+                    if *level == 0 {
+                        filename.push(name);
+                    }
                     children
                         .iter()
-                        .try_for_each(|c| explore_tasks_rec(config, filename, c))?;
+                        .try_for_each(|c| explore_tasks_rec(config, &mut filename, c))?;
                 }
                 VaultData::Task(task) => {
                     task.fix_task_attributes(config, filename)?;
@@ -398,6 +412,85 @@ impl TaskManager {
             .iter()
             .any(|e| aux(e.clone(), selected_header_path, 0))
     }
+
+    pub fn add_task(&mut self, task_desc: &str, filename_opt: Option<String>) {
+        /// Recursively searches for the entry in the vault.
+        /// `path_index` is the index of the current path element we are looking for.
+        fn aux(file_entry: &mut VaultData, filename: &str, new_task: &Task) -> Result<()> {
+            match file_entry {
+                VaultData::Directory(name, children) => {
+                    // Look for the child that matches the path
+                    for child in children {
+                        if let Ok(()) = aux(child, filename, new_task) {
+                            return Ok(());
+                            // I'm tempted to break here but we might have multiple entries with the same name
+                        }
+                    }
+                    // Either it's the first layer and the path is wrong or we recursively called on the wrong entry which is impossible
+                    bail!("Couldn't find corresponding entry in Directory {name}");
+                }
+                VaultData::Header(_, name, children) => {
+                    if *name == filename {
+                        debug! {"Adding task to {name}"
+                        };
+
+                        children.push(VaultData::Task(new_task.clone()));
+                        return Ok(());
+                    }
+                    // Look for the child that matches the path
+                    for child in children {
+                        if let Ok(()) = aux(child, filename, new_task) {
+                            return Ok(());
+                            // I'm tempted to break here but we might have multiple entries with the same name
+                        }
+                    }
+                    // Either it's the first layer and the path is wrong or we recursively called on the wrong entry which is impossible
+                    bail!("Couldn't find corresponding entry in Header {name}");
+                }
+
+                VaultData::Task(_task) => {
+                    bail!("Adding subtasks from CLI is not supported yet");
+                }
+            }
+        }
+
+        // Get filename
+        let filename = &filename_opt.unwrap_or(self.config.tasks_drop_file.clone());
+        if filename.is_empty() {
+            eprintln!( "No drop file was provided via `--filename`, and no default is set in the configuration." );
+            return;
+        }
+        if !Path::new(&filename)
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
+        {
+            eprintln!("Filename {filename} does not have the .md extension");
+            return;
+        }
+
+        // Parse input string
+        let vault_parser = VaultParser::new(self.config.clone());
+        let task = match vault_parser.parse_single_task(task_desc, filename) {
+            Ok(task) => task,
+            Err(e) => {
+                eprintln!("Failed to parse task: {e}");
+                return;
+            }
+        };
+        debug!("Adding new task: {} to path: {:?}", task, filename);
+
+        // Insert the task into the vault tree
+        if let Err(e) = aux(&mut self.tasks, filename, &task) {
+            eprintln!("Failed to insert task in VaultData tree: {e}");
+            return;
+        }
+
+        // Fix attributes again (maybe we should only fix the task itself
+        // but we would need the path to filename)
+        if let Err(e) = Self::rewrite_vault_tasks(&self.config, &self.tasks) {
+            eprintln!("Failed to fix task attributes in vault files: {e}");
+        }
+    }
 }
 impl Display for TaskManager {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -419,19 +512,19 @@ mod tests {
         let expected_tasks = vec![
             VaultData::Task(Task {
                 name: "test".to_string(),
-                line_number: 8,
+                line_number: Some(8),
                 description: Some("test\ndesc".to_string()),
                 ..Default::default()
             }),
             VaultData::Task(Task {
                 name: "test".to_string(),
-                line_number: 8,
+                line_number: Some(8),
                 description: Some("test\ndesc".to_string()),
                 ..Default::default()
             }),
             VaultData::Task(Task {
                 name: "test".to_string(),
-                line_number: 8,
+                line_number: Some(8),
                 description: Some("test\ndesc".to_string()),
                 ..Default::default()
             }),

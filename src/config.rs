@@ -154,13 +154,16 @@ impl Config {
         }
 
         if let Some(path) = &args.vault_path {
+            let path = match path.strip_prefix("./") {
+                Ok(stripped_path) => &stripped_path.to_path_buf(),
+                Err(_) => path,
+            };
             cfg.tasks_config.vault_path.clone_from(path);
         }
 
         cfg.config.show_fps = args.show_fps;
 
         cfg.check_config()?;
-        debug!("{cfg:#?}");
         Ok(cfg)
     }
     fn check_config(&mut self) -> Result<(), ConfigError> {

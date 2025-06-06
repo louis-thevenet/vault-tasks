@@ -266,7 +266,7 @@ mod tests {
                                 "2".to_string(),
                                 vec![VaultData::Task(Task {
                                     name: "test 1".to_string(),
-                                    line_number: 8,
+                                    line_number: Some(8),
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
@@ -282,7 +282,7 @@ mod tests {
                                     "4".to_string(),
                                     vec![VaultData::Task(Task {
                                         name: "test 2".to_string(),
-                                        line_number: 8,
+                                        line_number: Some(8),
                                         tags: Some(vec!["test".to_string()]),
                                         description: Some("test\ndesc".to_string()),
                                         ..Default::default()
@@ -294,7 +294,7 @@ mod tests {
                 ),
                 VaultData::Task(Task {
                     name: "test 3".to_string(),
-                    line_number: 8,
+                    line_number: Some(8),
                     tags: Some(vec!["test".to_string()]),
                     description: Some("test\ndesc".to_string()),
                     ..Default::default()
@@ -304,14 +304,14 @@ mod tests {
         let expected = vec![
             Task {
                 name: "test 2".to_string(),
-                line_number: 8,
+                line_number: Some(8),
                 tags: Some(vec!["test".to_string()]),
                 description: Some("test\ndesc".to_string()),
                 ..Default::default()
             },
             Task {
                 name: "test 3".to_string(),
-                line_number: 8,
+                line_number: Some(8),
                 tags: Some(vec!["test".to_string()]),
                 description: Some("test\ndesc".to_string()),
                 ..Default::default()
@@ -347,7 +347,7 @@ mod tests {
                                 "2".to_string(),
                                 vec![VaultData::Task(Task {
                                     name: "hfdgqskhjfg1".to_string(),
-                                    line_number: 8,
+                                    line_number: Some(8),
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
@@ -363,7 +363,7 @@ mod tests {
                                     "4".to_string(),
                                     vec![VaultData::Task(Task {
                                         name: "test 2".to_string(),
-                                        line_number: 8,
+                                        line_number: Some(8),
                                         tags: Some(vec!["test".to_string()]),
                                         description: Some("test\ndesc".to_string()),
                                         ..Default::default()
@@ -375,7 +375,7 @@ mod tests {
                 ),
                 VaultData::Task(Task {
                     name: "test 3".to_string(),
-                    line_number: 8,
+                    line_number: Some(8),
                     tags: Some(vec!["test".to_string()]),
                     description: Some("test\ndesc".to_string()),
                     ..Default::default()
@@ -385,14 +385,14 @@ mod tests {
         let expected = vec![
             Task {
                 name: "test 2".to_string(),
-                line_number: 8,
+                line_number: Some(8),
                 tags: Some(vec!["test".to_string()]),
                 description: Some("test\ndesc".to_string()),
                 ..Default::default()
             },
             Task {
                 name: "test 3".to_string(),
-                line_number: 8,
+                line_number: Some(8),
                 tags: Some(vec!["test".to_string()]),
                 description: Some("test\ndesc".to_string()),
                 ..Default::default()
@@ -427,7 +427,7 @@ mod tests {
                                 "2".to_string(),
                                 vec![VaultData::Task(Task {
                                     name: "hfdgqskhjfg1".to_string(),
-                                    line_number: 8,
+                                    line_number: Some(8),
                                     due_date: DueDate::Day(
                                         NaiveDate::from_ymd_opt(2020, 2, 2).unwrap(),
                                     ),
@@ -446,7 +446,7 @@ mod tests {
                                     "4".to_string(),
                                     vec![VaultData::Task(Task {
                                         name: "test 2".to_string(),
-                                        line_number: 8,
+                                        line_number: Some(8),
                                         tags: Some(vec!["test".to_string()]),
                                         description: Some("test\ndesc".to_string()),
                                         ..Default::default()
@@ -458,7 +458,7 @@ mod tests {
                 ),
                 VaultData::Task(Task {
                     name: "test 3".to_string(),
-                    line_number: 8,
+                    line_number: Some(8),
                     tags: Some(vec!["test".to_string()]),
                     description: Some("test\ndesc".to_string()),
                     ..Default::default()
@@ -467,7 +467,7 @@ mod tests {
         );
         let expected = vec![Task {
             name: "hfdgqskhjfg1".to_string(),
-            line_number: 8,
+            line_number: Some(8),
             due_date: DueDate::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap()),
             description: Some("test\ndesc".to_string()),
             ..Default::default()
@@ -501,7 +501,7 @@ mod tests {
                                 "2".to_string(),
                                 vec![VaultData::Task(Task {
                                     name: "real target".to_string(),
-                                    line_number: 8,
+                                    line_number: Some(8),
                                     tags: Some(vec!["test".to_string()]),
                                     due_date: DueDate::Day(
                                         NaiveDate::from_ymd_opt(2020, 2, 2).unwrap(),
@@ -521,7 +521,7 @@ mod tests {
                                     "4".to_string(),
                                     vec![VaultData::Task(Task {
                                         name: "false target 2".to_string(),
-                                        line_number: 8,
+                                        line_number: Some(8),
                                         tags: Some(vec!["test".to_string()]),
                                         description: Some("test\ndesc".to_string()),
                                         ..Default::default()
@@ -533,7 +533,7 @@ mod tests {
                 ),
                 VaultData::Task(Task {
                     name: "test 3".to_string(),
-                    line_number: 8,
+                    line_number: Some(8),
                     tags: Some(vec!["test".to_string()]),
                     description: Some("test\ndesc".to_string()),
                     ..Default::default()
@@ -542,7 +542,7 @@ mod tests {
         );
         let expected = vec![Task {
             name: "real target".to_string(),
-            line_number: 8,
+            line_number: Some(8),
             due_date: DueDate::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap()),
             tags: Some(vec!["test".to_string()]),
             description: Some("test\ndesc".to_string()),
@@ -579,7 +579,7 @@ mod tests {
                                 "2".to_string(),
                                 vec![VaultData::Task(Task {
                                     name: "task".to_string(),
-                                    line_number: 8,
+                                    line_number: Some(8),
                                     tags: Some(vec!["test".to_string()]),
                                     description: Some("test\ndesc".to_string()),
                                     subtasks: vec![Task {
@@ -600,7 +600,7 @@ mod tests {
                                     "4".to_string(),
                                     vec![VaultData::Task(Task {
                                         name: "false target 2".to_string(),
-                                        line_number: 8,
+                                        line_number: Some(8),
                                         tags: Some(vec!["test".to_string()]),
                                         description: Some("test\ndesc".to_string()),
                                         ..Default::default()
@@ -612,7 +612,7 @@ mod tests {
                 ),
                 VaultData::Task(Task {
                     name: "test 3".to_string(),
-                    line_number: 8,
+                    line_number: Some(8),
                     tags: Some(vec!["test".to_string()]),
                     description: Some("test\ndesc".to_string()),
                     ..Default::default()
@@ -632,7 +632,7 @@ mod tests {
                         "2".to_string(),
                         vec![VaultData::Task(Task {
                             name: "task".to_string(),
-                            line_number: 8,
+                            line_number: Some(8),
                             tags: Some(vec!["test".to_string()]),
                             description: Some("test\ndesc".to_string()),
                             subtasks: vec![Task {

@@ -183,7 +183,10 @@ pub struct Task {
     pub description: Option<String>,
     pub due_date: DueDate,
     pub filename: String,
-    pub line_number: usize,
+    /// Line number in the file, if None then the task was not
+    /// parsed from the file but added from CLI, it should be
+    /// appended at the end.
+    pub line_number: Option<usize>,
     pub name: String,
     pub priority: usize,
     pub completion: Option<usize>,
@@ -201,7 +204,7 @@ impl Default for Task {
             state: State::ToDo,
             tags: None,
             description: None,
-            line_number: 1,
+            line_number: Some(1),
             subtasks: vec![],
             filename: String::new(),
             is_today: false,
@@ -346,37 +349,49 @@ impl Task {
     }
 
     pub fn fix_task_attributes(&self, config: &TasksConfig, path: &PathBuf) -> Result<()> {
+        if !path.is_file() {
+            bail!("Tried to fix tasks attributes but {path:?} is not a file");
+        }
         let content = read_to_string(path.clone())?;
-        let mut lines = content.split('\n').collect::<Vec<&str>>();
+        let mut lines = content
+            .split('\n')
+            .map(str::to_owned)
+            .collect::<Vec<String>>();
+        if let Some(line_number) = self.line_number {
+            if lines.len() < line_number - 1 {
+                bail!(
+                    "Task's line number {} was greater than length of file {:?}",
+                    line_number,
+                    path
+                );
+            }
 
-        if lines.len() < self.line_number - 1 {
-            bail!(
-                "Task's line number {} was greater than length of file {:?}",
-                self.line_number,
-                path
-            );
+            let indent_length = lines[line_number - 1]
+                .chars()
+                .take_while(|c| c.is_whitespace())
+                .count();
+
+            let fixed_line = self.get_fixed_attributes(config, indent_length);
+
+            if lines[line_number - 1] != fixed_line {
+                debug!(
+                    "\nReplacing\n{}\nWith\n{}\n",
+                    lines[line_number - 1],
+                    self.get_fixed_attributes(config, indent_length,)
+                );
+                lines[line_number - 1] = fixed_line;
+
+                info!("Wrote to {path:?} at line {}", line_number);
+            }
+        } else {
+            debug!("Creating a new task at end of file {}", path.display());
+            let fixed_line = self.get_fixed_attributes(config, 0);
+            lines.push(fixed_line);
+            lines.push(String::new()); // Empty line
         }
+        let mut file = File::create(path)?;
+        file.write_all(lines.join("\n").as_bytes())?;
 
-        let indent_length = lines[self.line_number - 1]
-            .chars()
-            .take_while(|c| c.is_whitespace())
-            .count();
-
-        let fixed_line = self.get_fixed_attributes(config, indent_length);
-
-        if lines[self.line_number - 1] != fixed_line {
-            debug!(
-                "\nReplacing\n{}\nWith\n{}\n",
-                lines[self.line_number - 1],
-                self.get_fixed_attributes(config, indent_length,)
-            );
-            lines[self.line_number - 1] = &fixed_line;
-
-            let mut file = File::create(path)?;
-            file.write_all(lines.join("\n").as_bytes())?;
-
-            info!("Wrote to {path:?} at line {}", self.line_number);
-        }
         Ok(())
     }
 }
@@ -404,7 +419,7 @@ mod tests_tasks {
             state: State::ToDo,
             tags: Some(vec![String::from("tag1"), String::from("tag2")]),
             description: Some(String::from("This is a test task.")),
-            line_number: 2,
+            line_number: Some(2),
             ..Default::default()
         };
         let res = task.get_fixed_attributes(&config, 0);
@@ -423,7 +438,7 @@ mod tests_tasks {
             state: State::Done,
             tags: Some(vec![String::from("tag3")]),
             description: None,
-            line_number: 3,
+            line_number: Some(3),
             ..Default::default()
         };
 
@@ -442,7 +457,7 @@ mod tests_tasks {
             state: State::Done,
             tags: Some(vec![String::from("tag3")]),
             description: None,
-            line_number: 3,
+            line_number: Some(3),
             is_today: true,
             ..Default::default()
         };

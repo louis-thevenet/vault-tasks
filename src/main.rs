@@ -27,12 +27,19 @@ async fn main() -> Result<()> {
 
     let args = Cli::parse();
 
+    let config = Config::new(&args)?;
     match args.command {
         Some(cli::Commands::GenerateConfig { path }) => Config::generate_config(path),
         Some(cli::Commands::Stdout) => {
-            let config = Config::new(&args)?;
             let task_mgr = TaskManager::load_from_config(&config.tasks_config)?;
             println!("{}", task_mgr.tasks);
+            Ok(())
+        }
+        Some(cli::Commands::NewTask {
+            description: task,
+            filename: filename_opt,
+        }) => {
+            TaskManager::load_from_config(&config.tasks_config)?.add_task(&task, filename_opt);
             Ok(())
         }
         _ => {

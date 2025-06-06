@@ -161,7 +161,7 @@ impl ParserFileEntry<'_> {
                     let mut last_task = task;
                     while current_task_depth < target_task_depth {
                         if last_task.subtasks.is_empty() {
-                            error!("Could not find parent task, indenting may be wrong. Closest task line number: {}",last_task.line_number);
+                            error!("Could not find parent task, indenting may be wrong. Closest task line number: {:?}",last_task.line_number);
                             bail!("Failed to insert task")
                         }
                         last_task = last_task.subtasks.last_mut().unwrap();
@@ -445,7 +445,7 @@ impl ParserFileEntry<'_> {
         } else {
             match parser.parse_next(&mut line) {
                 Ok(FileToken::Task(mut task, indent_length)) => {
-                    task.line_number = line_number + 1; // line 1 was element 0 of iterator
+                    task.line_number = Some(line_number + 1); // line 1 was element 0 of iterator
                     if Self::insert_task_at(
                         file_entry,
                         task,
@@ -541,18 +541,19 @@ impl ParserFileEntry<'_> {
     }
 
     /// Removes any empty headers from a `FileEntry`
-    fn clean_file_entry(file_entry: &mut VaultData) -> Option<VaultData> {
+    fn clean_file_entry(&self, file_entry: &mut VaultData) -> Option<VaultData> {
         match file_entry {
-            VaultData::Header(_, _, children) | VaultData::Directory(_, children) => {
+            VaultData::Header(_, name, children) | VaultData::Directory(name, children) => {
                 let mut actual_children = vec![];
                 for child in children.iter_mut() {
                     let mut child_clone = child.clone();
-                    if Self::clean_file_entry(&mut child_clone).is_some() {
+                    if self.clean_file_entry(&mut child_clone).is_some() {
                         actual_children.push(child_clone);
                     }
                 }
                 *children = actual_children;
-                if children.is_empty() {
+                // If the `config.tasks_drop_file` happens to be empty, don't drop it
+                if children.is_empty() && name != &self.config.tasks_drop_file {
                     return None;
                 }
             }
@@ -580,7 +581,7 @@ impl ParserFileEntry<'_> {
             file_tags.iter().for_each(|t| add_global_tag(&mut res, t));
         }
 
-        Self::clean_file_entry(&mut res)
+        self.clean_file_entry(&mut res)
     }
 }
 
@@ -672,7 +673,7 @@ mod tests {
                             "4 useful".to_string(),
                             vec![VaultData::Task(Task {
                                 name: "test".to_string(),
-                                line_number: 8,
+                                line_number: Some(8),
                                 description: Some("test\ndesc".to_string()),
                                 ..Default::default()
                             })],
@@ -695,14 +696,14 @@ mod tests {
                     "4 useful".to_string(),
                     vec![VaultData::Task(Task {
                         name: "test".to_string(),
-                        line_number: 8,
+                        line_number: Some(8),
                         description: Some("test\ndesc".to_string()),
                         ..Default::default()
                     })],
                 )],
             )],
         );
-        ParserFileEntry::clean_file_entry(&mut res);
+        parser.clean_file_entry(&mut res);
         assert_eq!(res, expected_after_cleaning);
     }
     #[test]
@@ -741,7 +742,7 @@ mod tests {
                 vec![
                     VaultData::Task(Task {
                         name: "Task".to_string(),
-                        line_number: 2,
+                        line_number: Some(2),
                         ..Default::default()
                     }),
                     VaultData::Header(
@@ -753,12 +754,12 @@ mod tests {
                             vec![
                                 VaultData::Task(Task {
                                     name: "Task".to_string(),
-                                    line_number: 6,
+                                    line_number: Some(6),
                                     ..Default::default()
                                 }),
                                 VaultData::Task(Task {
                                     name: "Task 2".to_string(),
-                                    line_number: 7,
+                                    line_number: Some(7),
                                     ..Default::default()
                                 }),
                             ],
@@ -769,7 +770,7 @@ mod tests {
                         "2 Header 2".to_string(),
                         vec![VaultData::Task(Task {
                             name: "Task".to_string(),
-                            line_number: 9,
+                            line_number: Some(9),
                             description: Some("Description".to_string()),
                             ..Default::default()
                         })],
@@ -842,7 +843,7 @@ mod tests {
                 vec![
                     VaultData::Task(Task {
                         name: "Task".to_string(),
-                        line_number: 3,
+                        line_number: Some(3),
                         ..Default::default()
                     }),
                     VaultData::Header(2, "2 Header".to_string(), vec![]),
@@ -884,13 +885,13 @@ mod tests {
                     "Test".to_string(),
                     vec![VaultData::Task(Task {
                         name: "Test a".to_string(),
-                        line_number: 3,
+                        line_number: Some(3),
                         subtasks: vec![Task {
                             name: "Test b".to_string(),
-                            line_number: 4,
+                            line_number: Some(4),
                             subtasks: vec![Task {
                                 name: "Test c".to_string(),
-                                line_number: 5,
+                                line_number: Some(5),
                                 ..Default::default()
                             }],
                             ..Default::default()
