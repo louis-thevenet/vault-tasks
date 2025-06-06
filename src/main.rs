@@ -43,6 +43,11 @@ async fn main() -> Result<()> {
             let mut task_mgr = TaskManager::load_from_config(&config.tasks_config)?;
             let path = file_opt.unwrap_or(config.tasks_config.tasks_drop_file);
 
+            if path.is_empty() {
+                eprintln!( "No drop file was provided via `--filename`, and no default is set in the configuration." );
+                return Ok(());
+            }
+
             debug!("Adding new task: {} to path: {:?}", task, path);
             task_mgr.add_task(&task, &path)
         }
