@@ -1,11 +1,9 @@
 use core::TaskManager;
-use std::path::Path;
 
 use clap::Parser;
 use cli::Cli;
 use color_eyre::Result;
 use config::Config;
-use tracing::debug;
 
 use crate::app::App;
 
@@ -39,22 +37,9 @@ async fn main() -> Result<()> {
         }
         Some(cli::Commands::NewTask {
             description: task,
-            filename: file_opt,
+            filename: filename_opt,
         }) => {
-            let mut task_mgr = TaskManager::load_from_config(&config.tasks_config)?;
-            let path = file_opt.unwrap_or(config.tasks_config.tasks_drop_file);
-
-            if path.is_empty()
-                || !Path::new(&path)
-                    .extension()
-                    .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
-            {
-                eprintln!( "No drop file was provided via `--filename`, and no default is set in the configuration." );
-                return Ok(());
-            }
-
-            debug!("Adding new task: {} to path: {:?}", task, path);
-            task_mgr.add_task(&task, &path);
+            TaskManager::load_from_config(&config.tasks_config)?.add_task(&task, filename_opt);
             Ok(())
         }
         _ => {

@@ -2,7 +2,11 @@ use color_eyre::{eyre::bail, Result};
 use serde::Deserialize;
 use task::Task;
 
-use std::{collections::HashSet, fmt::Display, path::PathBuf};
+use std::{
+    collections::HashSet,
+    fmt::Display,
+    path::{Path, PathBuf},
+};
 use vault_data::VaultData;
 
 use filter::{filter, Filter};
@@ -409,7 +413,7 @@ impl TaskManager {
             .any(|e| aux(e.clone(), selected_header_path, 0))
     }
 
-    pub fn add_task(&mut self, task_desc: &str, filename: &str) {
+    pub fn add_task(&mut self, task_desc: &str, filename_opt: Option<String>) {
         /// Recursively searches for the entry in the vault.
         /// `path_index` is the index of the current path element we are looking for.
         fn aux(file_entry: &mut VaultData, filename: &str, new_task: &Task) -> Result<()> {
@@ -449,8 +453,20 @@ impl TaskManager {
                 }
             }
         }
-        let vault_parser = VaultParser::new(self.config.clone());
 
+        // Get filename
+        let filename = &filename_opt.unwrap_or(self.config.tasks_drop_file.clone());
+        if filename.is_empty()
+            || !Path::new(&filename)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
+        {
+            eprintln!( "No drop file was provided via `--filename`, and no default is set in the configuration." );
+            return;
+        }
+
+        // Parse input string
+        let vault_parser = VaultParser::new(self.config.clone());
         let task = match vault_parser.parse_single_task(task_desc, filename) {
             Ok(task) => task,
             Err(e) => {
@@ -458,12 +474,16 @@ impl TaskManager {
                 return;
             }
         };
+        debug!("Adding new task: {} to path: {:?}", task, filename);
 
+        // Insert the task into the vault tree
         if let Err(e) = aux(&mut self.tasks, filename, &task) {
             eprintln!("Failed to insert task in VaultData tree: {e}");
             return;
         }
 
+        // Fix attributes again (maybe we should only fix the task itself
+        // but we would need the path to filename)
         if let Err(e) = Self::rewrite_vault_tasks(&self.config, &self.tasks) {
             eprintln!("Failed to fix task attributes in vault files: {e}");
         }
