@@ -541,18 +541,19 @@ impl ParserFileEntry<'_> {
     }
 
     /// Removes any empty headers from a `FileEntry`
-    fn clean_file_entry(file_entry: &mut VaultData) -> Option<VaultData> {
+    fn clean_file_entry(&self, file_entry: &mut VaultData) -> Option<VaultData> {
         match file_entry {
-            VaultData::Header(_, _, children) | VaultData::Directory(_, children) => {
+            VaultData::Header(_, name, children) | VaultData::Directory(name, children) => {
                 let mut actual_children = vec![];
                 for child in children.iter_mut() {
                     let mut child_clone = child.clone();
-                    if Self::clean_file_entry(&mut child_clone).is_some() {
+                    if self.clean_file_entry(&mut child_clone).is_some() {
                         actual_children.push(child_clone);
                     }
                 }
                 *children = actual_children;
-                if children.is_empty() {
+                // If the `config.tasks_drop_file` happens to be empty, don't drop it
+                if children.is_empty() && name != &self.config.tasks_drop_file {
                     return None;
                 }
             }
@@ -580,7 +581,7 @@ impl ParserFileEntry<'_> {
             file_tags.iter().for_each(|t| add_global_tag(&mut res, t));
         }
 
-        Self::clean_file_entry(&mut res)
+        self.clean_file_entry(&mut res)
     }
 }
 
@@ -702,7 +703,7 @@ mod tests {
                 )],
             )],
         );
-        ParserFileEntry::clean_file_entry(&mut res);
+        parser.clean_file_entry(&mut res);
         assert_eq!(res, expected_after_cleaning);
     }
     #[test]
