@@ -456,12 +456,15 @@ impl TaskManager {
 
         // Get filename
         let filename = &filename_opt.unwrap_or(self.config.tasks_drop_file.clone());
-        if filename.is_empty()
-            || !Path::new(&filename)
-                .extension()
-                .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
-        {
+        if filename.is_empty() {
             eprintln!( "No drop file was provided via `--filename`, and no default is set in the configuration." );
+            return;
+        }
+        if !Path::new(&filename)
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
+        {
+            eprintln!("Filename {filename} does not have the .md extension");
             return;
         }
 
