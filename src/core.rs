@@ -450,12 +450,14 @@ impl TaskManager {
             }
         }
         let vault_parser = VaultParser::new(self.config.clone());
-        vault_parser
-            .parse_single_task(task_desc, filename)
-            .and_then(|task| {
-                aux(&mut self.tasks, filename, task.clone())
-                    .and_then(|()| Self::rewrite_vault_tasks(&self.config, &self.tasks))
-            })
+        match vault_parser.parse_single_task(task_desc, filename) {
+            Ok(task) => aux(&mut self.tasks, filename, task.clone())
+                .and_then(|()| Self::rewrite_vault_tasks(&self.config, &self.tasks)),
+            Err(e) => {
+                eprintln!("Failed to parse task: {e}");
+                Ok(())
+            }
+        }
     }
 }
 impl Display for TaskManager {

@@ -32,7 +32,9 @@ impl VaultParser {
         debug!("{task}");
         match parser.parse_file(filename, &task) {
             Some(VaultData::Task(_)) => {
-                bail!("Failed to parse task: {task}, should have been a header then the task")
+                bail!(
+                    "Got a Task from {task}, should have been a Header then the Task, but this should never happen"
+                )
             }
 
             Some(VaultData::Header(_, _, content)) => {
@@ -46,11 +48,15 @@ impl VaultParser {
                     };
                     Ok(res)
                 } else {
-                    bail!("Expected task in header, got: {content:?}");
+                    bail!("Expected a single Task in Header, got: {content:?}");
                 }
             }
+            Some(VaultData::Directory(_,_ )) =>bail!(
+                    "Got a Directory from {task}, should have been a Header then the Task, but this should never happen"
+                )
+,
 
-            _ => bail!("Failed to parse task: {task}"),
+            _ => bail!("Task is malformed: `{task}`"),
         }
     }
 
