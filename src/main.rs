@@ -49,7 +49,8 @@ async fn main() -> Result<()> {
             }
 
             debug!("Adding new task: {} to path: {:?}", task, path);
-            task_mgr.add_task(&task, &path)
+            task_mgr.add_task(&task, &path);
+            Ok(())
         }
         _ => {
             let mut app = App::new(&args)?;

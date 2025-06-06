@@ -409,21 +409,21 @@ impl TaskManager {
             .any(|e| aux(e.clone(), selected_header_path, 0))
     }
 
-    pub fn add_task(&mut self, task_desc: &str, filename: &str) -> Result<()> {
+    pub fn add_task(&mut self, task_desc: &str, filename: &str) {
         /// Recursively searches for the entry in the vault.
         /// `path_index` is the index of the current path element we are looking for.
-        fn aux(file_entry: &mut VaultData, filename: &str, new_task: Task) -> Result<()> {
+        fn aux(file_entry: &mut VaultData, filename: &str, new_task: &Task) -> Result<()> {
             match file_entry {
-                VaultData::Directory(_name, children) => {
+                VaultData::Directory(name, children) => {
                     // Look for the child that matches the path
                     for child in children {
-                        if let Ok(()) = aux(child, filename, new_task.clone()) {
+                        if let Ok(()) = aux(child, filename, new_task) {
                             return Ok(());
                             // I'm tempted to break here but we might have multiple entries with the same name
                         }
                     }
                     // Either it's the first layer and the path is wrong or we recursively called on the wrong entry which is impossible
-                    bail!("Couldn't find corresponding entry");
+                    bail!("Couldn't find corresponding entry in Directory {name}");
                 }
                 VaultData::Header(_, name, children) => {
                     if *name == filename {
@@ -435,13 +435,13 @@ impl TaskManager {
                     }
                     // Look for the child that matches the path
                     for child in children {
-                        if let Ok(()) = aux(child, filename, new_task.clone()) {
+                        if let Ok(()) = aux(child, filename, new_task) {
                             return Ok(());
                             // I'm tempted to break here but we might have multiple entries with the same name
                         }
                     }
                     // Either it's the first layer and the path is wrong or we recursively called on the wrong entry which is impossible
-                    bail!("Couldn't find corresponding entry");
+                    bail!("Couldn't find corresponding entry in Header {name}");
                 }
 
                 VaultData::Task(_task) => {
@@ -450,13 +450,22 @@ impl TaskManager {
             }
         }
         let vault_parser = VaultParser::new(self.config.clone());
-        match vault_parser.parse_single_task(task_desc, filename) {
-            Ok(task) => aux(&mut self.tasks, filename, task.clone())
-                .and_then(|()| Self::rewrite_vault_tasks(&self.config, &self.tasks)),
+
+        let task = match vault_parser.parse_single_task(task_desc, filename) {
+            Ok(task) => task,
             Err(e) => {
                 eprintln!("Failed to parse task: {e}");
-                Ok(())
+                return;
             }
+        };
+
+        if let Err(e) = aux(&mut self.tasks, filename, &task) {
+            eprintln!("Failed to insert task in VaultData tree: {e}");
+            return;
+        }
+
+        if let Err(e) = Self::rewrite_vault_tasks(&self.config, &self.tasks) {
+            eprintln!("Failed to fix task attributes in vault files: {e}");
         }
     }
 }
