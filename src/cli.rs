@@ -51,12 +51,14 @@ pub enum Commands {
     #[command(alias = "task")]
     NewTask {
         #[arg(short, long, value_name = "FILENAME")]
+        /// Filename to append the new tasks to
         filename: Option<String>,
         #[arg(
             trailing_var_arg = true,
             allow_hyphen_values = true,
             value_name = "TASKS"
         )]
+        /// Tasks to create, use usual vault-tasks syntax
         tasks: Vec<String>,
     },
 }
