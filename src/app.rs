@@ -9,8 +9,8 @@ use crate::{
     action::Action,
     cli::{Cli, Commands},
     components::{
-        calendar_tab::CalendarTab, explorer_tab::ExplorerTab, filter_tab::FilterTab,
-        fps::FpsCounter, home::Home, time_management_tab::TimeManagementTab, Component,
+        Component, calendar_tab::CalendarTab, explorer_tab::ExplorerTab, filter_tab::FilterTab,
+        fps::FpsCounter, home::Home, time_management_tab::TimeManagementTab,
     },
     config::Config,
     tui::{Event, Tui},

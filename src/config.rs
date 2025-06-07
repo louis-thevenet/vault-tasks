@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 use std::{
-    collections::{hash_map::Entry, HashMap},
+    collections::{HashMap, hash_map::Entry},
     env,
-    fs::{create_dir_all, File},
+    fs::{File, create_dir_all},
     io::Write,
     path::PathBuf,
 };
@@ -14,14 +14,14 @@ use strum::{EnumIter, FromRepr};
 use crate::core::TasksConfig;
 use crate::widgets::timer::TimerWidget;
 use crate::{action::Action, app::Mode, cli::Cli};
-use color_eyre::{eyre::bail, Result};
+use color_eyre::{Result, eyre::bail};
 use config::ConfigError;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use derive_deref::{Deref, DerefMut};
 use directories::ProjectDirs;
 use lazy_static::lazy_static;
 use ratatui::style::{Color, Modifier, Style};
-use serde::{de::Deserializer, Deserialize};
+use serde::{Deserialize, de::Deserializer};
 use tracing::{debug, info};
 
 const CONFIG: &str = include_str!("../.config/config.toml");
@@ -107,7 +107,8 @@ impl Config {
             }
             if !found_config && !cfg!(test) {
                 info!(
-                    "No configuration file found.\nCreate one at {config_path:?} or generate one using `vault-tasks generate-config`");
+                    "No configuration file found.\nCreate one at {config_path:?} or generate one using `vault-tasks generate-config`"
+                );
             }
             builder
         };
@@ -203,13 +204,15 @@ impl Config {
         } else {
             bail!("Failed to create default config at {dest:?}".to_owned());
         }
-        println!("Configuration has been created at {dest:?}. You can fill the `vault-path` value to set a default vault.");
+        println!(
+            "Configuration has been created at {dest:?}. You can fill the `vault-path` value to set a default vault."
+        );
         Ok(())
     }
 }
 
 pub fn get_data_dir() -> PathBuf {
-    let directory = DATA_FOLDER.clone().map_or(
+    DATA_FOLDER.clone().map_or(
         {
             project_directory().map_or_else(
                 || PathBuf::from(".").join(".data"),
@@ -217,12 +220,11 @@ pub fn get_data_dir() -> PathBuf {
             )
         },
         |s| s,
-    );
-    directory
+    )
 }
 
 pub fn get_config_dir() -> PathBuf {
-    let directory = CONFIG_FOLDER.clone().map_or_else(
+    CONFIG_FOLDER.clone().map_or_else(
         || {
             project_directory().map_or_else(
                 || PathBuf::from(".").join(".config"),
@@ -230,8 +232,7 @@ pub fn get_config_dir() -> PathBuf {
             )
         },
         |s| s,
-    );
-    directory
+    )
 }
 
 fn project_directory() -> Option<ProjectDirs> {
@@ -413,8 +414,7 @@ pub fn parse_key_sequence(raw: &str) -> Result<Vec<KeyEvent>, String> {
         raw
     } else {
         let raw = raw.strip_prefix('<').unwrap_or(raw);
-        let raw = raw.strip_prefix('>').unwrap_or(raw);
-        raw
+        raw.strip_prefix('>').unwrap_or(raw)
     };
 
     raw.split("><")
