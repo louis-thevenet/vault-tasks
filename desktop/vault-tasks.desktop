@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=vault-tasks
-Version=0.11.2
+Version=0.12.0
 GenericName=Markdown Tasks Manager
 Exec=vault-tasks
 Terminal=true
