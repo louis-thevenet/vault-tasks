@@ -47,9 +47,14 @@ pub enum Commands {
     /// Creates a new task
     #[command(alias = "task")]
     NewTask {
-        description: String,
         #[arg(short, long, value_name = "FILENAME")]
         filename: Option<String>,
+        #[arg(
+            trailing_var_arg = true,
+            allow_hyphen_values = true,
+            value_name = "TASKS"
+        )]
+        tasks: Vec<String>,
     },
 }
 

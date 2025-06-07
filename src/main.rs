@@ -36,10 +36,13 @@ async fn main() -> Result<()> {
             Ok(())
         }
         Some(cli::Commands::NewTask {
-            description: task,
+            tasks,
             filename: filename_opt,
         }) => {
-            TaskManager::load_from_config(&config.tasks_config)?.add_task(&task, filename_opt);
+            let mut task_mgr = TaskManager::load_from_config(&config.tasks_config)?;
+            tasks
+                .iter()
+                .for_each(|task| task_mgr.add_task(task, filename_opt.clone()));
             Ok(())
         }
         _ => {

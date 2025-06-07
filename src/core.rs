@@ -370,7 +370,7 @@ impl TaskManager {
     /// Whether the path resolves to something that can be entered or not.
     /// Directories, Headers and Tasks with subtasks can be entered.
     #[must_use]
-    pub fn can_enter(&self, selected_header_path: &[String]) -> bool {
+    pub fn can_enter(&mut self, selected_header_path: &[String]) -> bool {
         fn aux(file_entry: VaultData, selected_header_path: &[String], path_index: usize) -> bool {
             if path_index == selected_header_path.len() {
                 true
@@ -489,6 +489,11 @@ impl TaskManager {
         // but we would need the path to filename)
         if let Err(e) = Self::rewrite_vault_tasks(&self.config, &self.tasks) {
             eprintln!("Failed to fix task attributes in vault files: {e}");
+        }
+        if let Err(e) = self.reload(&self.config.clone()) {
+            eprintln!("Failed to reload tasks after adding a new task: {e}");
+        } else {
+            debug!("Successfully added task to vault");
         }
     }
 }
