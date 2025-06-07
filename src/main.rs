@@ -1,6 +1,8 @@
 use core::TaskManager;
+use std::io;
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
+use clap_complete::generate;
 use cli::Cli;
 use color_eyre::Result;
 use config::Config;
@@ -43,6 +45,10 @@ async fn main() -> Result<()> {
             tasks
                 .iter()
                 .for_each(|task| task_mgr.add_task(task, filename_opt.clone()));
+            Ok(())
+        }
+        Some(cli::Commands::GenerateCompletions { shell }) => {
+            generate(shell, &mut Cli::command(), "vault-tasks", &mut io::stdout());
             Ok(())
         }
         _ => {

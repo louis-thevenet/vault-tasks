@@ -168,23 +168,6 @@ impl Config {
         Ok(cfg)
     }
     fn check_config(&mut self) -> Result<(), ConfigError> {
-        if self
-            .tasks_config
-            .vault_path
-            .to_str()
-            .is_some_and(str::is_empty)
-        {
-            return Err(ConfigError::Message(
-                "No vault path provided (use `--vault-path <PATH>`) and no default path set in config file".to_string(),
-            ));
-        }
-        if !self.tasks_config.vault_path.exists() && !cfg!(test) {
-            return Err(ConfigError::Message(format!(
-                "Vault path does not exist: {:?}",
-                self.tasks_config.vault_path
-            )));
-        }
-
         if self.tasks_config.indent_length == 0 {
             self.tasks_config.indent_length = Self::default().tasks_config.indent_length;
         }
