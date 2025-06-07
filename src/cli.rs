@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use clap::{ArgAction, Parser, Subcommand};
+use clap_complete::Shell;
 
 use crate::config::{get_config_dir, get_data_dir};
 
@@ -42,6 +43,8 @@ pub enum Commands {
     Calendar,
     /// Generates a new configuration file from the default one
     GenerateConfig { path: Option<PathBuf> },
+    /// Generates shell completions
+    GenerateCompletions { shell: Shell },
     /// Write tasks to STDOUT
     Stdout,
     /// Creates a new task
