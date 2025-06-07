@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.12.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.11.2...v0.12.0) (2025-06-07)
+
+
+### Features
+
+* **cli:** `new-task` cli command ([#76](https://github.com/louis-thevenet/vault-tasks/issues/76)) ([5b44289](https://github.com/louis-thevenet/vault-tasks/commit/5b4428978def1d441c55668925e2f2e946a4effe))
+* **cli:** makes new_task command accept multiple tasks and allow hyphen values without passing -- ([8b485cc](https://github.com/louis-thevenet/vault-tasks/commit/8b485cc3986eb4fa0f91c4a76ade0b7292739e24))
+* shell completions generation ([#77](https://github.com/louis-thevenet/vault-tasks/issues/77)) ([9a69b5d](https://github.com/louis-thevenet/vault-tasks/commit/9a69b5dc3b633701f708050a626355a9adfddd31))
+* **tui:** allow wrapping around when selecting previous or next tab ([ba105e6](https://github.com/louis-thevenet/vault-tasks/commit/ba105e6cd2225817a2bab04d91c19a36c414c97e))
+* **tui:** display container name in preview ([#73](https://github.com/louis-thevenet/vault-tasks/issues/73)) ([c03d998](https://github.com/louis-thevenet/vault-tasks/commit/c03d998cb8637901bfb32c4f86bd08a51127d995))
+
+
+### Bug Fixes
+
+* **core:** strengthen time parsing rules (don't accept h&gt;24 etc) ([4841be2](https://github.com/louis-thevenet/vault-tasks/commit/4841be246cff467c8bfca857e1b2b143d31f944f))
+
+## [0.12.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.11.2...v0.12.0) (2025-06-07)
+
+
+### Features
+
+* **cli:** `new-task` cli command ([#76](https://github.com/louis-thevenet/vault-tasks/issues/76)) ([5b44289](https://github.com/louis-thevenet/vault-tasks/commit/5b4428978def1d441c55668925e2f2e946a4effe))
+* **cli:** makes new_task command accept multiple tasks and allow hyphen values without passing -- ([8b485cc](https://github.com/louis-thevenet/vault-tasks/commit/8b485cc3986eb4fa0f91c4a76ade0b7292739e24))
+* shell completions generation ([#77](https://github.com/louis-thevenet/vault-tasks/issues/77)) ([9a69b5d](https://github.com/louis-thevenet/vault-tasks/commit/9a69b5dc3b633701f708050a626355a9adfddd31))
+* **tui:** allow wrapping around when selecting previous or next tab ([ba105e6](https://github.com/louis-thevenet/vault-tasks/commit/ba105e6cd2225817a2bab04d91c19a36c414c97e))
+* **tui:** display container name in preview ([#73](https://github.com/louis-thevenet/vault-tasks/issues/73)) ([c03d998](https://github.com/louis-thevenet/vault-tasks/commit/c03d998cb8637901bfb32c4f86bd08a51127d995))
+
+
+### Bug Fixes
+
+* **core:** strengthen time parsing rules (don't accept h&gt;24 etc) ([4841be2](https://github.com/louis-thevenet/vault-tasks/commit/4841be246cff467c8bfca857e1b2b143d31f944f))
+
 ## [0.11.2](https://github.com/louis-thevenet/vault-tasks/compare/v0.11.1...v0.11.2) (2025-05-30)
 
 
