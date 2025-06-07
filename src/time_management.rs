@@ -57,7 +57,7 @@ mod tests {
     use color_eyre::eyre::Result;
 
     use crate::time_management::{
-        flow_time::FlowTime, pomodoro::Pomodoro, State, TimeManagementEngine,
+        State, TimeManagementEngine, flow_time::FlowTime, pomodoro::Pomodoro,
     };
 
     use std::time::Duration;

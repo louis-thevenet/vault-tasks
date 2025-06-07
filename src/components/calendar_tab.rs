@@ -1,15 +1,15 @@
 use std::collections::hash_map::Entry;
 
-use ::time::{Date, OffsetDateTime};
 use chrono::{Datelike, NaiveDate, NaiveTime, TimeDelta};
 use ratatui::{
+    Frame,
     layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span, ToSpan},
-    widgets::{calendar::CalendarEventStore, StatefulWidget, Widget},
-    Frame,
+    widgets::{StatefulWidget, Widget, calendar::CalendarEventStore},
 };
-use time::{util::days_in_year, Weekday};
+use time::{Date, OffsetDateTime};
+use time::{Weekday, util::days_in_year};
 use tracing::error;
 use tui_scrollview::ScrollViewState;
 
@@ -18,11 +18,11 @@ use crate::{
     app::Mode,
     config::Config,
     core::{
-        filter::{filter_to_vec, Filter},
+        TaskManager,
+        filter::{Filter, filter_to_vec},
         sorter::SortingMode,
         task::{DueDate, State, Task},
         vault_data::VaultData,
-        TaskManager,
     },
     widgets::{help_menu::HelpMenu, styled_calendar::StyledCalendar, task_list::TaskList},
 };

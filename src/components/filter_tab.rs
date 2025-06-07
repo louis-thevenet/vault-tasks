@@ -12,11 +12,11 @@ use tui_scrollview::ScrollViewState;
 use super::Component;
 
 use crate::app::Mode;
+use crate::core::TaskManager;
 use crate::core::filter::{self, filter_to_vec, parse_search_input};
 use crate::core::sorter::SortingMode;
 use crate::core::task::Task;
 use crate::core::vault_data::VaultData;
-use crate::core::TaskManager;
 use crate::tui::Tui;
 use crate::widgets::help_menu::HelpMenu;
 use crate::widgets::input_bar::InputBar;

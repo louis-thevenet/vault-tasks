@@ -1,4 +1,4 @@
-use color_eyre::{eyre::bail, Result};
+use color_eyre::{Result, eyre::bail};
 use serde::Deserialize;
 use task::Task;
 
@@ -9,7 +9,7 @@ use std::{
 };
 use vault_data::VaultData;
 
-use filter::{filter, Filter};
+use filter::{Filter, filter};
 use tracing::{debug, error};
 use vault_parser::VaultParser;
 
@@ -457,7 +457,9 @@ impl TaskManager {
         // Get filename
         let filename = &filename_opt.unwrap_or(self.config.tasks_drop_file.clone());
         if filename.is_empty() {
-            eprintln!( "No drop file was provided via `--filename`, and no default is set in the configuration." );
+            eprintln!(
+                "No drop file was provided via `--filename`, and no default is set in the configuration."
+            );
             return;
         }
         if !Path::new(&filename)

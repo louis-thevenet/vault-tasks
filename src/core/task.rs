@@ -1,10 +1,10 @@
 use chrono::{NaiveDate, NaiveDateTime, Timelike};
-use color_eyre::{eyre::bail, Result};
+use color_eyre::{Result, eyre::bail};
 use core::fmt;
 use std::{
     cmp::Ordering,
     fmt::Display,
-    fs::{read_to_string, File},
+    fs::{File, read_to_string},
     io::Write,
     path::PathBuf,
 };
@@ -402,8 +402,8 @@ mod tests_tasks {
     use pretty_assertions::assert_eq;
 
     use crate::core::{
-        task::{DueDate, State, Task},
         TasksConfig,
+        task::{DueDate, State, Task},
     };
 
     #[test]

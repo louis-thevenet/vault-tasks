@@ -1,7 +1,7 @@
 use core::panic;
 use std::time::Duration;
 
-use crate::time_management::{time_management_technique::TimeManagementTechnique, State};
+use crate::time_management::{State, time_management_technique::TimeManagementTechnique};
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub struct Pomodoro {

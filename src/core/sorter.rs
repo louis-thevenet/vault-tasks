@@ -81,7 +81,7 @@ mod tests {
     use insta::{assert_debug_snapshot, with_settings};
 
     use super::SortingMode;
-    use crate::core::{parser::task::parse_task, task::Task, TasksConfig};
+    use crate::core::{TasksConfig, parser::task::parse_task, task::Task};
     #[test]
     fn task_sort_by_name() {
         let mut source = [

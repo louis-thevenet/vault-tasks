@@ -3,13 +3,13 @@ use std::iter::Peekable;
 use color_eyre::eyre::bail;
 use tracing::{debug, error};
 use winnow::{
+    Parser, Result,
     ascii::{space0, space1},
     combinator::{alt, delimited, preceded, repeat},
     token::{any, take_till, take_until, take_while},
-    Parser, Result,
 };
 
-use crate::{core::task::Task, core::vault_data::VaultData, core::TasksConfig};
+use crate::{core::TasksConfig, core::task::Task, core::vault_data::VaultData};
 
 use super::task::parse_task;
 
@@ -116,7 +116,9 @@ impl ParserFileEntry<'_> {
             match file_entry {
                 VaultData::Header(_, _, header_children) => {
                     match current_header_depth.cmp(&target_header_depth) {
-                        std::cmp::Ordering::Greater => panic!("Target header level was greater than current level which is impossible"), // shouldn't happen
+                        std::cmp::Ordering::Greater => panic!(
+                            "Target header level was greater than current level which is impossible"
+                        ), // shouldn't happen
                         std::cmp::Ordering::Equal => {
                             // Found correct header level
                             if current_task_depth == target_task_depth {
@@ -135,13 +137,16 @@ impl ParserFileEntry<'_> {
                                         );
                                     }
                                 }
-                                bail!("Couldn't find correct parent task to insert task {}", task_to_insert.name)
+                                bail!(
+                                    "Couldn't find correct parent task to insert task {}",
+                                    task_to_insert.name
+                                )
                             }
                         }
                         std::cmp::Ordering::Less => {
                             // Going deeper in header levels
                             for child in header_children.iter_mut().rev() {
-                                if let VaultData::Header(_,_, _) = child {
+                                if let VaultData::Header(_, _, _) = child {
                                     return append_task_aux(
                                         child,
                                         task_to_insert,
@@ -152,7 +157,10 @@ impl ParserFileEntry<'_> {
                                     );
                                 }
                             }
-                                bail!("Couldn't find correct parent header to insert task {}", task_to_insert.name)
+                            bail!(
+                                "Couldn't find correct parent header to insert task {}",
+                                task_to_insert.name
+                            )
                         }
                     }
                 }
@@ -161,7 +169,10 @@ impl ParserFileEntry<'_> {
                     let mut last_task = task;
                     while current_task_depth < target_task_depth {
                         if last_task.subtasks.is_empty() {
-                            error!("Could not find parent task, indenting may be wrong. Closest task line number: {:?}",last_task.line_number);
+                            error!(
+                                "Could not find parent task, indenting may be wrong. Closest task line number: {:?}",
+                                last_task.line_number
+                            );
                             bail!("Failed to insert task")
                         }
                         last_task = last_task.subtasks.last_mut().unwrap();
@@ -337,7 +348,9 @@ impl ParserFileEntry<'_> {
                         } else if let Some(task) = task.subtasks.last_mut() {
                             insert_desc_task(description, task, current_level + 1, target_level)
                         } else {
-                            debug!("Description was too indented, adding to closest task: {description}");
+                            debug!(
+                                "Description was too indented, adding to closest task: {description}"
+                            );
                             insert_desc_task(description, task, current_level + 1, target_level)
                         }
                     }
@@ -622,7 +635,7 @@ mod tests {
     use super::ParserFileEntry;
 
     use crate::core::{
-        parser::parser_file_entry::add_global_tag, task::Task, vault_data::VaultData, TasksConfig,
+        TasksConfig, parser::parser_file_entry::add_global_tag, task::Task, vault_data::VaultData,
     };
     #[test]
     fn test_with_useless_headers() {

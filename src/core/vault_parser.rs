@@ -1,11 +1,11 @@
-use color_eyre::{eyre::bail, Result};
+use color_eyre::{Result, eyre::bail};
 use std::{
     fs::{self, DirEntry},
     path::Path,
 };
 use tracing::{debug, info};
 
-use crate::core::{parser::parser_file_entry::ParserFileEntry, TasksConfig};
+use crate::core::{TasksConfig, parser::parser_file_entry::ParserFileEntry};
 
 use super::{task::Task, vault_data::VaultData};
 
@@ -51,11 +51,9 @@ impl VaultParser {
                     bail!("Expected a single Task in Header, got: {content:?}");
                 }
             }
-            Some(VaultData::Directory(_,_ )) =>bail!(
-                    "Got a Directory from {task}, should have been a Header then the Task, but this should never happen"
-                )
-,
-
+            Some(VaultData::Directory(_, _)) => bail!(
+                "Got a Directory from {task}, should have been a Header then the Task, but this should never happen"
+            ),
             _ => bail!("Task is malformed: `{task}`"),
         }
     }

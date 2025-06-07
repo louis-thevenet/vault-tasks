@@ -8,9 +8,9 @@ use ratskin::RatSkin;
 use tracing::error;
 
 use crate::core::{
+    PrettySymbolsConfig,
     task::{DueDate, Task},
     vault_data::VaultData,
-    PrettySymbolsConfig,
 };
 
 const HEADER_INDENT_RATIO: u16 = 3;
@@ -201,7 +201,7 @@ impl TaskListItem {
                     count += Self::compute_height(&VaultData::Task(sb.clone()), max_width - 2);
                 }
                 count.max(3) // If count == 2 then task name will go directly inside a block
-                             // Else task name will be the block's title and content will go inside
+                // Else task name will be the block's title and content will go inside
             }
         }
     }
@@ -294,7 +294,7 @@ mod tests {
     };
     use chrono::NaiveDate;
     use insta::assert_snapshot;
-    use ratatui::{backend::TestBackend, Terminal};
+    use ratatui::{Terminal, backend::TestBackend};
 
     use crate::config::Config;
 

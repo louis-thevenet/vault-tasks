@@ -34,10 +34,10 @@ impl Widget for InputBar<'_> {
 mod tests {
     use insta::assert_snapshot;
     use ratatui::{
+        Terminal,
         backend::TestBackend,
         layout::{Constraint, Layout},
         widgets::Block,
-        Terminal,
     };
     use tui_input::Input;
 

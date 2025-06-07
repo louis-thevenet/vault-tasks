@@ -1,4 +1,4 @@
-use winnow::{combinator::preceded, token::take_while, Parser, Result};
+use winnow::{Parser, Result, combinator::preceded, token::take_while};
 
 use super::token::Token;
 

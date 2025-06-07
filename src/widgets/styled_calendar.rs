@@ -1,8 +1,8 @@
 use ratatui::{
+    Frame,
     layout::{Constraint, Layout, Margin, Rect},
     style::{Style, Stylize},
     widgets::calendar::{CalendarEventStore, Monthly},
-    Frame,
 };
 use time::{Date, Month};
 

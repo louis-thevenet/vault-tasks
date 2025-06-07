@@ -136,11 +136,11 @@ impl SelectedTab {
 #[cfg(test)]
 mod tests {
     use insta::assert_snapshot;
-    use ratatui::{backend::TestBackend, Terminal};
+    use ratatui::{Terminal, backend::TestBackend};
     use tokio::sync::mpsc::unbounded_channel;
 
     use crate::{
-        components::{home::Home, Component},
+        components::{Component, home::Home},
         config::Config,
     };
 

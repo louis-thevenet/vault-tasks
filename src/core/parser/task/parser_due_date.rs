@@ -2,11 +2,11 @@ use chrono::{Datelike, Days, Months, NaiveDate};
 
 use tracing::error;
 use winnow::{
+    Parser, Result,
     ascii::digit1,
     combinator::{alt, separated},
     error::ParserError,
     token::take_while,
-    Parser, Result,
 };
 
 use super::token::Token;

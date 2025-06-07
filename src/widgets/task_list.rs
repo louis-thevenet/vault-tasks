@@ -100,7 +100,7 @@ mod tests {
     };
     use chrono::NaiveDate;
     use insta::assert_snapshot;
-    use ratatui::{backend::TestBackend, Terminal};
+    use ratatui::{Terminal, backend::TestBackend};
     use tui_scrollview::ScrollViewState;
 
     use crate::{config::Config, widgets::task_list::TaskList};

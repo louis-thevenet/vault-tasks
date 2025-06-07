@@ -1,5 +1,5 @@
-use crate::core::task::DueDate;
 use crate::core::TasksConfig;
+use crate::core::task::DueDate;
 
 use super::{
     parser::task::parse_task,
@@ -203,10 +203,10 @@ mod tests {
     use chrono::NaiveDate;
 
     use crate::core::{
-        filter::{filter, Filter},
+        TasksConfig,
+        filter::{Filter, filter},
         task::{DueDate, State, Task},
         vault_data::VaultData,
-        TasksConfig,
     };
 
     use super::{filter_to_vec, parse_search_input};

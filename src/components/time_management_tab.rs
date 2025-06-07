@@ -2,8 +2,8 @@ use crate::time_management::flow_time::FlowTime;
 use crate::time_management::pomodoro::Pomodoro;
 use crate::time_management::time_management_technique::TimeManagementTechnique;
 use crate::time_management::{State, TimeManagementEngine};
-use color_eyre::eyre::bail;
 use color_eyre::Result;
+use color_eyre::eyre::bail;
 use crossterm::event::Event;
 use layout::Flex;
 use notify_rust::Notification;
@@ -13,8 +13,8 @@ use std::time::Duration;
 use strum::IntoEnumIterator;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error};
-use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
+use tui_input::backend::crossterm::EventHandler;
 
 use super::Component;
 use crate::app::Mode;
@@ -172,7 +172,9 @@ impl TimeManagementTab<'_> {
                     .unwrap(),
                 ),
                 None => {
-                    error!("No corresponding time management method found, yet an update was triggered");
+                    error!(
+                        "No corresponding time management method found, yet an update was triggered"
+                    );
                     return;
                 }
             }
@@ -242,7 +244,9 @@ impl Component for TimeManagementTab<'_> {
                     let Some(old_value) =
                         settings.get(self.method_settings_list_state.selected().unwrap())
                     else {
-                        bail!("Tried to edit settings from a time management method that doesn't exist")
+                        bail!(
+                            "Tried to edit settings from a time management method that doesn't exist"
+                        )
                     };
                     debug!("Editing field {}", old_value.name);
                     // Don't accept invalid inputs
@@ -296,7 +300,9 @@ impl Component for TimeManagementTab<'_> {
                     let Some(old_value) =
                         settings.get(self.method_settings_list_state.selected().unwrap())
                     else {
-                        bail!("Tried to edit settings from a time management method that doesn't exist")
+                        bail!(
+                            "Tried to edit settings from a time management method that doesn't exist"
+                        )
                     };
                     self.edit_setting_bar.input = Input::new(old_value.value.to_string());
                     self.edit_setting_bar.is_focused = true;

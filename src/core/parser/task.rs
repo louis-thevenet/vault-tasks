@@ -18,14 +18,14 @@ use parser_time::parse_naive_time;
 use token::Token;
 use tracing::error;
 use winnow::{
+    Parser, Result,
     combinator::{alt, fail, repeat},
     token::any,
-    Parser, Result,
 };
 
 use crate::core::{
-    task::{DueDate, Task},
     TasksConfig,
+    task::{DueDate, Task},
 };
 
 /// Parses a `Token` from an input string.FileEntry
@@ -133,9 +133,9 @@ mod test {
     use chrono::{Datelike, Days, NaiveDate, NaiveDateTime, NaiveTime};
 
     use crate::core::{
+        TasksConfig,
         parser::task::parse_task,
         task::{DueDate, State, Task},
-        TasksConfig,
     };
     #[test]
     fn test_parse_task_no_description() {

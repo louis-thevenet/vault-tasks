@@ -1,5 +1,5 @@
 use chrono::NaiveTime;
-use winnow::{combinator::separated, prelude::*, token::take_while, Result};
+use winnow::{Result, combinator::separated, prelude::*, token::take_while};
 
 use super::token::Token;
 

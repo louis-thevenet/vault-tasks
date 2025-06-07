@@ -1,6 +1,6 @@
 use winnow::{
-    combinator::{alt, preceded},
     Parser, Result,
+    combinator::{alt, preceded},
 };
 
 use super::token::Token;

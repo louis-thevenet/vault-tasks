@@ -1,7 +1,7 @@
-use color_eyre::{eyre::bail, Result};
+use color_eyre::{Result, eyre::bail};
 use std::time::Duration;
 
-use crate::time_management::{time_management_technique::TimeManagementTechnique, State};
+use crate::time_management::{State, time_management_technique::TimeManagementTechnique};
 
 #[derive(Debug)]
 pub struct FlowTime {

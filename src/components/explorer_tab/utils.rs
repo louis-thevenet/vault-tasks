@@ -2,9 +2,9 @@ use crate::core::task::Task;
 use crate::tui::Tui;
 use crate::{action::Action, core::vault_data::VaultData};
 
-use super::{ExplorerTab, DIRECTORY_EMOJI, FILE_EMOJI};
-use color_eyre::eyre::bail;
+use super::{DIRECTORY_EMOJI, ExplorerTab, FILE_EMOJI};
 use color_eyre::Result;
+use color_eyre::eyre::bail;
 use std::cmp::Ordering;
 use std::path::PathBuf;
 use tracing::{debug, error, info};
