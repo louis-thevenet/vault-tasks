@@ -22,12 +22,6 @@ impl Display for BoolEntry {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EntryTypeVariant {
-    Score,
-    Bool,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EntryType {
     Score(ScoreEntry),
     Bool(BoolEntry),
@@ -42,21 +36,10 @@ impl Display for EntryType {
     }
 }
 
-impl EntryType {
-    fn variant(&self) -> EntryTypeVariant {
-        match self {
-            EntryType::Score(_) => EntryTypeVariant::Score,
-            EntryType::Bool(_) => EntryTypeVariant::Bool,
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TrackerCategory {
     /// Name of the tracker category
     pub name: String,
-    /// The type of entries this category accepts
-    entry_type: EntryTypeVariant,
     /// Entries in this tracker category
     pub entries: Vec<EntryType>,
 }
