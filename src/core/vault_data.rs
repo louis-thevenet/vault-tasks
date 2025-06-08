@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use super::task::Task;
+use super::{task::Task, tracker::Tracker};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VaultData {
@@ -10,6 +10,8 @@ pub enum VaultData {
     Header(usize, String, Vec<VaultData>),
     /// Task, Subtasks
     Task(Task),
+    // /// Tracker
+    // Tracker(Tracker),
 }
 
 impl Display for VaultData {
