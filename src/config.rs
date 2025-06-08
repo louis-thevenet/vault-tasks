@@ -155,10 +155,6 @@ impl Config {
         }
 
         if let Some(path) = &args.vault_path {
-            let path = match path.strip_prefix("./") {
-                Ok(stripped_path) => &stripped_path.to_path_buf(),
-                Err(_) => path,
-            };
             cfg.tasks_config.vault_path.clone_from(path);
         }
 
