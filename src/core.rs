@@ -1,6 +1,7 @@
 use color_eyre::{Result, eyre::bail};
 use serde::Deserialize;
 use task::Task;
+use tracker::Tracker;
 
 use std::{
     collections::HashSet,
@@ -133,6 +134,10 @@ impl TaskManager {
     pub fn load_from_config(config: &TasksConfig) -> Result<Self> {
         let mut res = Self::default();
         res.reload(config)?;
+        // insert some tracker for testing
+        if let VaultData::Directory(_, children) = &mut res.tasks {
+            children.push(VaultData::Tracker(Tracker::test()));
+        }
         Ok(res)
     }
 
@@ -178,6 +183,7 @@ impl TaskManager {
                     .iter()
                     .for_each(|task| Self::collect_tags(&VaultData::Task(task.clone()), tags));
             }
+            VaultData::Tracker(tracker) => todo!(),
         }
     }
 
@@ -215,6 +221,7 @@ impl TaskManager {
                                 );
                             }
                         }
+                        VaultData::Tracker(tracker) => todo!(),
                     }
                 }
                 bail!("Couldn't find corresponding entry");
@@ -256,6 +263,7 @@ impl TaskManager {
                     t.subtasks = vec![]; // Discard subtasks
                     VaultData::Task(t)
                 }
+                VaultData::Tracker(tracker) => todo!(),
             })
             .collect::<Vec<VaultData>>())
     }
@@ -290,6 +298,7 @@ impl TaskManager {
                         .iter()
                         .try_for_each(|c| explore_tasks_rec(config, &mut filename.clone(), c))?;
                 }
+                VaultData::Tracker(tracker) => todo!(),
             }
             Ok(())
         }
@@ -311,7 +320,6 @@ impl TaskManager {
                 Ok(file_entry)
             } else {
                 match &file_entry {
-                    // Both variants are very similar
                     VaultData::Header(_, name, children) | VaultData::Directory(name, children) => {
                         if *name == selected_header_path[path_index] {
                             if path_index + 1 == selected_header_path.len() {
@@ -349,6 +357,7 @@ impl TaskManager {
                         }
                         bail!("Couldn't find corresponding entry");
                     }
+                    VaultData::Tracker(tracker) => todo!(),
                 }
             }
         }
@@ -405,6 +414,7 @@ impl TaskManager {
                         }
                         false
                     }
+                    VaultData::Tracker(tracker) => todo!(),
                 }
             }
         }
@@ -456,10 +466,10 @@ impl TaskManager {
                     // Either it's the first layer and the path is wrong or we recursively called on the wrong entry which is impossible
                     bail!("Couldn't find corresponding entry in Header {name}");
                 }
-
                 VaultData::Task(_task) => {
                     bail!("Adding subtasks from CLI is not supported yet");
                 }
+                VaultData::Tracker(tracker) => todo!(),
             }
         }
 

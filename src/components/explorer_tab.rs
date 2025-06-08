@@ -266,6 +266,7 @@ impl ExplorerTab<'_> {
                 highlighted_style,
             )
             .render(area, frame.buffer_mut(), &mut ListState::default()),
+            Some(VaultData::Tracker(_)) => todo!(),
             None => (),
         }
     }

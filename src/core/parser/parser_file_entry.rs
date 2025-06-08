@@ -184,6 +184,7 @@ impl ParserFileEntry<'_> {
                 VaultData::Directory(_, _) => {
                     bail!("Failed to insert task: tried to insert into a directory")
                 }
+                VaultData::Tracker(tracker) => todo!(),
             }
         }
         append_task_aux(file_entry, task, 0, header_depth, 0, indent_length)
@@ -253,6 +254,7 @@ impl ParserFileEntry<'_> {
                 VaultData::Directory(name, _) => {
                     error!("Error: tried to insert a header into a directory : {name}");
                 }
+                VaultData::Tracker(tracker) => todo!(),
             }
         }
         insert_at_aux(
@@ -359,6 +361,7 @@ impl ParserFileEntry<'_> {
                 VaultData::Directory(_, _) => {
                     bail!("Failed to insert description: tried to insert into a directory")
                 }
+                VaultData::Tracker(tracker) => todo!(),
             }
         }
         append_description_aux(
@@ -571,6 +574,7 @@ impl ParserFileEntry<'_> {
                 }
             }
             VaultData::Task(_) => (),
+            VaultData::Tracker(tracker) => todo!(),
         }
         Some(file_entry.to_owned())
     }
@@ -623,6 +627,7 @@ fn add_global_tag(file_entry: &mut VaultData, tag: &String) {
                 }
                 insert_tag_task(task, tag);
             }
+            VaultData::Tracker(tracker) => todo!(),
         }
     }
     add_tag_aux(file_entry, tag);

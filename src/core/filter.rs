@@ -136,6 +136,7 @@ fn filter_to_vec_layer(
                 res.push(task.clone());
             }
         }
+        VaultData::Tracker(tracker) => todo!(),
     }
 }
 
@@ -197,6 +198,7 @@ pub fn filter(vault_data: &VaultData, task_filter: &Filter) -> Option<VaultData>
                 }))
             }
         }
+        VaultData::Tracker(tracker) => todo!(),
     }
 }
 

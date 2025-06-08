@@ -29,6 +29,7 @@ impl ExplorerTab<'_> {
                 name.clone(),
             ),
             VaultData::Task(task) => (task.state.to_string(), task.name.clone()),
+            VaultData::Tracker(tracker) => todo!(),
         }
     }
 
