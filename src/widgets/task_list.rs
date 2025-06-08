@@ -95,7 +95,8 @@ impl StatefulWidget for TaskList {
 #[cfg(test)]
 mod tests {
     use crate::core::{
-        task::{DueDate, State, Task},
+        date::DueDate,
+        task::{State, Task},
         vault_data::VaultData,
     };
     use chrono::NaiveDate;

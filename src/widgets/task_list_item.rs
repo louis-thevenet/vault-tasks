@@ -7,11 +7,7 @@ use ratatui::{
 use ratskin::RatSkin;
 use tracing::error;
 
-use crate::core::{
-    PrettySymbolsConfig,
-    task::{DueDate, Task},
-    vault_data::VaultData,
-};
+use crate::core::{PrettySymbolsConfig, date::DueDate, task::Task, vault_data::VaultData};
 
 const HEADER_INDENT_RATIO: u16 = 3;
 
@@ -287,7 +283,8 @@ impl Widget for TaskListItem {
 mod tests {
     use crate::{
         core::{
-            task::{DueDate, State, Task},
+            date::DueDate,
+            task::{State, Task},
             vault_data::VaultData,
         },
         widgets::task_list_item::TaskListItem,

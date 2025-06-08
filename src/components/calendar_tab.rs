@@ -19,9 +19,10 @@ use crate::{
     config::Config,
     core::{
         TaskManager,
+        date::DueDate,
         filter::{Filter, filter_to_vec},
         sorter::SortingMode,
-        task::{DueDate, State, Task},
+        task::{State, Task},
         vault_data::VaultData,
     },
     widgets::{help_menu::HelpMenu, styled_calendar::StyledCalendar, task_list::TaskList},

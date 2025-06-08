@@ -9,12 +9,12 @@ use std::{
 };
 use vault_data::VaultData;
 
+use crate::config::Config;
 use filter::{Filter, filter};
 use tracing::{debug, error};
 use vault_parser::VaultParser;
 
-use crate::config::Config;
-
+pub mod date;
 pub mod filter;
 pub mod parser;
 pub mod sorter;

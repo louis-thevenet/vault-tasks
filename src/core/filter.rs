@@ -1,7 +1,7 @@
 use crate::core::TasksConfig;
-use crate::core::task::DueDate;
 
 use super::{
+    date::DueDate,
     parser::task::parse_task,
     task::{State, Task},
     vault_data::VaultData,
@@ -204,8 +204,9 @@ mod tests {
 
     use crate::core::{
         TasksConfig,
+        date::DueDate,
         filter::{Filter, filter},
-        task::{DueDate, State, Task},
+        task::{State, Task},
         vault_data::VaultData,
     };
 
