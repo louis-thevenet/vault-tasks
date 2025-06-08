@@ -8,7 +8,7 @@ use ratatui::{
     text::{Line, Span, ToSpan},
     widgets::{StatefulWidget, Widget, calendar::CalendarEventStore},
 };
-use time::{Date, OffsetDateTime};
+use time::OffsetDateTime;
 use time::{Weekday, util::days_in_year};
 use tracing::error;
 use tui_scrollview::ScrollViewState;
@@ -19,7 +19,7 @@ use crate::{
     config::Config,
     core::{
         TaskManager,
-        date::DueDate,
+        date::Date,
         filter::{Filter, filter_to_vec},
         sorter::SortingMode,
         task::{State, Task},
@@ -48,8 +48,8 @@ pub struct CalendarTab<'a> {
     tasks: Vec<Task>,
     entries_list: TaskList,
     events: CalendarEventStore,
-    selected_date: Date,
-    previewed_date: Option<Date>,
+    selected_date: time::Date,
+    previewed_date: Option<time::Date>,
     task_list_widget_state: ScrollViewState,
     // Whether the help panel is open or not
     show_help: bool,
@@ -145,8 +145,8 @@ impl CalendarTab<'_> {
         let mut best = TimeDelta::MAX;
         for (i, task) in self.tasks.iter().enumerate() {
             let d = match task.due_date {
-                DueDate::NoDate => TimeDelta::MAX,
-                DueDate::Day(naive_date) => NaiveDate::from_ymd_opt(
+                Date::NoDate => TimeDelta::MAX,
+                Date::Day(naive_date) => NaiveDate::from_ymd_opt(
                     self.selected_date.year(),
                     self.selected_date.month() as u32,
                     u32::from(self.selected_date.day()),
@@ -154,7 +154,7 @@ impl CalendarTab<'_> {
                 .unwrap()
                 .signed_duration_since(naive_date)
                 .abs(),
-                DueDate::DayTime(naive_date_time) => NaiveDate::from_ymd_opt(
+                Date::DayTime(naive_date_time) => NaiveDate::from_ymd_opt(
                     self.selected_date.year(),
                     self.selected_date.month() as u32,
                     u32::from(self.selected_date.day()),
@@ -171,9 +171,9 @@ impl CalendarTab<'_> {
         }
 
         let previewed_date = match self.tasks[index_closest_task].due_date {
-            DueDate::NoDate => return, // return early since there is no task with date information
-            DueDate::Day(naive_date) => naive_date,
-            DueDate::DayTime(naive_date_time) => naive_date_time.date(),
+            Date::NoDate => return, // return early since there is no task with date information
+            Date::Day(naive_date) => naive_date,
+            Date::DayTime(naive_date_time) => naive_date_time.date(),
         };
 
         // Build preview task list
@@ -181,15 +181,15 @@ impl CalendarTab<'_> {
             self.tasks
                 .iter()
                 .filter_map(|t| match t.due_date {
-                    DueDate::NoDate => None,
-                    DueDate::Day(naive_date) => {
+                    Date::NoDate => None,
+                    Date::Day(naive_date) => {
                         if naive_date == previewed_date {
                             Some(VaultData::Task(t.clone()))
                         } else {
                             None
                         }
                     }
-                    DueDate::DayTime(naive_date_time) => {
+                    Date::DayTime(naive_date_time) => {
                         if naive_date_time.date() == previewed_date {
                             Some(VaultData::Task(t.clone()))
                         } else {
@@ -207,8 +207,8 @@ impl CalendarTab<'_> {
         self.tasks_to_events(self.tasks.clone().get(index_closest_task));
     }
     #[allow(clippy::cast_possible_truncation)]
-    fn naive_date_to_date(naive_date: NaiveDate) -> Date {
-        Date::from_iso_week_date(
+    fn naive_date_to_date(naive_date: NaiveDate) -> time::Date {
+        time::Date::from_iso_week_date(
             naive_date.year(),
             naive_date.iso_week().week() as u8,
             match naive_date.weekday() {
@@ -232,12 +232,12 @@ impl CalendarTab<'_> {
         // Previewed date
         if let Some(t) = previewed_task {
             match t.due_date {
-                DueDate::NoDate => (),
-                DueDate::Day(naive_date) => self
+                Date::NoDate => (),
+                Date::Day(naive_date) => self
                     .events
                     .add(Self::naive_date_to_date(naive_date), Self::PREVIEWED),
 
-                DueDate::DayTime(naive_date_time) => self.events.add(
+                Date::DayTime(naive_date_time) => self.events.add(
                     Self::naive_date_to_date(naive_date_time.date()),
                     Self::PREVIEWED,
                 ),
@@ -249,10 +249,10 @@ impl CalendarTab<'_> {
         let mut current = None;
         for task in self.tasks.clone() {
             let next = match task.clone().due_date {
-                DueDate::NoDate => None,
-                DueDate::Day(naive_date) => Some(Self::naive_date_to_date(naive_date)),
+                Date::NoDate => None,
+                Date::Day(naive_date) => Some(Self::naive_date_to_date(naive_date)),
 
-                DueDate::DayTime(naive_datetime) => {
+                Date::DayTime(naive_datetime) => {
                     Some(Self::naive_date_to_date(naive_datetime.date()))
                 }
             };
@@ -280,7 +280,7 @@ impl CalendarTab<'_> {
                 }
 
                 // Are we on the same date as before ?
-                if current.is_some_and(|d: Date| d == date) {
+                if current.is_some_and(|d: time::Date| d == date) {
                     // update if needed
                     if let Entry::Occupied(mut e) = self.events.0.entry(date) {
                         if theme == Self::TASK_TODO {

@@ -23,7 +23,7 @@ use winnow::{
     token::any,
 };
 
-use crate::core::{TasksConfig, date::DueDate, task::Task};
+use crate::core::{TasksConfig, date::Date, task::Task};
 
 /// Parses a `Token` from an input string.FileEntry
 fn parse_token(input: &mut &str, config: &TasksConfig) -> Result<Token> {
@@ -112,14 +112,14 @@ pub fn parse_task(input: &mut &str, filename: String, config: &TasksConfig) -> R
     );
     let due_date_time = if has_date {
         if has_time {
-            DueDate::DayTime(NaiveDateTime::new(due_date, due_time))
+            Date::DayTime(NaiveDateTime::new(due_date, due_time))
         } else {
-            DueDate::Day(due_date)
+            Date::Day(due_date)
         }
     } else if has_time {
-        DueDate::DayTime(NaiveDateTime::new(now.date_naive(), due_time))
+        Date::DayTime(NaiveDateTime::new(now.date_naive(), due_time))
     } else {
-        DueDate::NoDate
+        Date::NoDate
     };
     task.due_date = due_date_time;
     Ok(task)
@@ -131,7 +131,7 @@ mod test {
 
     use crate::core::{
         TasksConfig,
-        date::DueDate,
+        date::Date,
         parser::task::parse_task,
         task::{State, Task},
     };
@@ -150,7 +150,7 @@ mod test {
             name: "task_name".to_string(),
             description: None,
             tags: Some(vec!["done".to_string()]),
-            due_date: DueDate::Day(NaiveDate::from_ymd_opt(year, 10, 15).unwrap()),
+            due_date: Date::Day(NaiveDate::from_ymd_opt(year, 10, 15).unwrap()),
             priority: 0,
             state: State::Done,
             line_number: Some(1),
@@ -171,7 +171,7 @@ mod test {
             name: String::new(),
             description: None,
             tags: None,
-            due_date: DueDate::NoDate,
+            due_date: Date::NoDate,
             priority: 0,
             state: State::ToDo,
             line_number: Some(1),
@@ -190,7 +190,7 @@ mod test {
         let res = res.unwrap();
         let expected_date = chrono::Local::now().date_naive();
         let expected_time = NaiveTime::from_hms_opt(15, 30, 0).unwrap();
-        let expected_due_date = DueDate::DayTime(NaiveDateTime::new(expected_date, expected_time));
+        let expected_due_date = Date::DayTime(NaiveDateTime::new(expected_date, expected_time));
         assert_eq!(res.due_date, expected_due_date);
     }
 
@@ -210,7 +210,7 @@ mod test {
             ))
             .unwrap();
         let expected_time = NaiveTime::from_hms_opt(15, 30, 0).unwrap();
-        let expected_due_date = DueDate::DayTime(NaiveDateTime::new(expected_date, expected_time));
+        let expected_due_date = Date::DayTime(NaiveDateTime::new(expected_date, expected_time));
         assert_eq!(res.due_date, expected_due_date);
     }
 
@@ -229,7 +229,7 @@ mod test {
             ))
             .unwrap();
         let expected_time = NaiveTime::from_hms_opt(15, 30, 0).unwrap();
-        let expected_due_date = DueDate::DayTime(NaiveDateTime::new(expected_date, expected_time));
+        let expected_due_date = Date::DayTime(NaiveDateTime::new(expected_date, expected_time));
         assert_eq!(res.due_date, expected_due_date);
     }
 
@@ -248,7 +248,7 @@ mod test {
             ))
             .unwrap();
         let expected_time = NaiveTime::from_hms_opt(15, 30, 0).unwrap();
-        let expected_due_date = DueDate::DayTime(NaiveDateTime::new(expected_date, expected_time));
+        let expected_due_date = Date::DayTime(NaiveDateTime::new(expected_date, expected_time));
         assert_eq!(res.due_date, expected_due_date);
     }
 
@@ -259,7 +259,7 @@ mod test {
         let res = parse_task(&mut input, String::new(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
-        let expected_due_date = DueDate::NoDate;
+        let expected_due_date = Date::NoDate;
         assert_eq!(res.due_date, expected_due_date);
     }
 

@@ -4,12 +4,12 @@ use chrono::{NaiveDate, NaiveDateTime, Timelike};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 /// This type accounts for the case where the task has a due date but no exact due time
-pub enum DueDate {
+pub enum Date {
     NoDate,
     Day(NaiveDate),
     DayTime(NaiveDateTime),
 }
-impl Display for DueDate {
+impl Display for Date {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Day(date) => write!(f, "{date}"),
@@ -19,7 +19,7 @@ impl Display for DueDate {
     }
 }
 
-impl DueDate {
+impl Date {
     #[must_use]
     pub fn to_display_format(&self, due_date_symbol: &str, not_american_format: bool) -> String {
         if matches!(self, Self::NoDate) {
@@ -61,8 +61,8 @@ impl DueDate {
             .unwrap();
 
         let time_delta = match self {
-            DueDate::Day(naive_date) => now.date_naive().signed_duration_since(*naive_date),
-            DueDate::DayTime(naive_date_time) => {
+            Date::Day(naive_date) => now.date_naive().signed_duration_since(*naive_date),
+            Date::DayTime(naive_date_time) => {
                 now.date_naive()
                     .signed_duration_since(naive_date_time.date())
                     // same truncation here
@@ -75,7 +75,7 @@ impl DueDate {
                             .unwrap(),
                     )
             }
-            DueDate::NoDate => return None,
+            Date::NoDate => return None,
         };
         let (prefix, suffix) = match time_delta.num_seconds().cmp(&0) {
             Ordering::Less => (String::from("in "), String::new()),

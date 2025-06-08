@@ -1,7 +1,7 @@
 use crate::core::TasksConfig;
 
 use super::{
-    date::DueDate,
+    date::Date,
     parser::task::parse_task,
     task::{State, Task},
     vault_data::VaultData,
@@ -73,13 +73,13 @@ fn filter_task(task: &Task, filter: &Filter) -> bool {
     };
 
     let date_match = match (task.due_date.clone(), filter.task.due_date.clone()) {
-        (_, DueDate::NoDate) => true,
-        (DueDate::DayTime(task_date), DueDate::DayTime(search_date))
+        (_, Date::NoDate) => true,
+        (Date::DayTime(task_date), Date::DayTime(search_date))
             if task_date == search_date =>
         {
             true
         }
-        (DueDate::Day(task_date), DueDate::Day(search_date)) if task_date == search_date => true,
+        (Date::Day(task_date), Date::Day(search_date)) if task_date == search_date => true,
         (_, _) => false,
     };
 
@@ -204,7 +204,7 @@ mod tests {
 
     use crate::core::{
         TasksConfig,
-        date::DueDate,
+        date::Date,
         filter::{Filter, filter},
         task::{State, Task},
         vault_data::VaultData,
@@ -219,7 +219,7 @@ mod tests {
         let res = parse_search_input(input, &config);
         let expected = Filter {
             task: Task {
-                due_date: DueDate::Day(chrono::Local::now().date_naive()),
+                due_date: Date::Day(chrono::Local::now().date_naive()),
                 name: String::from("name"),
                 priority: 5,
                 state: State::ToDo,
@@ -238,7 +238,7 @@ mod tests {
         let res = parse_search_input(input, &config);
         let expected = Filter {
             task: Task {
-                due_date: DueDate::Day(chrono::Local::now().date_naive()),
+                due_date: Date::Day(chrono::Local::now().date_naive()),
                 name: String::from("name"),
                 priority: 5,
                 state: State::ToDo,
@@ -429,7 +429,7 @@ mod tests {
                                 vec![VaultData::Task(Task {
                                     name: "hfdgqskhjfg1".to_string(),
                                     line_number: Some(8),
-                                    due_date: DueDate::Day(
+                                    due_date: Date::Day(
                                         NaiveDate::from_ymd_opt(2020, 2, 2).unwrap(),
                                     ),
                                     description: Some("test\ndesc".to_string()),
@@ -469,7 +469,7 @@ mod tests {
         let expected = vec![Task {
             name: "hfdgqskhjfg1".to_string(),
             line_number: Some(8),
-            due_date: DueDate::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap()),
+            due_date: Date::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap()),
             description: Some("test\ndesc".to_string()),
             ..Default::default()
         }];
@@ -477,7 +477,7 @@ mod tests {
             &input,
             &Filter {
                 task: Task {
-                    due_date: DueDate::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap()),
+                    due_date: Date::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap()),
                     ..Default::default()
                 },
                 state: None,
@@ -504,7 +504,7 @@ mod tests {
                                     name: "real target".to_string(),
                                     line_number: Some(8),
                                     tags: Some(vec!["test".to_string()]),
-                                    due_date: DueDate::Day(
+                                    due_date: Date::Day(
                                         NaiveDate::from_ymd_opt(2020, 2, 2).unwrap(),
                                     ),
                                     description: Some("test\ndesc".to_string()),
@@ -544,7 +544,7 @@ mod tests {
         let expected = vec![Task {
             name: "real target".to_string(),
             line_number: Some(8),
-            due_date: DueDate::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap()),
+            due_date: Date::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap()),
             tags: Some(vec!["test".to_string()]),
             description: Some("test\ndesc".to_string()),
             ..Default::default()
@@ -555,7 +555,7 @@ mod tests {
                 task: Task {
                     name: String::from("target"),
                     tags: Some(vec!["test".to_string()]),
-                    due_date: DueDate::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap()),
+                    due_date: Date::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap()),
                     ..Default::default()
                 },
                 state: None,
