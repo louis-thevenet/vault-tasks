@@ -5,7 +5,7 @@ use lexical_sort::lexical_cmp;
 use strum::EnumIter;
 use strum_macros::FromRepr;
 
-use super::{date::DueDate, task::Task};
+use super::{date::Date, task::Task};
 
 #[derive(Default, Clone, Copy, FromRepr, EnumIter, strum_macros::Display)]
 pub enum SortingMode {
@@ -31,12 +31,12 @@ impl SortingMode {
     /// Compare two tasks by due date
     pub fn cmp_due_date(t1: &Task, t2: &Task) -> Ordering {
         match (&t1.due_date, &t2.due_date) {
-            (DueDate::Day(d1), DueDate::Day(d2)) => d1.cmp(d2),
-            (DueDate::DayTime(d1), DueDate::DayTime(d2)) => d1.cmp(d2),
-            (DueDate::Day(d1), DueDate::DayTime(d2)) => d1.and_time(NaiveTime::default()).cmp(d2),
-            (DueDate::DayTime(d1), DueDate::Day(d2)) => d1.cmp(&d2.and_time(NaiveTime::default())),
-            (DueDate::NoDate, DueDate::Day(_) | DueDate::DayTime(_)) => Ordering::Greater,
-            (DueDate::Day(_) | DueDate::DayTime(_), DueDate::NoDate) => Ordering::Less,
+            (Date::Day(d1), Date::Day(d2)) => d1.cmp(d2),
+            (Date::DayTime(d1), Date::DayTime(d2)) => d1.cmp(d2),
+            (Date::Day(d1), Date::DayTime(d2)) => d1.and_time(NaiveTime::default()).cmp(d2),
+            (Date::DayTime(d1), Date::Day(d2)) => d1.cmp(&d2.and_time(NaiveTime::default())),
+            (Date::NoDate, Date::Day(_) | Date::DayTime(_)) => Ordering::Greater,
+            (Date::Day(_) | Date::DayTime(_), Date::NoDate) => Ordering::Less,
             _ => Ordering::Equal,
         }
     }

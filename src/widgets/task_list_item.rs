@@ -7,7 +7,7 @@ use ratatui::{
 use ratskin::RatSkin;
 use tracing::error;
 
-use crate::core::{PrettySymbolsConfig, date::DueDate, task::Task, vault_data::VaultData};
+use crate::core::{PrettySymbolsConfig, date::Date, task::Task, vault_data::VaultData};
 
 const HEADER_INDENT_RATIO: u16 = 3;
 
@@ -183,7 +183,7 @@ impl TaskListItem {
                         0
                     });
                 }
-                if task.due_date != DueDate::NoDate
+                if task.due_date != Date::NoDate
                     || task.priority > 0
                     || task.is_today
                     || task.completion.is_some()
@@ -283,7 +283,7 @@ impl Widget for TaskListItem {
 mod tests {
     use crate::{
         core::{
-            date::DueDate,
+            date::Date,
             task::{State, Task},
             vault_data::VaultData,
         },
@@ -303,7 +303,7 @@ mod tests {
             tags: Some(vec![String::from("tag"), String::from("tag2")]),
             priority: 5,
             completion: Some(60),
-            due_date: DueDate::DayTime(
+            due_date: Date::DayTime(
                 NaiveDate::from_ymd_opt(2016, 7, 8)
                     .unwrap()
                     .and_hms_opt(9, 10, 11)
@@ -323,7 +323,7 @@ mod tests {
                 Task {
                     name: "subtask test with a long title 123456789 1 2 3".to_string(),
                     priority: 5,
-                    due_date: DueDate::DayTime(
+                    due_date: Date::DayTime(
                         NaiveDate::from_ymd_opt(2016, 7, 8)
                             .unwrap()
                             .and_hms_opt(9, 10, 11)
