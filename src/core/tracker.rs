@@ -1,16 +1,61 @@
-use std::fmt::Display;
 use chrono::{Datelike, NaiveDate, NaiveDateTime, TimeDelta};
 use frequency::Frequency;
+use std::fmt::Display;
 use tabled::{builder::Builder, settings::Style};
 use tracker_category::{EntryType, TrackerCategory};
 
 use super::date::Date;
-mod frequency;
+pub mod frequency;
 mod tracker_category;
+
+pub struct NewTracker {
+    pub name: String,
+}
+
+impl NewTracker {
+    pub fn new(name: String) -> Self {
+        Self { name }
+    }
+    pub fn to_incomplete_tracker(
+        self,
+
+        frequency: Frequency,
+        categories: Vec<String>,
+    ) -> IncompleteTracker {
+        IncompleteTracker {
+            name: self.name,
+            frequency,
+            categories,
+        }
+    }
+}
+pub struct IncompleteTracker {
+    pub name: String,
+    frequency: Frequency,
+    categories: Vec<String>,
+}
+impl IncompleteTracker {
+    pub fn complete(
+        self,
+        start_date: Date,
+        length: usize,
+        categories: Vec<TrackerCategory>,
+        notes: Vec<String>,
+    ) -> Tracker {
+        Tracker {
+            name: self.name,
+            start_date,
+            length,
+            frequency: self.frequency,
+            categories,
+            notes,
+        }
+    }
+}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Tracker {
     /// Name of the tracker
-    name: String,
+    pub name: String,
     /// Date of the first occurrence
     start_date: Date,
     /// Total number of occurrences
@@ -23,42 +68,14 @@ pub struct Tracker {
     notes: Vec<String>,
 }
 impl Tracker {
-    pub(crate) fn test() -> Tracker {
-        Tracker {
-            name: "Test Tracker".to_string(),
-            start_date: Date::Day(NaiveDate::from_ymd_opt(2022, 1, 1).unwrap()),
-            length: 5,
-            frequency: Frequency::EveryXDays(5),
-            categories: vec![
-                TrackerCategory {
-                    name: "Some score stuff".to_string(),
-                    entries: vec![
-                        EntryType::Score(tracker_category::ScoreEntry { score: 4 }),
-                        EntryType::Score(tracker_category::ScoreEntry { score: 5 }),
-                        EntryType::Score(tracker_category::ScoreEntry { score: 5 }),
-                        EntryType::Score(tracker_category::ScoreEntry { score: 2 }),
-                        EntryType::Score(tracker_category::ScoreEntry { score: 5 }),
-                    ],
-                },
-                TrackerCategory {
-                    name: "Some boolean stuff".to_string(),
-                    entries: vec![
-                        EntryType::Bool(tracker_category::BoolEntry { value: true }),
-                        EntryType::Bool(tracker_category::BoolEntry { value: true }),
-                        EntryType::Bool(tracker_category::BoolEntry { value: true }),
-                        EntryType::Bool(tracker_category::BoolEntry { value: false }),
-                        EntryType::Bool(tracker_category::BoolEntry { value: true }),
-                    ],
-                },
-            ],
-            notes: vec![
-                "This is a test tracker.".to_string(),
-                "Created for demonstration purposes.".to_string(),
-                String::new(),
-                "It has two categories with different entry types.".to_string(),
-                String::new(),
-            ],
-        }
+    pub fn add_event(&mut self, date: &Date, entries: Vec<EntryType>) {
+        // should ensure date is valid
+        self.categories
+            .iter_mut()
+            .zip(entries.iter())
+            .map(|(cat, entry)| {
+                cat.entries.push(entry.clone());
+            });
     }
 }
 

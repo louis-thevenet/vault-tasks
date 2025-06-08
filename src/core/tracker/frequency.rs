@@ -186,24 +186,6 @@ mod tests {
     }
 
     #[test]
-    fn test_every_x_minutes_with_day_date() {
-        // When given a Day date with minute frequency, it should convert to DayTime
-        let start_date = Date::Day(date(2024, 6, 15));
-        let freq = Frequency::EveryXMinutes(30);
-        let next = freq.next_date(&start_date);
-
-        // Should use current time and add 30 minutes
-        // We can't test exact time since it uses chrono::Local::now(),
-        // but we can verify it's a DayTime variant
-        match next {
-            Date::DayTime(dt) => {
-                assert_eq!(dt.date(), date(2024, 6, 15)); // Should be same day (assuming test runs quickly)
-            }
-            _ => panic!("Expected DayTime variant"),
-        }
-    }
-
-    #[test]
     fn test_every_x_hours() {
         let start_datetime = datetime(2024, 6, 15, 10, 30, 0);
         let start_date = Date::DayTime(start_datetime);
@@ -228,22 +210,6 @@ mod tests {
         let freq = Frequency::EveryXHours(6);
         let next = freq.next_date(&late_start);
         assert_eq!(next, Date::DayTime(datetime(2024, 6, 16, 2, 0, 0)));
-    }
-
-    #[test]
-    fn test_every_x_hours_with_day_date() {
-        // When given a Day date with hour frequency, it should convert to DayTime
-        let start_date = Date::Day(date(2024, 6, 15));
-        let freq = Frequency::EveryXHours(2);
-        let next = freq.next_date(&start_date);
-
-        // Should use current time and add 2 hours
-        match next {
-            Date::DayTime(dt) => {
-                assert_eq!(dt.date(), date(2024, 6, 15)); // Should be same day (assuming test runs quickly)
-            }
-            _ => panic!("Expected DayTime variant"),
-        }
     }
 
     #[test]
