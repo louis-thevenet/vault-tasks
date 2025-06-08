@@ -59,65 +59,47 @@ impl VaultParser {
     }
 
     fn scan(&self, path: &Path, tasks: &mut VaultData) -> Result<()> {
-        if self.config.ignored.contains(&path.to_owned()) {
+        if self.config.ignored.contains(&path.to_path_buf()) {
             debug!("Ignoring {path:?} (ignored list)");
             return Ok(());
         }
 
-        let entries = if path.is_dir() {
-            path.read_dir()?
-                .collect::<Vec<Result<DirEntry, std::io::Error>>>()
-        } else {
-            path.parent()
-                .unwrap()
-                .read_dir()?
-                .filter(|e| {
-                    let e = e.as_ref().unwrap();
-                    e.file_name().eq(&path.file_name().unwrap())
-                })
-                .collect::<Vec<Result<DirEntry, std::io::Error>>>()
-        };
+        for entry in path.read_dir()?.filter_map(Result::ok) {
+            let file_name = entry.file_name();
+            let name = file_name.to_string_lossy();
+            let entry_path = entry.path();
 
-        for entry_err in entries {
-            let Ok(entry) = entry_err else { continue };
-            let name = entry.file_name().into_string().unwrap();
             if !self.config.parse_dot_files && name.starts_with('.') {
                 debug!("Ignoring {name:?} (dot file)");
                 continue;
             }
-            if self.config.ignored.contains(&entry.path()) {
+            if self.config.ignored.contains(&entry_path) {
                 debug!("Ignoring {name:?} (ignored list)");
                 continue;
             }
 
-            if let VaultData::Directory(_, children) = tasks {
-                if entry.path().is_dir() {
-                    // recursive call for this subdir
-                    let mut new_child = VaultData::Directory(
-                        entry.file_name().to_str().unwrap().to_owned(),
-                        vec![],
-                    );
+            let VaultData::Directory(_, children) = tasks else {
+                bail!("Error while scanning directories, FileEntry was not a Directory");
+            };
 
-                    self.scan(&entry.path(), &mut new_child)?;
+            if entry.file_type()?.is_dir() {
+                let mut new_child = VaultData::Directory(name.to_string(), vec![]);
+                self.scan(&entry_path, &mut new_child)?;
 
-                    if let VaultData::Directory(_, c) = new_child.clone() {
-                        if !c.is_empty() {
-                            children.push(new_child);
-                        }
+                if let VaultData::Directory(_, c) = &new_child {
+                    if !c.is_empty() {
+                        children.push(new_child);
                     }
-                } else if !std::path::Path::new(
-                    &entry.file_name().into_string().unwrap_or_default(),
-                )
-                .extension()
-                .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
-                {
-                    debug!("Ignoring {name:?} (not a .md file)");
-                    continue;
-                } else if let Some(file_tasks) = self.parse_file(&entry) {
-                    children.push(file_tasks);
                 }
             } else {
-                bail!("Error while scanning directories, FileEntry was not a Directory");
+                let ext = entry_path.extension().and_then(|s| s.to_str());
+                if ext.is_none_or(|e| !e.eq_ignore_ascii_case("md")) {
+                    debug!("Ignoring {name:?} (not a .md file)");
+                    continue;
+                }
+                if let Some(file_tasks) = self.parse_file(&entry) {
+                    children.push(file_tasks);
+                }
             }
         }
         Ok(())
