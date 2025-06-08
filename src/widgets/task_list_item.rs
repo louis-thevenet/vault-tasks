@@ -7,7 +7,7 @@ use ratatui::{
 use ratskin::RatSkin;
 use tracing::error;
 
-use crate::core::{PrettySymbolsConfig, date::Date, task::Task, vault_data::VaultData};
+use crate::core::{PrettySymbolsConfig, task::Task, vault_data::VaultData};
 
 const HEADER_INDENT_RATIO: u16 = 3;
 
@@ -84,14 +84,13 @@ impl TaskListItem {
             data_line.push(Span::raw(format!("{} ", self.symbols.today_tag)));
         }
 
-        let due_date_str = task
-            .due_date
-            .to_display_format(&self.symbols.due_date, self.not_american_format);
-
-        if !due_date_str.is_empty() {
-            data_line.push(Span::from(format!("{due_date_str} ")));
+        if let Some(due_date) = &task.due_date {
+            data_line.push(Span::from(format!(
+                "{} ",
+                due_date.to_display_format(&self.symbols.due_date, self.not_american_format)
+            )));
             if self.show_relative_due_dates {
-                if let Some(due_date_relative) = task.due_date.get_relative_str() {
+                if let Some(due_date_relative) = due_date.get_relative_str() {
                     data_line.push(Span::styled(
                         format!("({due_date_relative}) "),
                         Style::new().dim(),
@@ -183,7 +182,7 @@ impl TaskListItem {
                         0
                     });
                 }
-                if task.due_date != Date::NoDate
+                if task.due_date.is_some()
                     || task.priority > 0
                     || task.is_today
                     || task.completion.is_some()
@@ -303,12 +302,12 @@ mod tests {
             tags: Some(vec![String::from("tag"), String::from("tag2")]),
             priority: 5,
             completion: Some(60),
-            due_date: Date::DayTime(
+            due_date: Some(Date::DayTime(
                 NaiveDate::from_ymd_opt(2016, 7, 8)
                     .unwrap()
                     .and_hms_opt(9, 10, 11)
                     .unwrap(),
-            ),
+            )),
             subtasks: vec![
                 Task {
                     name: "subtask with another long title that should wrap around".to_string(),
@@ -323,12 +322,12 @@ mod tests {
                 Task {
                     name: "subtask test with a long title 123456789 1 2 3".to_string(),
                     priority: 5,
-                    due_date: Date::DayTime(
+                    due_date: Some(Date::DayTime(
                         NaiveDate::from_ymd_opt(2016, 7, 8)
                             .unwrap()
                             .and_hms_opt(9, 10, 11)
                             .unwrap(),
-                    ),
+                    )),
                     description: Some("test\ndesc".to_string()),
                     ..Default::default()
                 },

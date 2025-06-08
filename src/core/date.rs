@@ -5,7 +5,6 @@ use chrono::{NaiveDate, NaiveDateTime, Timelike};
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 /// This type accounts for the case where the task has a due date but no exact due time
 pub enum Date {
-    NoDate,
     Day(NaiveDate),
     DayTime(NaiveDateTime),
 }
@@ -14,7 +13,6 @@ impl Display for Date {
         match self {
             Self::Day(date) => write!(f, "{date}"),
             Self::DayTime(date) => write!(f, "{date}"),
-            Self::NoDate => Ok(()),
         }
     }
 }
@@ -22,14 +20,10 @@ impl Display for Date {
 impl Date {
     #[must_use]
     pub fn to_display_format(&self, due_date_symbol: &str, not_american_format: bool) -> String {
-        if matches!(self, Self::NoDate) {
-            String::new()
-        } else {
-            format!(
-                "{due_date_symbol} {}",
-                self.to_string_format(not_american_format)
-            )
-        }
+        format!(
+            "{due_date_symbol} {}",
+            self.to_string_format(not_american_format)
+        )
     }
     #[must_use]
     pub fn to_string_format(&self, not_american_format: bool) -> String {
@@ -47,7 +41,6 @@ impl Date {
         match self {
             Self::Day(date) => date.format(format_date).to_string(),
             Self::DayTime(date) => date.format(format_datetime).to_string(),
-            Self::NoDate => String::new(),
         }
     }
 
@@ -75,7 +68,6 @@ impl Date {
                             .unwrap(),
                     )
             }
-            Date::NoDate => return None,
         };
         let (prefix, suffix) = match time_delta.num_seconds().cmp(&0) {
             Ordering::Less => (String::from("in "), String::new()),
