@@ -10,8 +10,8 @@ pub enum VaultData {
     Header(usize, String, Vec<VaultData>),
     /// Task, Subtasks
     Task(Task),
-    // /// Tracker
-    // Tracker(Tracker),
+    /// Tracker
+    Tracker(Tracker),
 }
 
 impl Display for VaultData {
@@ -63,6 +63,12 @@ impl Display for VaultData {
                             write_indent(depth + 1, f)?;
                             writeln!(f, "{line}")?;
                         }
+                    }
+                }
+                VaultData::Tracker(tracker) => {
+                    for line in tracker.to_string().split('\n') {
+                        write_indent(depth, f)?;
+                        writeln!(f, "{line}")?;
                     }
                 }
             }
