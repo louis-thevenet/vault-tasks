@@ -198,6 +198,7 @@ impl TaskListItem {
                 count.max(3) // If count == 2 then task name will go directly inside a block
                 // Else task name will be the block's title and content will go inside
             }
+            VaultData::Tracker(tracker) => todo!(),
         }
     }
 }
@@ -274,6 +275,7 @@ impl Widget for TaskListItem {
                     sb_widget.render(layout[i + 1], buf);
                 }
             }
+            VaultData::Tracker(tracker) => todo!(),
         };
     }
 }
