@@ -13,6 +13,7 @@ use filter::{Filter, filter};
 use tracing::{debug, error};
 use vault_parser::VaultParser;
 
+pub mod date;
 pub mod filter;
 pub mod parser;
 pub mod sorter;

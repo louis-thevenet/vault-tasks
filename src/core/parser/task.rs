@@ -23,10 +23,7 @@ use winnow::{
     token::any,
 };
 
-use crate::core::{
-    TasksConfig,
-    task::{DueDate, Task},
-};
+use crate::core::{TasksConfig, date::DueDate, task::Task};
 
 /// Parses a `Token` from an input string.FileEntry
 fn parse_token(input: &mut &str, config: &TasksConfig) -> Result<Token> {
@@ -134,8 +131,9 @@ mod test {
 
     use crate::core::{
         TasksConfig,
+        date::DueDate,
         parser::task::parse_task,
-        task::{DueDate, State, Task},
+        task::{State, Task},
     };
     #[test]
     fn test_parse_task_no_description() {

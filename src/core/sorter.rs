@@ -5,7 +5,7 @@ use lexical_sort::lexical_cmp;
 use strum::EnumIter;
 use strum_macros::FromRepr;
 
-use super::task::{DueDate, Task};
+use super::{date::DueDate, task::Task};
 
 #[derive(Default, Clone, Copy, FromRepr, EnumIter, strum_macros::Display)]
 pub enum SortingMode {
@@ -42,7 +42,7 @@ impl SortingMode {
     }
     /// Compares two tasks with the specified sorting mode
     /// Sorting mode is used first
-    /// If equal, other attribues will be used:
+    /// If equal, other attributes will be used:
     /// - State: `ToDo` < `Done` (in Ord impl of `State`)
     /// - The other sorting mode
     /// - Priority: usual number ordering
