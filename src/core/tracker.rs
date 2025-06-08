@@ -1,7 +1,8 @@
 use std::fmt::Display;
+use chrono::{Datelike, NaiveDate, NaiveDateTime, TimeDelta};
 use frequency::Frequency;
 use tabled::{builder::Builder, settings::Style};
-use tracker_category::TrackerCategory;
+use tracker_category::{EntryType, TrackerCategory};
 
 use super::date::Date;
 mod frequency;
@@ -27,7 +28,7 @@ impl Tracker {
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2022, 1, 1).unwrap()),
             length: 5,
-            frequency: Frequency::EveryXDays(3),
+            frequency: Frequency::EveryXDays(5),
             categories: vec![
                 TrackerCategory {
                     name: "Some score stuff".to_string(),
