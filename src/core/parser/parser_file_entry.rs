@@ -96,7 +96,7 @@ impl ParserFileEntry<'_> {
         Ok(FileToken::StartOfCodeBlock)
     }
     fn parse_end_of_code_block(input: &mut &str) -> Result<FileToken> {
-        take_until(0.., "````").parse_next(input)?;
+        take_until(0.., "```").parse_next(input)?;
         Ok(FileToken::EndOfCodeBlock)
     }
     fn insert_task_at(
