@@ -18,6 +18,7 @@ pub mod filter;
 pub mod parser;
 pub mod sorter;
 pub mod task;
+pub mod tracker;
 pub mod vault_data;
 mod vault_parser;
 
