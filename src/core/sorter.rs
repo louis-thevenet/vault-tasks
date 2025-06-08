@@ -31,12 +31,16 @@ impl SortingMode {
     /// Compare two tasks by due date
     pub fn cmp_due_date(t1: &Task, t2: &Task) -> Ordering {
         match (&t1.due_date, &t2.due_date) {
-            (Date::Day(d1), Date::Day(d2)) => d1.cmp(d2),
-            (Date::DayTime(d1), Date::DayTime(d2)) => d1.cmp(d2),
-            (Date::Day(d1), Date::DayTime(d2)) => d1.and_time(NaiveTime::default()).cmp(d2),
-            (Date::DayTime(d1), Date::Day(d2)) => d1.cmp(&d2.and_time(NaiveTime::default())),
-            (Date::NoDate, Date::Day(_) | Date::DayTime(_)) => Ordering::Greater,
-            (Date::Day(_) | Date::DayTime(_), Date::NoDate) => Ordering::Less,
+            (Some(Date::Day(d1)), Some(Date::Day(d2))) => d1.cmp(d2),
+            (Some(Date::DayTime(d1)), Some(Date::DayTime(d2))) => d1.cmp(d2),
+            (Some(Date::Day(d1)), Some(Date::DayTime(d2))) => {
+                d1.and_time(NaiveTime::default()).cmp(d2)
+            }
+            (Some(Date::DayTime(d1)), Some(Date::Day(d2))) => {
+                d1.cmp(&d2.and_time(NaiveTime::default()))
+            }
+            (None, Some(Date::Day(_) | Date::DayTime(_))) => Ordering::Greater,
+            (Some(Date::Day(_) | Date::DayTime(_)), None) => Ordering::Less,
             _ => Ordering::Equal,
         }
     }

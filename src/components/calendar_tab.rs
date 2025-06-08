@@ -145,8 +145,8 @@ impl CalendarTab<'_> {
         let mut best = TimeDelta::MAX;
         for (i, task) in self.tasks.iter().enumerate() {
             let d = match task.due_date {
-                Date::NoDate => TimeDelta::MAX,
-                Date::Day(naive_date) => NaiveDate::from_ymd_opt(
+                None => TimeDelta::MAX,
+                Some(Date::Day(naive_date)) => NaiveDate::from_ymd_opt(
                     self.selected_date.year(),
                     self.selected_date.month() as u32,
                     u32::from(self.selected_date.day()),
@@ -154,7 +154,7 @@ impl CalendarTab<'_> {
                 .unwrap()
                 .signed_duration_since(naive_date)
                 .abs(),
-                Date::DayTime(naive_date_time) => NaiveDate::from_ymd_opt(
+                Some(Date::DayTime(naive_date_time)) => NaiveDate::from_ymd_opt(
                     self.selected_date.year(),
                     self.selected_date.month() as u32,
                     u32::from(self.selected_date.day()),
@@ -171,9 +171,9 @@ impl CalendarTab<'_> {
         }
 
         let previewed_date = match self.tasks[index_closest_task].due_date {
-            Date::NoDate => return, // return early since there is no task with date information
-            Date::Day(naive_date) => naive_date,
-            Date::DayTime(naive_date_time) => naive_date_time.date(),
+            None => return, // return early since there is no task with date information
+            Some(Date::Day(naive_date)) => naive_date,
+            Some(Date::DayTime(naive_date_time)) => naive_date_time.date(),
         };
 
         // Build preview task list
@@ -181,15 +181,15 @@ impl CalendarTab<'_> {
             self.tasks
                 .iter()
                 .filter_map(|t| match t.due_date {
-                    Date::NoDate => None,
-                    Date::Day(naive_date) => {
+                    None => None,
+                    Some(Date::Day(naive_date)) => {
                         if naive_date == previewed_date {
                             Some(VaultData::Task(t.clone()))
                         } else {
                             None
                         }
                     }
-                    Date::DayTime(naive_date_time) => {
+                    Some(Date::DayTime(naive_date_time)) => {
                         if naive_date_time.date() == previewed_date {
                             Some(VaultData::Task(t.clone()))
                         } else {
@@ -232,12 +232,12 @@ impl CalendarTab<'_> {
         // Previewed date
         if let Some(t) = previewed_task {
             match t.due_date {
-                Date::NoDate => (),
-                Date::Day(naive_date) => self
+                None => (),
+                Some(Date::Day(naive_date)) => self
                     .events
                     .add(Self::naive_date_to_date(naive_date), Self::PREVIEWED),
 
-                Date::DayTime(naive_date_time) => self.events.add(
+                Some(Date::DayTime(naive_date_time)) => self.events.add(
                     Self::naive_date_to_date(naive_date_time.date()),
                     Self::PREVIEWED,
                 ),
@@ -249,10 +249,10 @@ impl CalendarTab<'_> {
         let mut current = None;
         for task in self.tasks.clone() {
             let next = match task.clone().due_date {
-                Date::NoDate => None,
-                Date::Day(naive_date) => Some(Self::naive_date_to_date(naive_date)),
+                None => None,
+                Some(Date::Day(naive_date)) => Some(Self::naive_date_to_date(naive_date)),
 
-                Date::DayTime(naive_datetime) => {
+                Some(Date::DayTime(naive_datetime)) => {
                     Some(Self::naive_date_to_date(naive_datetime.date()))
                 }
             };

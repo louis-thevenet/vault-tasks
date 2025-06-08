@@ -112,14 +112,17 @@ pub fn parse_task(input: &mut &str, filename: String, config: &TasksConfig) -> R
     );
     let due_date_time = if has_date {
         if has_time {
-            Date::DayTime(NaiveDateTime::new(due_date, due_time))
+            Some(Date::DayTime(NaiveDateTime::new(due_date, due_time)))
         } else {
-            Date::Day(due_date)
+            Some(Date::Day(due_date))
         }
     } else if has_time {
-        Date::DayTime(NaiveDateTime::new(now.date_naive(), due_time))
+        Some(Date::DayTime(NaiveDateTime::new(
+            now.date_naive(),
+            due_time,
+        )))
     } else {
-        Date::NoDate
+        None
     };
     task.due_date = due_date_time;
     Ok(task)
@@ -150,7 +153,7 @@ mod test {
             name: "task_name".to_string(),
             description: None,
             tags: Some(vec!["done".to_string()]),
-            due_date: Date::Day(NaiveDate::from_ymd_opt(year, 10, 15).unwrap()),
+            due_date: Some(Date::Day(NaiveDate::from_ymd_opt(year, 10, 15).unwrap())),
             priority: 0,
             state: State::Done,
             line_number: Some(1),
@@ -171,7 +174,7 @@ mod test {
             name: String::new(),
             description: None,
             tags: None,
-            due_date: Date::NoDate,
+            due_date: None,
             priority: 0,
             state: State::ToDo,
             line_number: Some(1),
@@ -191,7 +194,7 @@ mod test {
         let expected_date = chrono::Local::now().date_naive();
         let expected_time = NaiveTime::from_hms_opt(15, 30, 0).unwrap();
         let expected_due_date = Date::DayTime(NaiveDateTime::new(expected_date, expected_time));
-        assert_eq!(res.due_date, expected_due_date);
+        assert_eq!(res.due_date, Some(expected_due_date));
     }
 
     #[test]
@@ -211,7 +214,7 @@ mod test {
             .unwrap();
         let expected_time = NaiveTime::from_hms_opt(15, 30, 0).unwrap();
         let expected_due_date = Date::DayTime(NaiveDateTime::new(expected_date, expected_time));
-        assert_eq!(res.due_date, expected_due_date);
+        assert_eq!(res.due_date, Some(expected_due_date));
     }
 
     #[test]
@@ -230,7 +233,7 @@ mod test {
             .unwrap();
         let expected_time = NaiveTime::from_hms_opt(15, 30, 0).unwrap();
         let expected_due_date = Date::DayTime(NaiveDateTime::new(expected_date, expected_time));
-        assert_eq!(res.due_date, expected_due_date);
+        assert_eq!(res.due_date, Some(expected_due_date));
     }
 
     #[test]
@@ -249,7 +252,7 @@ mod test {
             .unwrap();
         let expected_time = NaiveTime::from_hms_opt(15, 30, 0).unwrap();
         let expected_due_date = Date::DayTime(NaiveDateTime::new(expected_date, expected_time));
-        assert_eq!(res.due_date, expected_due_date);
+        assert_eq!(res.due_date, Some(expected_due_date));
     }
 
     #[test]
@@ -259,7 +262,7 @@ mod test {
         let res = parse_task(&mut input, String::new(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
-        let expected_due_date = Date::NoDate;
+        let expected_due_date = None;
         assert_eq!(res.due_date, expected_due_date);
     }
 

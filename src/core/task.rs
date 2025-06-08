@@ -68,7 +68,8 @@ impl Display for State {
 pub struct Task {
     pub subtasks: Vec<Task>,
     pub description: Option<String>,
-    pub due_date: Date,
+    /// None means the task has no associated due date
+    pub due_date: Option<Date>,
     pub filename: String,
     /// Line number in the file, if None then the task was not
     /// parsed from the file but added from CLI, it should be
@@ -85,7 +86,7 @@ pub struct Task {
 impl Default for Task {
     fn default() -> Self {
         Self {
-            due_date: Date::NoDate,
+            due_date: None,
             name: String::new(),
             priority: 0,
             state: State::ToDo,
@@ -114,15 +115,15 @@ impl fmt::Display for Task {
             String::new()
         };
         data_line.push_str(&is_today);
-        let due_date_str = self.due_date.to_string();
-
-        if !due_date_str.is_empty() {
+        if let Some(date) = &self.due_date {
             data_line.push_str(&format!(
-                "{} {due_date_str} ({}) ",
+                "{} {} ({}) ",
                 default_symbols.due_date,
-                self.due_date.get_relative_str().unwrap_or_default()
+                date.to_string(),
+                date.get_relative_str().unwrap_or_default()
             ));
         }
+
         if self.priority > 0 {
             data_line.push_str(&format!("{}{} ", default_symbols.priority, self.priority));
         }
@@ -199,7 +200,11 @@ impl Task {
             None => String::new(),
         };
 
-        let due_date = self.due_date.to_string_format(!config.use_american_format);
+        let due_date = if let Some(due_date) = &self.due_date {
+            due_date.to_string_format(!config.use_american_format)
+        } else {
+            String::new()
+        };
 
         let tags_str = self.tags.as_ref().map_or_else(String::new, |tags| {
             tags.clone()
@@ -300,7 +305,7 @@ mod tests_tasks {
             ..Default::default()
         };
         let task = Task {
-            due_date: Date::Day(NaiveDate::from_ymd_opt(2021, 12, 3).unwrap()),
+            due_date: Some(Date::Day(NaiveDate::from_ymd_opt(2021, 12, 3).unwrap())),
             name: String::from("Test Task"),
             priority: 1,
             state: State::ToDo,
@@ -319,7 +324,7 @@ mod tests_tasks {
             ..Default::default()
         };
         let task = Task {
-            due_date: Date::NoDate,
+            due_date: None,
             name: String::from("Test Task with No Date"),
             priority: 2,
             state: State::Done,
@@ -338,7 +343,7 @@ mod tests_tasks {
             ..Default::default()
         };
         let task = Task {
-            due_date: Date::NoDate,
+            due_date: None,
             name: String::from("Test Task with Today tag"),
             priority: 2,
             state: State::Done,
@@ -358,12 +363,6 @@ mod tests_due_date {
 
     use crate::core::task::Date;
     use chrono::{Duration, Local};
-
-    #[test]
-    fn test_get_relative_str_no_date() {
-        let due = Date::NoDate;
-        assert_eq!(due.get_relative_str(), None);
-    }
 
     #[test]
     fn test_day_today() {
