@@ -9,7 +9,7 @@ use winnow::{
     token::{any, take_till, take_until, take_while},
 };
 
-use crate::{core::TasksConfig, core::task::Task, core::vault_data::VaultData};
+use crate::core::{TasksConfig, task::Task, tracker::Tracker, vault_data::VaultData};
 
 use super::task::parse_task;
 
@@ -32,6 +32,8 @@ enum FileToken {
     StartOfCodeBlock,
     /// A code block was closed
     EndOfCodeBlock,
+    /// Tracker Definition
+    TrackerDefinition(Tracker),
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -188,6 +190,59 @@ impl ParserFileEntry<'_> {
             }
         }
         append_task_aux(file_entry, task, 0, header_depth, 0, indent_length)
+    }
+    fn insert_tracker_at(
+        file_entry: &mut VaultData,
+        tracker: Tracker,
+        header_depth: usize,
+    ) -> color_eyre::Result<()> {
+        fn append_tracker_aux(
+            file_entry: &mut VaultData,
+            tracker_to_insert: Tracker,
+            current_header_depth: usize,
+            target_header_depth: usize,
+        ) -> color_eyre::Result<()> {
+            match file_entry {
+                VaultData::Header(_, _, header_children) => {
+                    match current_header_depth.cmp(&target_header_depth) {
+                        std::cmp::Ordering::Greater => panic!(
+                            "Target header level was greater than current level which is impossible"
+                        ), // shouldn't happen
+                        std::cmp::Ordering::Equal => {
+                            // Found correct header level
+                            header_children.push(VaultData::Tracker(tracker_to_insert));
+                            Ok(())
+                        }
+
+                        std::cmp::Ordering::Less => {
+                            // Going deeper in header levels
+                            for child in header_children.iter_mut().rev() {
+                                if let VaultData::Header(_, _, _) = child {
+                                    return append_tracker_aux(
+                                        child,
+                                        tracker_to_insert,
+                                        current_header_depth + 1,
+                                        target_header_depth,
+                                    );
+                                }
+                            }
+                            bail!(
+                                "Couldn't find correct parent header to insert task {}",
+                                tracker_to_insert.name
+                            )
+                        }
+                    }
+                }
+                VaultData::Task(task) => {
+                    bail!("Tried to insert a Tracker in a task")
+                }
+                VaultData::Directory(_, _) => {
+                    bail!("Failed to insert task: tried to insert into a directory")
+                }
+                VaultData::Tracker(tracker) => bail!("Tried to insert a Tracker in a tracker"),
+            }
+        }
+        append_tracker_aux(file_entry, tracker, 0, header_depth)
     }
     /// Inserts a `FileEntry` at the specific header `depth` in `file_entry`.
     fn insert_header_at(
@@ -405,7 +460,9 @@ impl ParserFileEntry<'_> {
         }
 
         let (line_number, mut line) = line_opt.unwrap();
+
         if code_block {
+            // We're in a code block
             match parser.parse_next(&mut line) {
                 Ok(FileToken::EndOfCodeBlock | FileToken::StartOfCodeBlock) => self.parse_file_aux(
                     input,
@@ -428,6 +485,7 @@ impl ParserFileEntry<'_> {
                 }
             }
         } else if comment_depth > 0 {
+            // We're in a comment
             match parser.parse_next(&mut line) {
                 Ok(FileToken::StartOfComment) => self.parse_file_aux(
                     input,
@@ -507,6 +565,19 @@ impl ParserFileEntry<'_> {
                     .is_err()
                     {
                         error!("Failed to insert description {description}");
+                    }
+                    self.parse_file_aux(
+                        input,
+                        file_entry,
+                        file_tags,
+                        header_depth,
+                        comment_depth,
+                        false,
+                    );
+                }
+                Ok(FileToken::TrackerDefinition(tracker)) => {
+                    if Self::insert_tracker_at(file_entry, tracker, header_depth).is_err() {
+                        error!("Failed to insert task");
                     }
                     self.parse_file_aux(
                         input,

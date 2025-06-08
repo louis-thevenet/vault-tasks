@@ -130,10 +130,6 @@ impl TaskManager {
     pub fn load_from_config(config: &TasksConfig) -> Result<Self> {
         let mut res = Self::default();
         res.reload(config)?;
-        // insert some tracker for testing
-        if let VaultData::Directory(_, children) = &mut res.tasks {
-            children.push(VaultData::Tracker(Tracker::test()));
-        }
         Ok(res)
     }
 
