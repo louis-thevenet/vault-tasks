@@ -78,7 +78,6 @@ pub fn parse_header(new_tracker: &NewTracker, input: &mut &str) -> Result<Tracke
         ),
     )
     .parse_next(input)?;
-    categories.pop(); // remove Notes
     Ok(new_tracker.to_tracker(frequency, categories))
 }
 pub fn parse_separator(input: &mut &str) -> Result<()> {
