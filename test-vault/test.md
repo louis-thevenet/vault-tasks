@@ -4,7 +4,7 @@ This is mostly a test file.
 
 ## test2
 
-- [ ] task 2024/10/10 p5 #tag @today
+- [ ] task 2024-10-10 p5 #tag @today
       Markdown _description_ that looks ~~pretty~~ **good**
 
   - [ ] subtask with desc
@@ -48,7 +48,7 @@ This is mostly a test file.
 - [ ] 16 c160
 - [ ] 17 c170
 
-- [ ] fully 2025/04/12 c50 p50 #tag1 #tag2 @today
+- [ ] fully 2025-04-12 c50 p50 #tag1 #tag2 @today
       description
 
   - [ ] subtask
