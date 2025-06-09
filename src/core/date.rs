@@ -28,14 +28,14 @@ impl Date {
     #[must_use]
     pub fn to_string_format(&self, not_american_format: bool) -> String {
         let format_date = if not_american_format {
-            "%d/%m/%Y"
+            "%d-%m-%Y"
         } else {
-            "%Y/%m/%d"
+            "%Y-%m-%d"
         };
         let format_datetime = if not_american_format {
-            "%d/%m/%Y %T"
+            "%d-%m-%Y %T"
         } else {
-            "%Y/%m/%d %T"
+            "%Y-%m-%d %T"
         };
 
         match self {

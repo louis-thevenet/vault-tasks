@@ -119,7 +119,7 @@ impl fmt::Display for Task {
             data_line.push_str(&format!(
                 "{} {} ({}) ",
                 default_symbols.due_date,
-                date.to_string(),
+                date,
                 date.get_relative_str().unwrap_or_default()
             ));
         }
