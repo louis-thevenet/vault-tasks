@@ -99,13 +99,15 @@ fn parse_score_entry(input: &mut &str) -> Result<TrackerEntry> {
         .parse_next(input)
 }
 fn parse_bool_entry(input: &mut &str) -> Result<TrackerEntry> {
-    alt((' ', 'x')).parse_next(input).map(|char| {
-        if char == ' ' {
-            TrackerEntry::Bool(BoolEntry { value: false })
-        } else {
-            TrackerEntry::Bool(BoolEntry { value: true })
-        }
-    })
+    delimited('[', alt((' ', 'x')), ']')
+        .parse_next(input)
+        .map(|char| {
+            if char == ' ' {
+                TrackerEntry::Bool(BoolEntry { value: false })
+            } else {
+                TrackerEntry::Bool(BoolEntry { value: true })
+            }
+        })
 }
 pub fn parse_entries(
     tracker: &Tracker,
@@ -118,7 +120,7 @@ pub fn parse_entries(
     )
     .parse_next(input)?;
 
-    // ensure date is consistent with tracker start date
+    // ensure date is consistent with tracker start date?
 
     let entries: Vec<String> = preceded(
         '|',
@@ -136,23 +138,46 @@ pub fn parse_entries(
 
     let mut parsed_entries = vec![];
     for (n, entry) in entries.iter().enumerate() {
-        debug!("Parsed entry: {entry}");
+        let entry = entry.trim().to_string();
+
+        // We're iterating over the entries we read from a line of the tracker
+        // Either
+        // - We already have at least one line from the categories
+        // - It's the first line
+        //
+        // It's the n-th entry, is there a category for it?
         if let Some(cat) = tracker.categories.get(n) {
+            // Is it the first entry we are parsing?
             parsed_entries.push(if let Some(first_entry) = cat.entries.first() {
-                match first_entry {
-                    TrackerEntry::Score(_score_entry) => parse_score_entry(&mut entry.as_str())?,
-                    TrackerEntry::Bool(_bool_entry) => parse_bool_entry(&mut entry.as_str())?,
-                    TrackerEntry::Note(_note_entry) => TrackerEntry::Note(NoteEntry {
-                        value: entry.to_string(),
-                    }),
+                if entry.is_empty() {
+                    // Empty entry => it's a blank entry
+                    TrackerEntry::Blank
+                } else {
+                    // Else, entry's type must match the category's type, else it's a parsing error
+                    match first_entry {
+                        TrackerEntry::Score(_score_entry) => {
+                            parse_score_entry(&mut entry.as_str())?
+                        }
+                        TrackerEntry::Bool(_bool_entry) => parse_bool_entry(&mut entry.as_str())?,
+                        TrackerEntry::Note(_note_entry) => TrackerEntry::Note(NoteEntry {
+                            value: entry.to_string(),
+                        }),
+                        TrackerEntry::Blank => TrackerEntry::Note(NoteEntry {
+                            value: entry.to_string(), // The only way to get here is if the first entry was
+                                                      // empty, but we know entry is not empty so that means
+                                                      // the first entry was an empty Note entry
+                        }),
+                    }
                 }
             } else {
-                debug!("First entry, can't ensure type");
+                // No previous entries, we'll guess the type from the first entry
                 if entry.is_empty() {
-                    parse_bool_entry(&mut entry.as_str())?
+                    // Empty entry => it's a blank entry
+                    TrackerEntry::Blank
                 } else {
                     alt((
                         parse_score_entry,
+                        parse_bool_entry,
                         (repeat(1.., none_of('|'))
                             .fold(String::new, |mut string, c| {
                                 string.push(c);
