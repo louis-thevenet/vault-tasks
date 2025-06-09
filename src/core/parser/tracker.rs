@@ -45,7 +45,12 @@ fn parse_date(config: &TasksConfig, input: &mut &str) -> Result<Date, winnow::er
 
     Ok(start_date)
 }
-pub fn parse_header(new_tracker: &NewTracker, input: &mut &str) -> Result<Tracker> {
+pub fn parse_header(
+    new_tracker: &NewTracker,
+    filename: String,
+    line_number: usize,
+    input: &mut &str,
+) -> Result<Tracker> {
     let frequency = preceded(
         '|',
         delimited(space0, parse_frequency::parse_frequency, space0),
@@ -66,7 +71,7 @@ pub fn parse_header(new_tracker: &NewTracker, input: &mut &str) -> Result<Tracke
         ),
     )
     .parse_next(input)?;
-    Ok(new_tracker.to_tracker(frequency, categories))
+    Ok(new_tracker.to_tracker(filename, line_number, frequency, categories))
 }
 pub fn parse_separator(input: &mut &str) -> Result<()> {
     '|'.parse_next(input)?;

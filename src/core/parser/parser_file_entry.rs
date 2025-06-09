@@ -598,7 +598,12 @@ impl ParserFileEntry<'_> {
 
                     if let Some((_next_line_number, mut next_line)) = input.peek().copied() {
                         // Parse header line
-                        if let Ok(mut tracker) = parse_header(&tracker_def, &mut next_line) {
+                        if let Ok(mut tracker) = parse_header(
+                            &tracker_def,
+                            self.filename.clone(),
+                            line_number,
+                            &mut next_line,
+                        ) {
                             input.next();
                             // Parse separator |---|---|
                             if input.peek().copied().is_some_and(|(_, mut next_line)| {
