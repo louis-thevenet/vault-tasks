@@ -67,7 +67,6 @@ impl Tracker {
             });
         self.length += 1;
     }
-
     pub(crate) fn fix_tracker_attributes(&self, _config: &TasksConfig, _filename: &path::Path) {
         debug!("Fixing Tracker attributes (not yet implemented)");
     }

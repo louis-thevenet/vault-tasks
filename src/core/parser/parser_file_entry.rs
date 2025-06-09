@@ -619,7 +619,7 @@ impl ParserFileEntry<'_> {
                                     }
                                     input.next();
                                 }
-
+                                debug!("{tracker:#?}");
                                 if Self::insert_tracker_at(file_entry, tracker, header_depth)
                                     .is_ok()
                                 {
@@ -634,7 +634,7 @@ impl ParserFileEntry<'_> {
                             error!("Failed to parse tracker header");
                         }
                     } else {
-                        error!("No line after tracker definition")
+                        error!("No line after tracker definition");
                     }
 
                     self.parse_file_aux(
