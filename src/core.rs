@@ -179,7 +179,7 @@ impl TaskManager {
                     .iter()
                     .for_each(|task| Self::collect_tags(&VaultData::Task(task.clone()), tags));
             }
-            VaultData::Tracker(tracker) => todo!(),
+            VaultData::Tracker(_tracker) => (),
         }
     }
 
@@ -294,7 +294,7 @@ impl TaskManager {
                         .iter()
                         .try_for_each(|c| explore_tasks_rec(config, &mut filename.clone(), c))?;
                 }
-                VaultData::Tracker(tracker) => todo!(),
+                VaultData::Tracker(tracker) => tracker.fix_tracker_attributes(config, filename),
             }
             Ok(())
         }

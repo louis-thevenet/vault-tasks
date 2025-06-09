@@ -9,9 +9,14 @@ use winnow::{
     token::{any, take_till, take_until, take_while},
 };
 
-use crate::core::{TasksConfig, task::Task, tracker::Tracker, vault_data::VaultData};
+use crate::core::{
+    TasksConfig,
+    task::Task,
+    tracker::{NewTracker, Tracker},
+    vault_data::VaultData,
+};
 
-use super::task::parse_task;
+use super::{task::parse_task, tracker::parse_tracker_definition};
 
 enum FileToken {
     /// Name, Heading level
@@ -33,7 +38,7 @@ enum FileToken {
     /// A code block was closed
     EndOfCodeBlock,
     /// Tracker Definition
-    TrackerDefinition(Tracker),
+    TrackerDefinition(NewTracker),
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -54,6 +59,12 @@ impl ParserFileEntry<'_> {
             |input: &mut &str| parse_task(input, self.filename.clone(), self.config);
         let task_res = task_parser.parse_next(input)?;
         Ok(FileToken::Task(task_res, indent_length))
+    }
+    fn parse_tracker_def(&self, input: &mut &str) -> Result<FileToken> {
+        Ok(FileToken::TrackerDefinition(parse_tracker_definition(
+            input,
+            self.config,
+        )?))
     }
     fn parse_header(input: &mut &str) -> Result<FileToken> {
         let header_depth: String = repeat(1.., "#").parse_next(input)?;
@@ -233,13 +244,13 @@ impl ParserFileEntry<'_> {
                         }
                     }
                 }
-                VaultData::Task(task) => {
+                VaultData::Task(_task) => {
                     bail!("Tried to insert a Tracker in a task")
                 }
                 VaultData::Directory(_, _) => {
                     bail!("Failed to insert task: tried to insert into a directory")
                 }
-                VaultData::Tracker(tracker) => bail!("Tried to insert a Tracker in a tracker"),
+                VaultData::Tracker(_tracker) => bail!("Tried to insert a Tracker in a tracker"),
             }
         }
         append_tracker_aux(file_entry, tracker, 0, header_depth)
@@ -449,6 +460,7 @@ impl ParserFileEntry<'_> {
             Self::parse_start_of_code_block,
             Self::parse_end_of_code_block,
             Self::parse_file_tag,
+            |input: &mut &str| self.parse_tracker_def(input),
             Self::parse_header,
             |input: &mut &str| self.parse_task(input),
             Self::parse_description,
@@ -575,8 +587,18 @@ impl ParserFileEntry<'_> {
                         false,
                     );
                 }
-                Ok(FileToken::TrackerDefinition(tracker)) => {
-                    if Self::insert_tracker_at(file_entry, tracker, header_depth).is_err() {
+                Ok(FileToken::TrackerDefinition(tracker_def)) => {
+                    debug!("Parsed a Tracker Definition");
+                    if Self::insert_tracker_at(
+                        file_entry,
+                        tracker_def.to_tracker(
+                            crate::core::tracker::frequency::Frequency::EveryXMinutes(5),
+                            vec![],
+                        ),
+                        header_depth,
+                    )
+                    .is_err()
+                    {
                         error!("Failed to insert task");
                     }
                     self.parse_file_aux(
@@ -645,7 +667,7 @@ impl ParserFileEntry<'_> {
                 }
             }
             VaultData::Task(_) => (),
-            VaultData::Tracker(tracker) => todo!(),
+            VaultData::Tracker(_) => (),
         }
         Some(file_entry.to_owned())
     }

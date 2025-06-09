@@ -143,7 +143,7 @@ fn parse_naive_date_from_numeric_format(
     }
     #[allow(clippy::cast_possible_wrap)]
     NaiveDate::from_ymd_opt(tokens[0] as i32, tokens[1], tokens[2])
-        .map_or_else(|| Err(ParserError::from_input(input)), |date| Ok(date))
+        .map_or_else(|| Err(ParserError::from_input(input)), Ok)
 }
 
 /// Parses a `NaiveDate` from the following cases:
