@@ -1,54 +1,45 @@
-use chrono::{Datelike, NaiveDate, NaiveDateTime, TimeDelta};
 use frequency::Frequency;
-use std::fmt::Display;
+use std::{fmt::Display, path};
 use tabled::{builder::Builder, settings::Style};
+use tracing::debug;
 use tracker_category::{EntryType, TrackerCategory};
 
-use super::date::Date;
+use super::{TasksConfig, date::Date};
 pub mod frequency;
 mod tracker_category;
 
+/// We need this state because of how the Tracker is parsed.
+///
+/// <!-- Tracker: tracker name <started on> -->
+/// <!-- | frequency | tracker categories | ... | notes | -->
+/// <!-- | --------- | ------------------ | --- | ----- | -->
+/// <!-- | date      | x                  | ... |  note | -->
+///
 pub struct NewTracker {
     pub name: String,
+    pub start_date: Date,
 }
 
 impl NewTracker {
-    pub fn new(name: String) -> Self {
-        Self { name }
+    pub fn new(name: String, start_date: Date) -> Self {
+        Self { name, start_date }
     }
-    pub fn to_incomplete_tracker(
-        self,
-
-        frequency: Frequency,
-        categories: Vec<String>,
-    ) -> IncompleteTracker {
-        IncompleteTracker {
-            name: self.name,
-            frequency,
-            categories,
-        }
-    }
-}
-pub struct IncompleteTracker {
-    pub name: String,
-    frequency: Frequency,
-    categories: Vec<String>,
-}
-impl IncompleteTracker {
-    pub fn complete(
-        self,
-        start_date: Date,
-        length: usize,
-        categories: Vec<TrackerCategory>,
-        notes: Vec<String>,
-    ) -> Tracker {
+    /// Converts the `NewTracker` into a `Tracker` which has no entry.
+    pub fn to_tracker(self, frequency: Frequency, categories: Vec<String>) -> Tracker {
+        let tracker_categories = categories
+            .into_iter()
+            .map(|name| TrackerCategory {
+                name,
+                entries: vec![],
+            })
+            .collect::<Vec<TrackerCategory>>();
         Tracker {
             name: self.name,
-            start_date,
-            length,
-            frequency: self.frequency,
-            categories,
-            notes,
+            frequency,
+            categories: tracker_categories,
+            start_date: self.start_date,
+            length: 0,
+            notes: vec![],
         }
     }
 }
@@ -76,6 +67,10 @@ impl Tracker {
             .map(|(cat, entry)| {
                 cat.entries.push(entry.clone());
             });
+    }
+
+    pub(crate) fn fix_tracker_attributes(&self, config: &TasksConfig, filename: &path::Path) {
+        debug!("Fixing Tracker attributes (not yet implemented)");
     }
 }
 

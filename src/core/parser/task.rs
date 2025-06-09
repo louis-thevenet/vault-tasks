@@ -22,7 +22,7 @@ use winnow::{
 use crate::core::{TasksConfig, date::Date, task::Task};
 
 use super::{
-    parser_date::{self, parse_naive_date},
+    parser_date::{self},
     parser_time,
 };
 
