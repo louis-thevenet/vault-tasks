@@ -1,20 +1,16 @@
 mod parse_completion;
 mod parse_today;
-mod parser_due_date;
 mod parser_priorities;
 mod parser_state;
 mod parser_tags;
-mod parser_time;
 mod token;
 
 use chrono::NaiveDateTime;
 use parse_completion::parse_completion;
 use parse_today::parse_today;
-use parser_due_date::parse_naive_date;
 use parser_priorities::parse_priority;
 use parser_state::parse_task_state;
 use parser_tags::parse_tag;
-use parser_time::parse_naive_time;
 use token::Token;
 use tracing::error;
 use winnow::{
@@ -25,11 +21,23 @@ use winnow::{
 
 use crate::core::{TasksConfig, date::Date, task::Task};
 
+use super::{
+    parser_date::{self, parse_naive_date},
+    parser_time,
+};
+
 /// Parses a `Token` from an input string.FileEntry
 fn parse_token(input: &mut &str, config: &TasksConfig) -> Result<Token> {
     alt((
-        |input: &mut &str| parse_naive_date(input, config.use_american_format),
-        parse_naive_time,
+        // |input: &mut &str| (parse_naive_date(input, config.use_american_format)),
+        |input: &mut &str| {
+            let date = parser_date::parse_naive_date(input, config.use_american_format)?;
+            Ok(Token::DueDate(date))
+        },
+        |input: &mut &str| {
+            let date = parser_time::parse_naive_time(input)?;
+            Ok(Token::DueTime(date))
+        },
         parse_tag,
         |input: &mut &str| parse_task_state(input, &config.task_state_markers),
         parse_priority,
@@ -100,31 +108,16 @@ pub fn parse_task(input: &mut &str, filename: String, config: &TasksConfig) -> R
     if !name_vec.is_empty() {
         task.name = name_vec.join(" ");
     }
-
-    let now = chrono::Local::now();
-    let (due_date, has_date) = (
-        due_date_opt.unwrap_or_else(|| now.date_naive()),
-        due_date_opt.is_some(),
-    );
-    let (due_time, has_time) = (
-        due_time_opt.unwrap_or_else(|| now.time()),
-        due_time_opt.is_some(),
-    );
-    let due_date_time = if has_date {
-        if has_time {
-            Some(Date::DayTime(NaiveDateTime::new(due_date, due_time)))
-        } else {
-            Some(Date::Day(due_date))
+    let due_date = if let Some(due_date) = due_date_opt {
+        match due_time_opt {
+            Some(time) => Some(Date::DayTime(NaiveDateTime::new(due_date, time))),
+            None => Some(Date::Day(due_date)),
         }
-    } else if has_time {
-        Some(Date::DayTime(NaiveDateTime::new(
-            now.date_naive(),
-            due_time,
-        )))
     } else {
         None
     };
-    task.due_date = due_date_time;
+
+    task.due_date = due_date;
     Ok(task)
 }
 #[cfg(test)]
