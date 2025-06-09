@@ -290,7 +290,7 @@ impl TaskManager {
                         .iter()
                         .try_for_each(|c| explore_tasks_rec(config, &mut filename.clone(), c))?;
                 }
-                VaultData::Tracker(tracker) => tracker.fix_tracker_attributes(config, filename),
+                VaultData::Tracker(tracker) => tracker.fix_tracker_attributes(config, filename)?,
             }
             Ok(())
         }

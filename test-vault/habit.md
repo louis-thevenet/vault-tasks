@@ -5,7 +5,7 @@
 ## Tracker definition
 
 <!-- Tracker: tracker name <started on> -->
-<!-- | frequence | tracker categories | ... | notes | -->
+<!-- | frequency | tracker categories | ... | notes | -->
 <!-- | --------- | ------------------ | --- | ----- | -->
 <!-- | dates     | x                  | ... |       | -->
 
