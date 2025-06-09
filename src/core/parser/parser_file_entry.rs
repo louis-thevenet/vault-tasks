@@ -11,6 +11,7 @@ use winnow::{
 
 use crate::core::{
     TasksConfig,
+    parser::tracker::parse_header,
     task::Task,
     tracker::{NewTracker, Tracker},
     vault_data::VaultData,
@@ -589,18 +590,23 @@ impl ParserFileEntry<'_> {
                 }
                 Ok(FileToken::TrackerDefinition(tracker_def)) => {
                     debug!("Parsed a Tracker Definition");
-                    if Self::insert_tracker_at(
-                        file_entry,
-                        tracker_def.to_tracker(
-                            crate::core::tracker::frequency::Frequency::EveryXMinutes(5),
-                            vec![],
-                        ),
-                        header_depth,
-                    )
-                    .is_err()
-                    {
-                        error!("Failed to insert task");
+
+                    while (input.peek().is_some_and(|(_, l)| l.is_empty())) {
+                        input.next();
                     }
+
+                    if let Some((next_line_number, mut next_line)) = input.peek().copied() {
+                        if let Ok(tracker) = parse_header(tracker_def, &mut next_line) {
+                            if Self::insert_tracker_at(file_entry, tracker, header_depth).is_ok() {
+                                input.next();
+                            } else {
+                                error!("Failed to insert tracker");
+                            }
+                        } else {
+                            error!("Failed to parse tracker");
+                        }
+                    }
+
                     self.parse_file_aux(
                         input,
                         file_entry,

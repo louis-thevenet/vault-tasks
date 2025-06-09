@@ -1,13 +1,19 @@
 use chrono::NaiveDateTime;
+use libc::__c_anonymous_sockaddr_can_tp;
+use tracing::debug;
 use winnow::{
     Parser, Result,
     ascii::space0,
-    combinator::{delimited, opt, preceded},
-    token::take_while,
+    combinator::{delimited, opt, preceded, repeat, separated},
+    token::{self, none_of, take_while},
 };
 mod parse_frequency;
 use super::{parser_date, parser_time::parse_naive_time};
-use crate::core::{TasksConfig, date::Date, tracker::NewTracker};
+use crate::core::{
+    TasksConfig,
+    date::Date,
+    tracker::{NewTracker, Tracker},
+};
 pub fn parse_tracker_definition(input: &mut &str, config: &TasksConfig) -> Result<NewTracker> {
     preceded(("Tracker:", space0), |input: &mut &str| {
         // Parse tracker name - everything up to the opening parenthesis
@@ -43,6 +49,33 @@ pub fn parse_tracker_definition(input: &mut &str, config: &TasksConfig) -> Resul
         Ok(NewTracker::new(name, start_date))
     })
     .parse_next(input)
+}
+pub fn parse_header(new_tracker: NewTracker, input: &mut &str) -> Result<Tracker> {
+    debug!("parsing {}", input);
+    let frequency = preceded(
+        '|',
+        delimited(space0, parse_frequency::parse_frequency, space0),
+    )
+    .parse_next(input)?;
+    debug!("Parsed frequency: {frequency:?}");
+    let mut categories: Vec<String> = preceded(
+        '|',
+        separated(
+            0..,
+            repeat(1.., delimited(space0, none_of('|'), space0)).fold(
+                String::new,
+                |mut string, c| {
+                    string.push(c);
+                    string
+                },
+            ),
+            '|',
+        ),
+    )
+    .parse_next(input)?;
+    debug!("Parsed categories: {categories:?}");
+    categories.pop();
+    Ok(new_tracker.to_tracker(frequency, categories))
 }
 #[cfg(test)]
 mod tests {

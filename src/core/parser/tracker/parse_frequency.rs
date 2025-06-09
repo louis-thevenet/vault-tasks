@@ -37,7 +37,7 @@ fn parse_every(input: &mut &str) -> Result<Frequency> {
         preceded((alt(("every", "Every")), space1), parse_literal_generic).parse_next(input)?;
     Ok(string_to_frequency(1, duration))
 }
-fn parse_frequency(input: &mut &str) -> Result<Frequency> {
+pub fn parse_frequency(input: &mut &str) -> Result<Frequency> {
     alt((parse_every_digit, parse_every)).parse_next(input)
 }
 
