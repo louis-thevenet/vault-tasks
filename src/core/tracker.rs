@@ -39,7 +39,6 @@ impl NewTracker {
             categories: tracker_categories,
             start_date: self.start_date.clone(),
             length: 0,
-            notes: vec![],
         }
     }
 }
@@ -55,8 +54,6 @@ pub struct Tracker {
     frequency: Frequency,
     /// Categories of the tracker
     pub categories: Vec<TrackerCategory>,
-    /// Additional notes for the tracker
-    notes: Vec<String>,
 }
 impl Tracker {
     pub fn add_event(&mut self, _date: &Date, entries: &[TrackerEntry]) {
@@ -68,13 +65,6 @@ impl Tracker {
             .for_each(|(cat, entry)| {
                 cat.entries.push(entry.clone());
             });
-        if entries_iter.clone().count() > self.categories.len() {
-            if let Some(TrackerEntry::Note(NoteEntry { value: note })) = entries_iter.last() {
-                self.notes.push(note.to_string());
-            } else {
-                error!("Last element of TrackerEntry entries was not a note but was still extra.");
-            }
-        }
         self.length += 1;
     }
 
@@ -90,7 +80,6 @@ impl Display for Tracker {
             [
                 vec![self.frequency.to_string()],
                 self.categories.iter().map(|c| c.name.clone()).collect(),
-                vec!["Notes".to_string()],
             ]
             .concat(),
         );
@@ -103,7 +92,6 @@ impl Display for Tracker {
                         .iter()
                         .map(|c| c.entries.get(n).unwrap().to_string())
                         .collect(),
-                    vec![self.notes.get(n).map_or("", |v| v).to_string()],
                 ]
                 .concat(),
             );
