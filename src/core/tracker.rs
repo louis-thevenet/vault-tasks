@@ -1,12 +1,12 @@
 use frequency::Frequency;
 use std::{fmt::Display, path};
 use tabled::{builder::Builder, settings::Style};
-use tracing::debug;
-use tracker_category::{EntryType, TrackerCategory};
+use tracing::{debug, error};
+use tracker_category::{NoteEntry, TrackerCategory, TrackerEntry};
 
 use super::{TasksConfig, date::Date};
 pub mod frequency;
-mod tracker_category;
+pub mod tracker_category;
 
 /// We need this state because of how the Tracker is parsed.
 ///
@@ -25,7 +25,7 @@ impl NewTracker {
         Self { name, start_date }
     }
     /// Converts the `NewTracker` into a `Tracker` which has no entry.
-    pub fn to_tracker(self, frequency: Frequency, categories: Vec<String>) -> Tracker {
+    pub fn to_tracker(&self, frequency: Frequency, categories: Vec<String>) -> Tracker {
         let tracker_categories = categories
             .into_iter()
             .map(|name| TrackerCategory {
@@ -34,10 +34,10 @@ impl NewTracker {
             })
             .collect::<Vec<TrackerCategory>>();
         Tracker {
-            name: self.name,
+            name: self.name.clone(),
             frequency,
             categories: tracker_categories,
-            start_date: self.start_date,
+            start_date: self.start_date.clone(),
             length: 0,
             notes: vec![],
         }
@@ -54,22 +54,31 @@ pub struct Tracker {
     /// Frequency (`start_date` + `frequency` * `n` = n-th occurrence)
     frequency: Frequency,
     /// Categories of the tracker
-    categories: Vec<TrackerCategory>,
+    pub categories: Vec<TrackerCategory>,
     /// Additional notes for the tracker
     notes: Vec<String>,
 }
 impl Tracker {
-    pub fn add_event(&mut self, date: &Date, entries: Vec<EntryType>) {
+    pub fn add_event(&mut self, _date: &Date, entries: &[TrackerEntry]) {
         // should ensure date is valid
+        let entries_iter = entries.iter();
         self.categories
             .iter_mut()
-            .zip(entries.iter())
-            .map(|(cat, entry)| {
+            .zip(entries_iter.clone()) // will consume only the correct amount
+            .for_each(|(cat, entry)| {
                 cat.entries.push(entry.clone());
             });
+        if entries_iter.clone().count() > self.categories.len() {
+            if let Some(TrackerEntry::Note(NoteEntry { value: note })) = entries_iter.last() {
+                self.notes.push(note.to_string());
+            } else {
+                error!("Last element of TrackerEntry entries was not a note but was still extra.");
+            }
+        }
+        self.length += 1;
     }
 
-    pub(crate) fn fix_tracker_attributes(&self, config: &TasksConfig, filename: &path::Path) {
+    pub(crate) fn fix_tracker_attributes(&self, _config: &TasksConfig, _filename: &path::Path) {
         debug!("Fixing Tracker attributes (not yet implemented)");
     }
 }
