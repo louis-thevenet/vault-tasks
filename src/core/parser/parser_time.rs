@@ -8,11 +8,7 @@ pub fn parse_naive_time(input: &mut &str) -> Result<NaiveTime> {
             let h = tokens[0];
             let m = tokens[1];
             let s = if tokens.len() == 3 { tokens[2] } else { 0 };
-            if h < 24 && m < 60 && s < 60 {
-                Some(NaiveTime::from_hms_opt(h, m, s).unwrap())
-            } else {
-                None
-            }
+            NaiveTime::from_hms_opt(h, m, s)
         })
         .parse_next(input)
 }

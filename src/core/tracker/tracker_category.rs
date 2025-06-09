@@ -17,7 +17,7 @@ pub struct BoolEntry {
 
 impl Display for BoolEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.value)
+        write!(f, "{}", if self.value { "x" } else { " " })
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]

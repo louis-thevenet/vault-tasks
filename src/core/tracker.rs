@@ -47,11 +47,11 @@ pub struct Tracker {
     /// Name of the tracker
     pub name: String,
     /// Date of the first occurrence
-    start_date: Date,
+    pub start_date: Date,
     /// Total number of occurrences
-    length: usize,
+    pub length: usize,
     /// Frequency (`start_date` + `frequency` * `n` = n-th occurrence)
-    frequency: Frequency,
+    pub frequency: Frequency,
     /// Categories of the tracker
     pub categories: Vec<TrackerCategory>,
 }
