@@ -20,41 +20,29 @@ use crate::core::{
 };
 pub fn parse_tracker_definition(input: &mut &str, config: &TasksConfig) -> Result<NewTracker> {
     preceded(("Tracker:", space0), |input: &mut &str| {
-        // Parse tracker name - everything up to the opening parenthesis
-        let name = take_while(0.., |c: char| c != '(' && c != '\n')
+        let name = take_while(0.., |c: char| c != '(')
             .map(|s: &str| s.trim().to_string())
             .parse_next(input)?;
 
         let start_date =
             delimited('(', |input: &mut &str| parse_date(config, input), ')').parse_next(input)?;
-
         Ok(NewTracker::new(name, start_date))
     })
     .parse_next(input)
 }
 
 fn parse_date(config: &TasksConfig, input: &mut &str) -> Result<Date, winnow::error::ContextError> {
-    let start_date = {
-        |input: &mut &str| {
-            // Parse the date first
-            let start_date = (|input: &mut &str| {
-                parser_date::parse_naive_date(input, config.use_american_format)
-            })
-            .parse_next(input)?;
+    // Parse the date first
+    let start_date = parser_date::parse_naive_date(input, config.use_american_format)?;
+    // Try to parse optional time after the date
+    let start_time_opt = opt(preceded(space0, parse_naive_time)).parse_next(input)?;
 
-            // Try to parse optional time after the date
-            let start_time_opt = opt(preceded(space0, parse_naive_time)).parse_next(input)?;
+    // Combine date and time
+    let start_date = match start_time_opt {
+        Some(time) => Date::DayTime(NaiveDateTime::new(start_date, time)),
+        None => Date::Day(start_date),
+    };
 
-            // Combine date and time
-            let start_date = match start_time_opt {
-                Some(time) => Date::DayTime(NaiveDateTime::new(start_date, time)),
-                None => Date::Day(start_date),
-            };
-
-            Ok(start_date)
-        }
-    }
-    .parse_next(input)?;
     Ok(start_date)
 }
 pub fn parse_header(new_tracker: &NewTracker, input: &mut &str) -> Result<Tracker> {
@@ -198,37 +186,629 @@ pub fn parse_entries(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::date::Date;
+    use crate::core::{
+        TasksConfig,
+        date::Date,
+        tracker::{
+            NewTracker, Tracker,
+            frequency::Frequency,
+            tracker_category::{BoolEntry, NoteEntry, ScoreEntry, TrackerCategory, TrackerEntry},
+        },
+    };
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
-    #[test]
-    fn test_parse_tracker_with_date() {
-        let mut input = "Tracker: my tracker name (today 15:30)";
-        let config = TasksConfig::default();
-        let result = parse_tracker_definition(&mut input, &config);
-        assert!(result.is_ok());
-        let tracker = result.unwrap();
-        assert_eq!(tracker.name, "my tracker name");
-        let now = chrono::Local::now().naive_local();
-        let expected_date = Date::DayTime(NaiveDateTime::new(
-            now.date(),
-            NaiveTime::from_hms_opt(15, 30, 0).unwrap(),
-        ));
-        assert_eq!(tracker.start_date, expected_date);
-    }
-    #[test]
-    fn test_parse_tracker_with_date_only() {
-        let mut input = "Tracker: date tracker (2024/12/25)";
-        let config = TasksConfig {
+    fn default_config() -> TasksConfig {
+        TasksConfig {
             use_american_format: true,
             ..Default::default()
-        };
+        }
+    }
+
+    #[test]
+    fn test_parse_tracker_definition_basic() {
+        let mut input = "Tracker: Reading Habit (2025/06/08)";
+        let config = default_config();
+
+        let result = parse_tracker_definition(&mut input, &config).unwrap();
+
+        assert_eq!(result.name, "Reading Habit");
+        assert_eq!(
+            result.start_date,
+            Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap())
+        );
+    }
+
+    #[test]
+    fn test_parse_tracker_definition_with_time() {
+        let mut input = "Tracker: Daily Exercise (2025/06/08 14:30)";
+        let config = default_config();
+
+        let result = parse_tracker_definition(&mut input, &config).unwrap();
+
+        assert_eq!(result.name, "Daily Exercise");
+        assert_eq!(
+            result.start_date,
+            Date::DayTime(NaiveDateTime::new(
+                NaiveDate::from_ymd_opt(2025, 6, 8).unwrap(),
+                NaiveTime::from_hms_opt(14, 30, 0).unwrap()
+            ))
+        );
+    }
+
+    #[test]
+    fn test_parse_tracker_definition_with_spaces() {
+        let mut input = "Tracker:   My Daily Habits   (2025/06/08)";
+        let config = default_config();
+
+        let result = parse_tracker_definition(&mut input, &config).unwrap();
+
+        assert_eq!(result.name, "My Daily Habits");
+    }
+
+    #[test]
+    fn test_parse_tracker_definition_empty_name() {
+        let mut input = "Tracker: (2025/06/08)";
+        let config = default_config();
+
+        let result = parse_tracker_definition(&mut input, &config).unwrap();
+
+        assert_eq!(result.name, "");
+    }
+
+    #[test]
+    fn test_parse_tracker_definition_invalid_format() {
+        let mut input = "Invalid format";
+        let config = default_config();
+
         let result = parse_tracker_definition(&mut input, &config);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_date_day_only() {
+        let mut input = "2025/06/08";
+        let config = default_config();
+
+        let result = parse_date(&config, &mut input).unwrap();
+
+        assert_eq!(
+            result,
+            Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap())
+        );
+    }
+
+    #[test]
+    fn test_parse_date_with_time() {
+        let mut input = "2025/06/08 09:15";
+        let config = default_config();
+
+        let result = parse_date(&config, &mut input).unwrap();
+
+        assert_eq!(
+            result,
+            Date::DayTime(NaiveDateTime::new(
+                NaiveDate::from_ymd_opt(2025, 6, 8).unwrap(),
+                NaiveTime::from_hms_opt(9, 15, 0).unwrap()
+            ))
+        );
+    }
+
+    #[test]
+    fn test_parse_date_with_seconds() {
+        let mut input = "2025/06/08 09:15:30";
+        let config = default_config();
+
+        let result = parse_date(&config, &mut input).unwrap();
+
+        assert_eq!(
+            result,
+            Date::DayTime(NaiveDateTime::new(
+                NaiveDate::from_ymd_opt(2025, 6, 8).unwrap(),
+                NaiveTime::from_hms_opt(9, 15, 30).unwrap()
+            ))
+        );
+    }
+
+    #[test]
+    fn test_parse_header_basic() {
+        let new_tracker = NewTracker::new(
+            "Test Tracker".to_string(),
+            Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
+        );
+        let mut input = "| every day | blogs | books | news | notes |";
+
+        let result = parse_header(&new_tracker, &mut input).unwrap();
+
+        assert_eq!(result.name, "Test Tracker");
+        assert_eq!(result.categories.len(), 4);
+        assert_eq!(result.categories[0].name, "blogs");
+        assert_eq!(result.categories[1].name, "books");
+        assert_eq!(result.categories[2].name, "news");
+        assert_eq!(result.categories[3].name, "notes");
+    }
+
+    #[test]
+    fn test_parse_header_with_spaces() {
+        let new_tracker = NewTracker::new(
+            "Test Tracker".to_string(),
+            Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
+        );
+        let mut input = "|  every week  |  exercise  |  diet  |  sleep  |";
+
+        let result = parse_header(&new_tracker, &mut input).unwrap();
+
+        assert_eq!(result.categories.len(), 3);
+        assert_eq!(result.categories[0].name, "exercise");
+        assert_eq!(result.categories[1].name, "diet");
+        assert_eq!(result.categories[2].name, "sleep");
+    }
+
+    #[test]
+    fn test_parse_header_single_category() {
+        let new_tracker = NewTracker::new(
+            "Single Cat".to_string(),
+            Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
+        );
+        let mut input = "| every day | reading |";
+
+        let result = parse_header(&new_tracker, &mut input).unwrap();
+
+        assert_eq!(result.categories.len(), 1);
+        assert_eq!(result.categories[0].name, "reading");
+    }
+
+    #[test]
+    fn test_parse_separator_basic() {
+        let mut input = "| ---------- | ----- | ----- | ---- |";
+
+        let result = parse_separator(&mut input);
+
         assert!(result.is_ok());
-        let tracker = result.unwrap();
-        assert_eq!(tracker.name, "date tracker");
-        let date = NaiveDate::from_ymd_opt(2024, 12, 25).unwrap();
-        let expected_date = Date::Day(date);
-        assert_eq!(tracker.start_date, expected_date);
+    }
+
+    #[test]
+    fn test_parse_separator_varied_lengths() {
+        let mut input = "| --- | ---------- | - | ------ |";
+
+        let result = parse_separator(&mut input);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_separator_with_spaces() {
+        let mut input = "|  -----  |  ---  |  --------  |";
+
+        let result = parse_separator(&mut input);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_score_entry_valid() {
+        let mut input = "5";
+
+        let result = parse_score_entry(&mut input).unwrap();
+
+        match result {
+            TrackerEntry::Score(score_entry) => assert_eq!(score_entry.score, 5),
+            _ => panic!("Expected Score entry"),
+        }
+    }
+
+    #[test]
+    fn test_parse_score_entry_zero() {
+        let mut input = "0";
+
+        let result = parse_score_entry(&mut input).unwrap();
+
+        match result {
+            TrackerEntry::Score(score_entry) => assert_eq!(score_entry.score, 0),
+            _ => panic!("Expected Score entry"),
+        }
+    }
+
+    #[test]
+    fn test_parse_score_entry_large_number() {
+        let mut input = "999";
+
+        let result = parse_score_entry(&mut input).unwrap();
+
+        match result {
+            TrackerEntry::Score(score_entry) => assert_eq!(score_entry.score, 999),
+            _ => panic!("Expected Score entry"),
+        }
+    }
+
+    #[test]
+    fn test_parse_score_entry_invalid() {
+        let mut input = "abc";
+
+        let result = parse_score_entry(&mut input);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_bool_entry_checked() {
+        let mut input = "[x]";
+
+        let result = parse_bool_entry(&mut input).unwrap();
+
+        match result {
+            TrackerEntry::Bool(bool_entry) => assert!(bool_entry.value),
+            _ => panic!("Expected Bool entry"),
+        }
+    }
+
+    #[test]
+    fn test_parse_bool_entry_unchecked() {
+        let mut input = "[ ]";
+
+        let result = parse_bool_entry(&mut input).unwrap();
+
+        match result {
+            TrackerEntry::Bool(bool_entry) => assert!(!bool_entry.value),
+            _ => panic!("Expected Bool entry"),
+        }
+    }
+
+    #[test]
+    fn test_parse_bool_entry_invalid_format() {
+        let mut input = "[y]";
+
+        let result = parse_bool_entry(&mut input);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_entries_mixed_types() {
+        // Create a tracker with existing categories to test type matching
+        let mut tracker = Tracker {
+            name: "Test Tracker".to_string(),
+            start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
+            length: 1,
+            frequency: Frequency::EveryXDays(1),
+            categories: vec![
+                TrackerCategory {
+                    name: "bool_cat".to_string(),
+                    entries: vec![TrackerEntry::Bool(BoolEntry { value: true })],
+                },
+                TrackerCategory {
+                    name: "score_cat".to_string(),
+                    entries: vec![TrackerEntry::Score(ScoreEntry { score: 1 })],
+                },
+                TrackerCategory {
+                    name: "note_cat".to_string(),
+                    entries: vec![TrackerEntry::Note(NoteEntry {
+                        value: "test".to_string(),
+                    })],
+                },
+            ],
+        };
+
+        let mut input = "| 2025/06/09 | [x] | 5 | finished reading |";
+        let config = default_config();
+
+        let result = parse_entries(&tracker, &config, &mut input).unwrap();
+
+        assert_eq!(
+            result.0,
+            Date::Day(NaiveDate::from_ymd_opt(2025, 6, 9).unwrap())
+        );
+        assert_eq!(result.1.len(), 3);
+
+        match &result.1[0] {
+            TrackerEntry::Bool(bool_entry) => assert!(bool_entry.value),
+            _ => panic!("Expected Bool entry"),
+        }
+
+        match &result.1[1] {
+            TrackerEntry::Score(score_entry) => assert_eq!(score_entry.score, 5),
+            _ => panic!("Expected Score entry"),
+        }
+
+        match &result.1[2] {
+            TrackerEntry::Note(note_entry) => assert_eq!(note_entry.value, "finished reading"),
+            _ => panic!("Expected Note entry"),
+        }
+    }
+
+    #[test]
+    fn test_parse_entries_with_blank_entries() {
+        let mut tracker = Tracker {
+            name: "Test Tracker".to_string(),
+            start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
+            length: 1,
+            frequency: Frequency::EveryXDays(1),
+            categories: vec![
+                TrackerCategory {
+                    name: "bool_cat".to_string(),
+                    entries: vec![TrackerEntry::Bool(BoolEntry { value: true })],
+                },
+                TrackerCategory {
+                    name: "score_cat".to_string(),
+                    entries: vec![TrackerEntry::Score(ScoreEntry { score: 1 })],
+                },
+            ],
+        };
+
+        let mut input = "| 2025/06/09 | [ ] |  |";
+        let config = default_config();
+
+        let result = parse_entries(&tracker, &config, &mut input).unwrap();
+
+        assert_eq!(result.1.len(), 2);
+
+        match &result.1[0] {
+            TrackerEntry::Bool(bool_entry) => assert!(!bool_entry.value),
+            _ => panic!("Expected Bool entry"),
+        }
+
+        match &result.1[1] {
+            TrackerEntry::Blank => {} // Expected blank entry
+            _ => panic!("Expected Blank entry"),
+        }
+    }
+
+    #[test]
+    fn test_parse_entries_first_time_type_inference() {
+        // Tracker with no existing entries - should infer types
+        let mut tracker = Tracker {
+            name: "New Tracker".to_string(),
+            start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
+            length: 0,
+            frequency: Frequency::EveryXDays(1),
+            categories: vec![
+                TrackerCategory {
+                    name: "cat1".to_string(),
+                    entries: vec![],
+                },
+                TrackerCategory {
+                    name: "cat2".to_string(),
+                    entries: vec![],
+                },
+                TrackerCategory {
+                    name: "cat3".to_string(),
+                    entries: vec![],
+                },
+            ],
+        };
+
+        let mut input = "| 2025/06/08 | [x] | 3 | some note |";
+        let config = default_config();
+
+        let result = parse_entries(&tracker, &config, &mut input).unwrap();
+
+        assert_eq!(result.1.len(), 3);
+
+        match &result.1[0] {
+            TrackerEntry::Bool(bool_entry) => assert!(bool_entry.value),
+            _ => panic!("Expected Bool entry"),
+        }
+
+        match &result.1[1] {
+            TrackerEntry::Score(score_entry) => assert_eq!(score_entry.score, 3),
+            _ => panic!("Expected Score entry"),
+        }
+
+        match &result.1[2] {
+            TrackerEntry::Note(note_entry) => assert_eq!(note_entry.value, "some note"),
+            _ => panic!("Expected Note entry"),
+        }
+    }
+
+    #[test]
+    fn test_parse_entries_with_datetime() {
+        let mut tracker = Tracker {
+            name: "Test Tracker".to_string(),
+            start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
+            length: 1,
+            frequency: Frequency::EveryXDays(1),
+            categories: vec![TrackerCategory {
+                name: "activity".to_string(),
+                entries: vec![TrackerEntry::Bool(BoolEntry { value: false })],
+            }],
+        };
+
+        let mut input = "| 2025/06/09 14:30 | [x] |";
+        let config = default_config();
+
+        let result = parse_entries(&tracker, &config, &mut input).unwrap();
+
+        assert_eq!(
+            result.0,
+            Date::DayTime(NaiveDateTime::new(
+                NaiveDate::from_ymd_opt(2025, 6, 9).unwrap(),
+                NaiveTime::from_hms_opt(14, 30, 0).unwrap()
+            ))
+        );
+    }
+
+    #[test]
+    fn test_parse_entries_empty_first_entry_becomes_blank() {
+        let mut tracker = Tracker {
+            name: "Test Tracker".to_string(),
+            start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
+            length: 0,
+            frequency: Frequency::EveryXDays(1),
+            categories: vec![TrackerCategory {
+                name: "cat1".to_string(),
+                entries: vec![],
+            }],
+        };
+
+        let mut input = "| 2025/06/08 |  |";
+        let config = default_config();
+
+        let result = parse_entries(&tracker, &config, &mut input).unwrap();
+
+        assert_eq!(result.1.len(), 1);
+
+        match &result.1[0] {
+            TrackerEntry::Blank => {} // Expected blank entry
+            _ => panic!("Expected Blank entry, got {:?}", result.1[0]),
+        }
+    }
+
+    #[test]
+    fn test_parse_entries_note_with_special_characters() {
+        let mut tracker = Tracker {
+            name: "Test Tracker".to_string(),
+            start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
+            length: 1,
+            frequency: Frequency::EveryXDays(1),
+            categories: vec![TrackerCategory {
+                name: "notes".to_string(),
+                entries: vec![TrackerEntry::Note(NoteEntry {
+                    value: "test".to_string(),
+                })],
+            }],
+        };
+
+        let mut input = "| 2025/06/09 | Read 'The Great Gatsby' - 50% done! |";
+        let config = default_config();
+
+        let result = parse_entries(&tracker, &config, &mut input).unwrap();
+
+        match &result.1[0] {
+            TrackerEntry::Note(note_entry) => {
+                assert_eq!(note_entry.value, "Read 'The Great Gatsby' - 50% done!");
+            }
+            _ => panic!("Expected Note entry"),
+        }
+    }
+
+    #[test]
+    fn test_parse_entries_score_type_mismatch_error() {
+        let mut tracker = Tracker {
+            name: "Test Tracker".to_string(),
+            start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
+            length: 1,
+            frequency: Frequency::EveryXDays(1),
+            categories: vec![TrackerCategory {
+                name: "score_cat".to_string(),
+                entries: vec![TrackerEntry::Score(ScoreEntry { score: 1 })],
+            }],
+        };
+
+        let mut input = "| 2025/06/09 | [x] |"; // Bool format for score category
+        let config = default_config();
+
+        let result = parse_entries(&tracker, &config, &mut input);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_entries_trimming_whitespace() {
+        let mut tracker = Tracker {
+            name: "Test Tracker".to_string(),
+            start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
+            length: 1,
+            frequency: Frequency::EveryXDays(1),
+            categories: vec![
+                TrackerCategory {
+                    name: "notes".to_string(),
+                    entries: vec![TrackerEntry::Note(NoteEntry {
+                        value: "test".to_string(),
+                    })],
+                },
+                TrackerCategory {
+                    name: "score".to_string(),
+                    entries: vec![TrackerEntry::Score(ScoreEntry { score: 1 })],
+                },
+            ],
+        };
+
+        let mut input = "|  2025/06/09  |   trimmed note   |   42   |";
+        let config = default_config();
+
+        let result = parse_entries(&tracker, &config, &mut input).unwrap();
+
+        match &result.1[0] {
+            TrackerEntry::Note(note_entry) => {
+                assert_eq!(note_entry.value, "trimmed note");
+            }
+            _ => panic!("Expected Note entry"),
+        }
+
+        match &result.1[1] {
+            TrackerEntry::Score(score_entry) => assert_eq!(score_entry.score, 42),
+            _ => panic!("Expected Score entry"),
+        }
+    }
+
+    #[test]
+    fn test_integration_full_tracker_parsing() {
+        let config = default_config();
+
+        // Parse tracker definition
+        let mut def_input = "Tracker: Reading Habit (2025/06/08)";
+        let new_tracker = parse_tracker_definition(&mut def_input, &config).unwrap();
+
+        // Parse header
+        let mut header_input = "| every day | blogs | books | news | notes |";
+        let tracker = parse_header(&new_tracker, &mut header_input).unwrap();
+
+        // Parse separator (just verify it works)
+        let mut sep_input = "| ---------- | ----- | ----- | ---- | ------------------ |";
+        parse_separator(&mut sep_input).unwrap();
+
+        // Parse multiple entries
+        let mut entry1_input = "| 2025/06/08 | [x] | [x] | 5 |  |";
+        let (date1, entries1) = parse_entries(&tracker, &config, &mut entry1_input).unwrap();
+
+        let mut entry2_input = "| 2025/06/09 | [x] | [ ] | 1 | finished this book |";
+        let (date2, entries2) = parse_entries(&tracker, &config, &mut entry2_input).unwrap();
+
+        // Verify results
+        assert_eq!(tracker.name, "Reading Habit");
+        assert_eq!(tracker.categories.len(), 4);
+
+        assert_eq!(
+            date1,
+            Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap())
+        );
+        assert_eq!(entries1.len(), 4);
+
+        assert_eq!(
+            date2,
+            Date::Day(NaiveDate::from_ymd_opt(2025, 6, 9).unwrap())
+        );
+        assert_eq!(entries2.len(), 4);
+
+        // Verify specific entry values from second row
+        match &entries2[3] {
+            TrackerEntry::Note(note) => assert_eq!(note.value, "finished this book"),
+            _ => panic!("Expected note entry"),
+        }
+    }
+
+    #[test]
+    fn test_error_cases() {
+        let config = default_config();
+
+        // Missing tracker prefix
+        let mut input1 = "Reading Habit (2025/06/08)";
+        assert!(parse_tracker_definition(&mut input1, &config).is_err());
+
+        // Missing date parentheses
+        let mut input2 = "Tracker: Reading Habit 2025/06/08";
+        assert!(parse_tracker_definition(&mut input2, &config).is_err());
+
+        // Invalid date format
+        let mut input3 = "Tracker: Reading Habit (invalid-date)";
+        assert!(parse_tracker_definition(&mut input3, &config).is_err());
+
+        // Missing pipe separators in header
+        let new_tracker = NewTracker::new(
+            "Test".to_string(),
+            Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
+        );
+        let mut input4 = "every day blogs books";
+        assert!(parse_header(&new_tracker, &mut input4).is_err());
     }
 }
