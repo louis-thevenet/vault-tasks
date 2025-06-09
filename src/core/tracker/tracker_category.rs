@@ -20,18 +20,30 @@ impl Display for BoolEntry {
         write!(f, "{}", self.value)
     }
 }
-
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EntryType {
-    Score(ScoreEntry),
-    Bool(BoolEntry),
+pub struct NoteEntry {
+    pub value: String,
 }
 
-impl Display for EntryType {
+impl Display for NoteEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TrackerEntry {
+    Score(ScoreEntry),
+    Bool(BoolEntry),
+    Note(NoteEntry),
+}
+
+impl Display for TrackerEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            EntryType::Score(entry) => write!(f, "{}", entry),
-            EntryType::Bool(entry) => write!(f, "{}", entry),
+            TrackerEntry::Score(entry) => write!(f, "{entry}",),
+            TrackerEntry::Bool(entry) => write!(f, "{entry}",),
+            TrackerEntry::Note(entry) => write!(f, "{entry}"),
         }
     }
 }
@@ -41,5 +53,5 @@ pub struct TrackerCategory {
     /// Name of the tracker category
     pub name: String,
     /// Entries in this tracker category
-    pub entries: Vec<EntryType>,
+    pub entries: Vec<TrackerEntry>,
 }

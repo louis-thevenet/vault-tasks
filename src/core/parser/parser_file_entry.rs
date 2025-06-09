@@ -1,7 +1,7 @@
 use std::iter::Peekable;
 
 use color_eyre::eyre::bail;
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 use winnow::{
     Parser, Result,
     ascii::{space0, space1},
@@ -11,7 +11,7 @@ use winnow::{
 
 use crate::core::{
     TasksConfig,
-    parser::tracker::parse_header,
+    parser::tracker::{parse_entries, parse_header, parse_separator},
     task::Task,
     tracker::{NewTracker, Tracker},
     vault_data::VaultData,
@@ -591,20 +591,50 @@ impl ParserFileEntry<'_> {
                 Ok(FileToken::TrackerDefinition(tracker_def)) => {
                     debug!("Parsed a Tracker Definition");
 
-                    while (input.peek().is_some_and(|(_, l)| l.is_empty())) {
+                    // Skip empty lines
+                    while input.peek().is_some_and(|(_, l)| l.is_empty()) {
                         input.next();
                     }
 
-                    if let Some((next_line_number, mut next_line)) = input.peek().copied() {
-                        if let Ok(tracker) = parse_header(tracker_def, &mut next_line) {
-                            if Self::insert_tracker_at(file_entry, tracker, header_depth).is_ok() {
+                    if let Some((_next_line_number, mut next_line)) = input.peek().copied() {
+                        // Parse header line
+                        if let Ok(mut tracker) = parse_header(&tracker_def, &mut next_line) {
+                            input.next();
+                            // Parse separator |---|---|
+                            if input.peek().copied().is_some_and(|(_, mut next_line)| {
+                                parse_separator(&mut next_line).is_ok()
+                            }) {
                                 input.next();
+
+                                while input.peek().is_some() {
+                                    let (_, mut next_line) = input.peek().copied().unwrap();
+                                    if let Ok((date, entries)) =
+                                        parse_entries(&tracker, self.config, &mut next_line)
+                                    {
+                                        debug!("inserting {entries:?}");
+                                        tracker.add_event(&date, &entries);
+                                    } else {
+                                        error!("Failed to parse tracker entry (could be finished)");
+                                        break;
+                                    }
+                                    input.next();
+                                }
+
+                                if Self::insert_tracker_at(file_entry, tracker, header_depth)
+                                    .is_ok()
+                                {
+                                    info!("Successfully inserted Tracker");
+                                } else {
+                                    error!("Failed to insert tracker");
+                                }
                             } else {
-                                error!("Failed to insert tracker");
+                                error!("Failed to parse tracker separator");
                             }
                         } else {
-                            error!("Failed to parse tracker");
+                            error!("Failed to parse tracker header");
                         }
+                    } else {
+                        error!("No line after tracker definition")
                     }
 
                     self.parse_file_aux(
