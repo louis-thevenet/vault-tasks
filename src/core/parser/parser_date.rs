@@ -124,14 +124,18 @@ fn parse_naive_date_from_adverb(input: &mut &str) -> Result<NaiveDate> {
     }
 }
 
-/// Parses a `NaiveDate` from a `yyyy/mm/dd` string.
-/// Can change convention with  =`american_format` flag.
+/// Parses a `NaiveDate` from a `yyyy/mm/dd` string or `yyyy-mm-dd`.
+/// Can change convention with the `american_format` flag.
 fn parse_naive_date_from_numeric_format(
     input: &mut &str,
     american_format: bool,
 ) -> Result<NaiveDate> {
-    let mut tokens: Vec<u32> =
-        separated(2..=3, take_while(1.., '0'..='9').parse_to::<u32>(), '/').parse_next(input)?;
+    let mut tokens: Vec<u32> = separated(
+        2..=3,
+        take_while(1.., '0'..='9').parse_to::<u32>(),
+        alt(('/', '-')),
+    )
+    .parse_next(input)?;
 
     if !american_format {
         tokens.reverse();
