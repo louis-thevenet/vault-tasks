@@ -4,10 +4,12 @@ use std::fs::read_to_string;
 use std::io::Write;
 use std::{fmt::Display, fs::File, path};
 use tabled::{builder::Builder, settings::Style};
-use tracing::Instrument;
+use tracing::error;
 use tracker_category::{NoteEntry, TrackerCategory, TrackerEntry};
 
-use super::{TasksConfig, date::Date};
+use super::TasksConfig;
+use super::date::Date;
+
 pub mod frequency;
 pub mod tracker_category;
 
@@ -75,8 +77,24 @@ impl Tracker {
     /// Amount of blanks to create when fixing the tracker attributes.
     const BLANKS_COUNT: usize = 3;
 
-    pub fn add_event(&mut self, _date: &Date, entries: &[TrackerEntry]) {
-        // should ensure date is valid
+    pub fn add_event(&mut self, date: &Date, entries: &[TrackerEntry]) {
+        // What date is it supposed to be?
+        let parsed_entries_count = self.categories.first().map_or(0, |c| c.entries.len());
+        let mut next_date = self.start_date.clone();
+        for _ in 0..parsed_entries_count {
+            next_date = self.frequency.next_date(&next_date);
+        }
+        // If a date was skipped,
+        // we'll push the missing dates
+        // it's expensive to count like this but you should have not skipped dates >:(
+        while date > &next_date {
+            self.categories.iter_mut().for_each(|cat| {
+                cat.entries.push(TrackerEntry::Blank);
+            });
+            self.length += 1;
+            next_date = self.frequency.next_date(&next_date);
+        }
+
         let entries_iter = entries.iter();
         self.categories
             .iter_mut()
@@ -170,5 +188,422 @@ impl Display for Tracker {
 
         writeln!(f, "Tracker: {} ({})\n", self.name, self.start_date)?;
         write!(f, "{}", b.build().with(Style::markdown()))
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::NaiveDate;
+    use frequency::Frequency;
+    use tracker_category::{NoteEntry, TrackerCategory, TrackerEntry};
+
+    fn create_test_tracker() -> Tracker {
+        Tracker {
+            name: "Test Tracker".to_string(),
+            filename: "test.md".to_string(),
+            line_number: 1,
+            start_date: Date::Day(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()),
+            length: 0,
+            frequency: Frequency::EveryXDays(1),
+            categories: vec![
+                TrackerCategory {
+                    name: "Category 1".to_string(),
+                    entries: vec![],
+                },
+                TrackerCategory {
+                    name: "Category 2".to_string(),
+                    entries: vec![],
+                },
+            ],
+        }
+    }
+
+    #[test]
+    fn test_add_event_no_skipped_dates() {
+        let mut tracker = create_test_tracker();
+        let date = Date::Day(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()); // Same as start_date
+        let entries = vec![
+            TrackerEntry::Note(NoteEntry {
+                value: "First entry".to_string(),
+            }),
+            TrackerEntry::Note(NoteEntry {
+                value: "Second entry".to_string(),
+            }),
+        ];
+
+        tracker.add_event(&date, &entries);
+
+        assert_eq!(tracker.length, 1);
+        assert_eq!(tracker.categories[0].entries.len(), 1);
+        assert_eq!(tracker.categories[1].entries.len(), 1);
+
+        // Verify the actual entries were added correctly
+        match &tracker.categories[0].entries[0] {
+            TrackerEntry::Note(note) => assert_eq!(note.value, "First entry"),
+            _ => panic!("Expected Note entry"),
+        }
+        match &tracker.categories[1].entries[0] {
+            TrackerEntry::Note(note) => assert_eq!(note.value, "Second entry"),
+            _ => panic!("Expected Note entry"),
+        }
+    }
+
+    #[test]
+    fn test_add_event_skip_one_date_daily() {
+        let mut tracker = create_test_tracker();
+
+        // Add first event on start date
+        let first_date = Date::Day(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap());
+        let first_entries = vec![
+            TrackerEntry::Note(NoteEntry {
+                value: "Day 1".to_string(),
+            }),
+            TrackerEntry::Note(NoteEntry {
+                value: "Day 1 Cat 2".to_string(),
+            }),
+        ];
+        tracker.add_event(&first_date, &first_entries);
+
+        // Skip January 2nd and add event for January 3rd
+        let skipped_date = Date::Day(NaiveDate::from_ymd_opt(2024, 1, 3).unwrap());
+        let skipped_entries = vec![
+            TrackerEntry::Note(NoteEntry {
+                value: "Day 3".to_string(),
+            }),
+            TrackerEntry::Note(NoteEntry {
+                value: "Day 3 Cat 2".to_string(),
+            }),
+        ];
+
+        tracker.add_event(&skipped_date, &skipped_entries);
+
+        // Should have 3 total entries now (Day 1, Blank for Day 2, Day 3)
+        assert_eq!(tracker.length, 3);
+        assert_eq!(tracker.categories[0].entries.len(), 3);
+        assert_eq!(tracker.categories[1].entries.len(), 3);
+
+        // Verify Day 1 entries
+        match &tracker.categories[0].entries[0] {
+            TrackerEntry::Note(note) => assert_eq!(note.value, "Day 1"),
+            _ => panic!("Expected Note entry for Day 1"),
+        }
+
+        // Verify Day 2 (skipped) entries are blank
+        assert_eq!(tracker.categories[0].entries[1], TrackerEntry::Blank);
+        assert_eq!(tracker.categories[1].entries[1], TrackerEntry::Blank);
+
+        // Verify Day 3 entries
+        match &tracker.categories[0].entries[2] {
+            TrackerEntry::Note(note) => assert_eq!(note.value, "Day 3"),
+            _ => panic!("Expected Note entry for Day 3"),
+        }
+    }
+
+    #[test]
+    fn test_add_event_skip_multiple_dates() {
+        let mut tracker = create_test_tracker();
+
+        // Add first event
+        let first_date = Date::Day(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap());
+        let first_entries = vec![
+            TrackerEntry::Note(NoteEntry {
+                value: "Day 1".to_string(),
+            }),
+            TrackerEntry::Note(NoteEntry {
+                value: "Day 1 Cat 2".to_string(),
+            }),
+        ];
+        tracker.add_event(&first_date, &first_entries);
+
+        // Skip 3 days (Jan 2, 3, 4) and add event for January 5th
+        let skipped_date = Date::Day(NaiveDate::from_ymd_opt(2024, 1, 5).unwrap());
+        let skipped_entries = vec![
+            TrackerEntry::Note(NoteEntry {
+                value: "Day 5".to_string(),
+            }),
+            TrackerEntry::Note(NoteEntry {
+                value: "Day 5 Cat 2".to_string(),
+            }),
+        ];
+
+        tracker.add_event(&skipped_date, &skipped_entries);
+
+        // Should have 5 total entries now (Day 1, 3 blanks, Day 5)
+        assert_eq!(tracker.length, 5);
+        assert_eq!(tracker.categories[0].entries.len(), 5);
+        assert_eq!(tracker.categories[1].entries.len(), 5);
+
+        // Verify Day 1 entries
+        match &tracker.categories[0].entries[0] {
+            TrackerEntry::Note(note) => assert_eq!(note.value, "Day 1"),
+            _ => panic!("Expected Note entry for Day 1"),
+        }
+
+        // Verify skipped days (indices 1, 2, 3) are blank
+        for i in 1..4 {
+            assert_eq!(tracker.categories[0].entries[i], TrackerEntry::Blank);
+            assert_eq!(tracker.categories[1].entries[i], TrackerEntry::Blank);
+        }
+
+        // Verify Day 5 entries
+        match &tracker.categories[0].entries[4] {
+            TrackerEntry::Note(note) => assert_eq!(note.value, "Day 5"),
+            _ => panic!("Expected Note entry for Day 5"),
+        }
+    }
+
+    #[test]
+    fn test_add_event_weekly_frequency_skip_dates() {
+        let mut tracker = Tracker {
+            name: "Weekly Tracker".to_string(),
+            filename: "test.md".to_string(),
+            line_number: 1,
+            start_date: Date::Day(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()), // Monday
+            length: 0,
+            frequency: Frequency::EveryXDays(7),
+            categories: vec![TrackerCategory {
+                name: "Weekly Cat".to_string(),
+                entries: vec![],
+            }],
+        };
+
+        // Add first week
+        let first_week = Date::Day(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap());
+        let first_entries = vec![TrackerEntry::Note(NoteEntry {
+            value: "Week 1".to_string(),
+        })];
+        tracker.add_event(&first_week, &first_entries);
+
+        // Skip week 2 (Jan 8) and add week 3 (Jan 15)
+        let third_week = Date::Day(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap());
+        let third_entries = vec![TrackerEntry::Note(NoteEntry {
+            value: "Week 3".to_string(),
+        })];
+        tracker.add_event(&third_week, &third_entries);
+
+        // Should have 3 entries (Week 1, Blank for Week 2, Week 3)
+        assert_eq!(tracker.length, 3);
+        assert_eq!(tracker.categories[0].entries.len(), 3);
+
+        // Verify entries
+        match &tracker.categories[0].entries[0] {
+            TrackerEntry::Note(note) => assert_eq!(note.value, "Week 1"),
+            _ => panic!("Expected Note entry for Week 1"),
+        }
+
+        assert_eq!(tracker.categories[0].entries[1], TrackerEntry::Blank);
+
+        match &tracker.categories[0].entries[2] {
+            TrackerEntry::Note(note) => assert_eq!(note.value, "Week 3"),
+            _ => panic!("Expected Note entry for Week 3"),
+        }
+    }
+
+    #[test]
+    fn test_add_event_skip_dates_with_multiple_categories() {
+        let mut tracker = Tracker {
+            name: "Multi Category Tracker".to_string(),
+            filename: "test.md".to_string(),
+            line_number: 1,
+            start_date: Date::Day(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()),
+            length: 0,
+            frequency: Frequency::EveryXDays(1),
+            categories: vec![
+                TrackerCategory {
+                    name: "Cat A".to_string(),
+                    entries: vec![],
+                },
+                TrackerCategory {
+                    name: "Cat B".to_string(),
+                    entries: vec![],
+                },
+                TrackerCategory {
+                    name: "Cat C".to_string(),
+                    entries: vec![],
+                },
+            ],
+        };
+
+        // Add first event
+        let first_date = Date::Day(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap());
+        let first_entries = vec![
+            TrackerEntry::Note(NoteEntry {
+                value: "A1".to_string(),
+            }),
+            TrackerEntry::Note(NoteEntry {
+                value: "B1".to_string(),
+            }),
+            TrackerEntry::Note(NoteEntry {
+                value: "C1".to_string(),
+            }),
+        ];
+        tracker.add_event(&first_date, &first_entries);
+
+        // Skip one day and add third day
+        let third_date = Date::Day(NaiveDate::from_ymd_opt(2024, 1, 3).unwrap());
+        let third_entries = vec![
+            TrackerEntry::Note(NoteEntry {
+                value: "A3".to_string(),
+            }),
+            TrackerEntry::Note(NoteEntry {
+                value: "B3".to_string(),
+            }),
+            TrackerEntry::Note(NoteEntry {
+                value: "C3".to_string(),
+            }),
+        ];
+        tracker.add_event(&third_date, &third_entries);
+
+        // Verify all categories have the same structure
+        for category in &tracker.categories {
+            assert_eq!(category.entries.len(), 3);
+            assert_eq!(category.entries[1], TrackerEntry::Blank);
+        }
+
+        // Verify specific entries
+        match &tracker.categories[0].entries[0] {
+            TrackerEntry::Note(note) => assert_eq!(note.value, "A1"),
+            _ => panic!("Expected Note entry"),
+        }
+        match &tracker.categories[2].entries[2] {
+            TrackerEntry::Note(note) => assert_eq!(note.value, "C3"),
+            _ => panic!("Expected Note entry"),
+        }
+    }
+
+    #[test]
+    fn test_add_event_sequential_no_skips() {
+        let mut tracker = create_test_tracker();
+
+        // Add events sequentially without skipping
+        for day in 1..=5 {
+            let date = Date::Day(NaiveDate::from_ymd_opt(2024, 1, day).unwrap());
+            let entries = vec![
+                TrackerEntry::Note(NoteEntry {
+                    value: format!("Day {day} Cat 1"),
+                }),
+                TrackerEntry::Note(NoteEntry {
+                    value: format!("Day {day} Cat 2"),
+                }),
+            ];
+            tracker.add_event(&date, &entries);
+        }
+
+        // Should have exactly 5 entries with no blanks
+        assert_eq!(tracker.length, 5);
+        assert_eq!(tracker.categories[0].entries.len(), 5);
+        assert_eq!(tracker.categories[1].entries.len(), 5);
+
+        // Verify no blank entries were created
+        for category in &tracker.categories {
+            for entry in &category.entries {
+                assert_ne!(*entry, TrackerEntry::Blank);
+            }
+        }
+    }
+
+    #[test]
+    fn test_add_event_with_datetime_skip_dates() {
+        let mut tracker = Tracker {
+            name: "DateTime Tracker".to_string(),
+            filename: "test.md".to_string(),
+            line_number: 1,
+            start_date: Date::DayTime(
+                NaiveDate::from_ymd_opt(2024, 1, 1)
+                    .unwrap()
+                    .and_hms_opt(9, 0, 0)
+                    .unwrap(),
+            ),
+            length: 0,
+            frequency: Frequency::EveryXDays(1),
+            categories: vec![TrackerCategory {
+                name: "DateTime Cat".to_string(),
+                entries: vec![],
+            }],
+        };
+
+        // Add first event
+        let first_date = Date::DayTime(
+            NaiveDate::from_ymd_opt(2024, 1, 1)
+                .unwrap()
+                .and_hms_opt(9, 0, 0)
+                .unwrap(),
+        );
+        let first_entries = vec![TrackerEntry::Note(NoteEntry {
+            value: "First".to_string(),
+        })];
+        tracker.add_event(&first_date, &first_entries);
+
+        // Skip a day and add third day
+        let third_date = Date::DayTime(
+            NaiveDate::from_ymd_opt(2024, 1, 3)
+                .unwrap()
+                .and_hms_opt(9, 0, 0)
+                .unwrap(),
+        );
+        let third_entries = vec![TrackerEntry::Note(NoteEntry {
+            value: "Third".to_string(),
+        })];
+        tracker.add_event(&third_date, &third_entries);
+
+        // Should have 3 entries (First, Blank, Third)
+        assert_eq!(tracker.length, 3);
+        assert_eq!(tracker.categories[0].entries.len(), 3);
+        assert_eq!(tracker.categories[0].entries[1], TrackerEntry::Blank);
+    }
+
+    #[test]
+    fn test_add_event_skip_with_existing_entries() {
+        let mut tracker = create_test_tracker();
+
+        // Add several sequential events first
+        for day in 1..=3 {
+            let date = Date::Day(NaiveDate::from_ymd_opt(2024, 1, day).unwrap());
+            let entries = vec![
+                TrackerEntry::Note(NoteEntry {
+                    value: format!("Day {day}"),
+                }),
+                TrackerEntry::Note(NoteEntry {
+                    value: format!("Cat2 Day {day}"),
+                }),
+            ];
+            tracker.add_event(&date, &entries);
+        }
+
+        // Now skip a few days and add another event
+        let skipped_date = Date::Day(NaiveDate::from_ymd_opt(2024, 1, 7).unwrap()); // Skip days 4, 5, 6
+        let skipped_entries = vec![
+            TrackerEntry::Note(NoteEntry {
+                value: "Day 7".to_string(),
+            }),
+            TrackerEntry::Note(NoteEntry {
+                value: "Cat2 Day 7".to_string(),
+            }),
+        ];
+        tracker.add_event(&skipped_date, &skipped_entries);
+
+        // Should have 7 entries total (3 initial + 3 blanks + 1 new)
+        assert_eq!(tracker.length, 7);
+        assert_eq!(tracker.categories[0].entries.len(), 7);
+
+        // Verify the structure: Days 1-3 should be filled, days 4-6 should be blank, day 7 should be filled
+        for i in 0..3 {
+            match &tracker.categories[0].entries[i] {
+                TrackerEntry::Note(note) => assert_eq!(note.value, format!("Day {}", i + 1)),
+                _ => panic!("Expected Note entry for day {}", i + 1),
+            }
+        }
+
+        // Days 4-6 should be blank (indices 3-5)
+        for i in 3..6 {
+            assert_eq!(tracker.categories[0].entries[i], TrackerEntry::Blank);
+            assert_eq!(tracker.categories[1].entries[i], TrackerEntry::Blank);
+        }
+
+        // Day 7 should be filled (index 6)
+        match &tracker.categories[0].entries[6] {
+            TrackerEntry::Note(note) => assert_eq!(note.value, "Day 7"),
+            _ => panic!("Expected Note entry for day 7"),
+        }
     }
 }
