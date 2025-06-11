@@ -315,7 +315,7 @@ mod tests_tasks {
             ..Default::default()
         };
         let res = task.get_fixed_attributes(&config, 0);
-        assert_eq!(res, "- [ ] Test Task 2021/12/03 p1 #tag1 #tag2");
+        assert_eq!(res, "- [ ] Test Task 2021-12-03 p1 #tag1 #tag2");
     }
 
     #[test]
