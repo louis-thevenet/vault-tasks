@@ -16,7 +16,16 @@ impl Display for Date {
         }
     }
 }
-
+impl PartialOrd for Date {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match (self, other) {
+            (Date::Day(a), Date::Day(b)) => Some(a.cmp(b)),
+            (Date::Day(a), Date::DayTime(b)) => Some(a.cmp(&b.date())),
+            (Date::DayTime(a), Date::Day(b)) => Some(a.date().cmp(b)),
+            (Date::DayTime(a), Date::DayTime(b)) => Some(a.cmp(b)),
+        }
+    }
+}
 impl Date {
     #[must_use]
     pub fn to_display_format(&self, due_date_symbol: &str, not_american_format: bool) -> String {

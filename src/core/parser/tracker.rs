@@ -9,6 +9,7 @@ use winnow::{
     token::{self, none_of, take_while},
 };
 mod parse_frequency;
+
 use super::{parser_date, parser_time::parse_naive_time};
 use crate::core::{
     TasksConfig,
@@ -113,8 +114,6 @@ pub fn parse_entries(
     )
     .parse_next(input)?;
 
-    // ensure date is consistent with tracker start date?
-
     let entries: Vec<String> = preceded(
         '|',
         separated(
@@ -127,7 +126,6 @@ pub fn parse_entries(
         ),
     )
     .parse_next(input)?;
-    debug!("Parsed entries: {entries:?}");
 
     let mut parsed_entries = vec![];
     for (n, entry) in entries.iter().enumerate() {
@@ -323,7 +321,7 @@ mod tests {
         );
         let mut input = "| every day | blogs | books | news | notes |";
 
-        let result = parse_header(&new_tracker, &mut input).unwrap();
+        let result = parse_header(&new_tracker, String::new(), 0, &mut input).unwrap();
 
         assert_eq!(result.name, "Test Tracker");
         assert_eq!(result.categories.len(), 4);
@@ -341,7 +339,7 @@ mod tests {
         );
         let mut input = "|  every week  |  exercise  |  diet  |  sleep  |";
 
-        let result = parse_header(&new_tracker, &mut input).unwrap();
+        let result = parse_header(&new_tracker, String::new(), 0, &mut input).unwrap();
 
         assert_eq!(result.categories.len(), 3);
         assert_eq!(result.categories[0].name, "exercise");
@@ -357,7 +355,7 @@ mod tests {
         );
         let mut input = "| every day | reading |";
 
-        let result = parse_header(&new_tracker, &mut input).unwrap();
+        let result = parse_header(&new_tracker, String::new(), 0, &mut input).unwrap();
 
         assert_eq!(result.categories.len(), 1);
         assert_eq!(result.categories[0].name, "reading");
@@ -492,6 +490,8 @@ mod tests {
                     })],
                 },
             ],
+            filename: String::new(),
+            line_number: 0,
         };
 
         let mut input = "| 2025/06/09 | [x] | 5 | finished reading |";
@@ -538,6 +538,8 @@ mod tests {
                     entries: vec![TrackerEntry::Score(ScoreEntry { score: 1 })],
                 },
             ],
+            filename: String::new(),
+            line_number: 0,
         };
 
         let mut input = "| 2025/06/09 | [ ] |  |";
@@ -562,6 +564,8 @@ mod tests {
     fn test_parse_entries_first_time_type_inference() {
         // Tracker with no existing entries - should infer types
         let mut tracker = Tracker {
+            filename: String::new(),
+            line_number: 0,
             name: "New Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
             length: 0,
@@ -608,6 +612,8 @@ mod tests {
     #[test]
     fn test_parse_entries_with_datetime() {
         let mut tracker = Tracker {
+            filename: String::new(),
+            line_number: 0,
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
             length: 1,
@@ -635,6 +641,8 @@ mod tests {
     #[test]
     fn test_parse_entries_empty_first_entry_becomes_blank() {
         let mut tracker = Tracker {
+            filename: String::new(),
+            line_number: 0,
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
             length: 0,
@@ -661,6 +669,8 @@ mod tests {
     #[test]
     fn test_parse_entries_note_with_special_characters() {
         let mut tracker = Tracker {
+            filename: String::new(),
+            line_number: 0,
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
             length: 1,
@@ -689,6 +699,8 @@ mod tests {
     #[test]
     fn test_parse_entries_score_type_mismatch_error() {
         let mut tracker = Tracker {
+            filename: String::new(),
+            line_number: 0,
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
             length: 1,
@@ -710,6 +722,8 @@ mod tests {
     #[test]
     fn test_parse_entries_trimming_whitespace() {
         let mut tracker = Tracker {
+            filename: String::new(),
+            line_number: 0,
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
             length: 1,
@@ -756,7 +770,7 @@ mod tests {
 
         // Parse header
         let mut header_input = "| every day | blogs | books | news | notes |";
-        let tracker = parse_header(&new_tracker, &mut header_input).unwrap();
+        let tracker = parse_header(&new_tracker, String::new(), 0, &mut header_input).unwrap();
 
         // Parse separator (just verify it works)
         let mut sep_input = "| ---------- | ----- | ----- | ---- | ------------------ |";
@@ -814,6 +828,6 @@ mod tests {
             Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
         );
         let mut input4 = "every day blogs books";
-        assert!(parse_header(&new_tracker, &mut input4).is_err());
+        assert!(parse_header(&new_tracker, String::new(), 0, &mut input4).is_err());
     }
 }
