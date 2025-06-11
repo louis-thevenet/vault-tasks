@@ -2,7 +2,7 @@ use crate::core::task::Task;
 use crate::tui::Tui;
 use crate::{action::Action, core::vault_data::VaultData};
 
-use super::{DIRECTORY_EMOJI, ExplorerTab, FILE_EMOJI};
+use super::{DIRECTORY_EMOJI, ExplorerTab, FILE_EMOJI, TRACKER_EMOJI};
 use color_eyre::Result;
 use color_eyre::eyre::bail;
 use std::cmp::Ordering;
@@ -29,7 +29,7 @@ impl ExplorerTab<'_> {
                 name.clone(),
             ),
             VaultData::Task(task) => (task.state.to_string(), task.name.clone()),
-            VaultData::Tracker(tracker) => todo!(),
+            VaultData::Tracker(tracker) => (TRACKER_EMOJI.to_owned(), tracker.name.clone()),
         }
     }
 

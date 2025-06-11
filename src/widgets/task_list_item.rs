@@ -159,6 +159,15 @@ impl TaskListItem {
             },
         )
     }
+    fn tracker_to_paragraph(&self, tracker: &crate::core::tracker::Tracker) -> Paragraph<'_> {
+        let lines = tracker
+            .to_string()
+            .split('\n')
+            .map(str::to_string)
+            .map(Line::from)
+            .collect::<Vec<Line>>();
+        Paragraph::new(Text::from(lines))
+    }
     fn compute_height(item: &VaultData, max_width: u16) -> u16 {
         let rat_skin = RatSkin::default();
         match &item {
@@ -198,7 +207,12 @@ impl TaskListItem {
                 count.max(3) // If count == 2 then task name will go directly inside a block
                 // Else task name will be the block's title and content will go inside
             }
-            VaultData::Tracker(tracker) => todo!(),
+            VaultData::Tracker(tracker) => {
+                2 + tracker
+                    .categories
+                    .first()
+                    .map_or(0, |c| c.entries.len() as u16)
+            }
         }
     }
 }
@@ -275,7 +289,7 @@ impl Widget for TaskListItem {
                     sb_widget.render(layout[i + 1], buf);
                 }
             }
-            VaultData::Tracker(tracker) => todo!(),
+            VaultData::Tracker(tracker) => self.tracker_to_paragraph(tracker).render(area, buf),
         };
     }
 }
