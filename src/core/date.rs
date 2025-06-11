@@ -54,7 +54,7 @@ impl Date {
     }
 
     #[must_use]
-    pub fn get_relative_str(&self) -> Option<String> {
+    pub fn get_relative_str(&self) -> String {
         // This truncation prevents errors such as 23:59:59:999... instead of 24 hours
         let now = chrono::Local::now()
             .with_second(0)
@@ -87,13 +87,13 @@ impl Date {
         let time_delta_abs = time_delta.abs();
 
         if time_delta_abs.is_zero() {
-            return Some(String::from("today"));
+            return String::from("today");
         }
         if time_delta.num_seconds() < 0 && time_delta_abs.num_hours() == 24 {
-            return Some(String::from("tomorrow"));
+            return String::from("tomorrow");
         }
         if time_delta.num_seconds() > 0 && time_delta_abs.num_hours() == 24 {
-            return Some(String::from("yesterday"));
+            return String::from("yesterday");
         }
 
         // >= 13 months -> show years
@@ -114,6 +114,6 @@ impl Date {
         } else {
             format!("{} minutes", time_delta_abs.num_minutes())
         };
-        Some(format!("{prefix}{res}{suffix}"))
+        format!("{prefix}{res}{suffix}")
     }
 }
