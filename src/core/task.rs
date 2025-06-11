@@ -120,7 +120,7 @@ impl fmt::Display for Task {
                 "{} {} ({}) ",
                 default_symbols.due_date,
                 date,
-                date.get_relative_str().unwrap_or_default()
+                date.get_relative_str()
             ));
         }
 
@@ -368,159 +368,159 @@ mod tests_due_date {
     fn test_day_today() {
         let today = Local::now().naive_local().date();
         let due = Date::Day(today);
-        assert_eq!(due.get_relative_str(), Some("today".to_string()));
+        assert_eq!(due.get_relative_str(), ("today".to_string()));
     }
 
     #[test]
     fn test_day_tomorrow() {
         let date = Local::now().naive_local().date() + Duration::days(1);
         let due = Date::Day(date);
-        assert_eq!(due.get_relative_str(), Some("tomorrow".to_string()));
+        assert_eq!(due.get_relative_str(), ("tomorrow".to_string()));
     }
 
     #[test]
     fn test_day_yesterday() {
         let date = Local::now().naive_local().date() - Duration::days(1);
         let due = Date::Day(date);
-        assert_eq!(due.get_relative_str(), Some("yesterday".to_string()));
+        assert_eq!(due.get_relative_str(), ("yesterday".to_string()));
     }
 
     #[test]
     fn test_day_in_three_days() {
         let date = Local::now().naive_local().date() + Duration::days(3);
         let due = Date::Day(date);
-        assert_eq!(due.get_relative_str(), Some("in 3 days".to_string()));
+        assert_eq!(due.get_relative_str(), ("in 3 days".to_string()));
     }
 
     #[test]
     fn test_day_two_weeks_ago() {
         let date = Local::now().naive_local().date() - Duration::weeks(2);
         let due = Date::Day(date);
-        assert_eq!(due.get_relative_str(), Some("2 weeks ago".to_string()));
+        assert_eq!(due.get_relative_str(), ("2 weeks ago".to_string()));
     }
 
     #[test]
     fn test_day_in_two_months() {
         let date = Local::now().naive_local().date() + Duration::weeks(9); // ~2 months
         let due = Date::Day(date);
-        assert_eq!(due.get_relative_str(), Some("in 2 months".to_string()));
+        assert_eq!(due.get_relative_str(), ("in 2 months".to_string()));
     }
 
     #[test]
     fn test_day_three_years_ago() {
         let date = Local::now().naive_local().date() - Duration::weeks(4 * 12 * 3);
         let due = Date::Day(date);
-        assert_eq!(due.get_relative_str(), Some("3 years ago".to_string()));
+        assert_eq!(due.get_relative_str(), ("3 years ago".to_string()));
     }
 
     #[test]
     fn test_daytime_now() {
         let now = Local::now().naive_local();
         let due = Date::DayTime(now);
-        assert_eq!(due.get_relative_str(), Some("today".to_string()));
+        assert_eq!(due.get_relative_str(), ("today".to_string()));
     }
 
     #[test]
     fn test_daytime_in_30_minutes() {
         let dt = Local::now().naive_local() + Duration::minutes(30);
         let due = Date::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("in 30 minutes".to_string()));
+        assert_eq!(due.get_relative_str(), ("in 30 minutes".to_string()));
     }
 
     #[test]
     fn test_daytime_three_hours_ago() {
         let dt = Local::now().naive_local() - Duration::hours(3);
         let due = Date::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("3 hours ago".to_string()));
+        assert_eq!(due.get_relative_str(), ("3 hours ago".to_string()));
     }
 
     #[test]
     fn test_daytime_tomorrow_same_time() {
         let dt = Local::now().naive_local() + Duration::hours(24);
         let due = Date::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("tomorrow".to_string()));
+        assert_eq!(due.get_relative_str(), ("tomorrow".to_string()));
     }
     #[test]
     fn test_daytime_tomorrow_hours() {
         let dt = Local::now().naive_local() + Duration::hours(25);
         let due = Date::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("in 25 hours".to_string()));
+        assert_eq!(due.get_relative_str(), ("in 25 hours".to_string()));
     }
 
     #[test]
     fn test_daytime_yesterday_same_time() {
         let dt = Local::now().naive_local() - Duration::hours(24);
         let due = Date::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("yesterday".to_string()));
+        assert_eq!(due.get_relative_str(), ("yesterday".to_string()));
     }
 
     #[test]
     fn test_daytime_in_1_minute() {
         let dt = Local::now().naive_local() + Duration::minutes(1);
         let due = Date::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("in 1 minutes".to_string()));
+        assert_eq!(due.get_relative_str(), ("in 1 minutes".to_string()));
     }
 
     #[test]
     fn test_daytime_45_minutes_ago() {
         let dt = Local::now().naive_local() - Duration::minutes(45);
         let due = Date::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("45 minutes ago".to_string()));
+        assert_eq!(due.get_relative_str(), ("45 minutes ago".to_string()));
     }
 
     #[test]
     fn test_daytime_in_3_hours() {
         let dt = Local::now().naive_local() + Duration::hours(3);
         let due = Date::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("in 3 hours".to_string()));
+        assert_eq!(due.get_relative_str(), ("in 3 hours".to_string()));
     }
 
     #[test]
     fn test_daytime_12_hours_ago() {
         let dt = Local::now().naive_local() - Duration::hours(12);
         let due = Date::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("12 hours ago".to_string()));
+        assert_eq!(due.get_relative_str(), ("12 hours ago".to_string()));
     }
 
     #[test]
     fn test_daytime_in_1_day_exact() {
         let dt = Local::now().naive_local() + Duration::days(1);
         let due = Date::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("tomorrow".to_string()));
+        assert_eq!(due.get_relative_str(), ("tomorrow".to_string()));
     }
 
     #[test]
     fn test_daytime_exactly_yesterday() {
         let dt = Local::now().naive_local() - Duration::days(1);
         let due = Date::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("yesterday".to_string()));
+        assert_eq!(due.get_relative_str(), ("yesterday".to_string()));
     }
 
     #[test]
     fn test_daytime_in_2_days() {
         let dt = Local::now().naive_local() + Duration::days(2);
         let due = Date::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("in 2 days".to_string()));
+        assert_eq!(due.get_relative_str(), ("in 2 days".to_string()));
     }
 
     #[test]
     fn test_daytime_10_days_ago() {
         let dt = Local::now().naive_local() - Duration::days(10);
         let due = Date::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("10 days ago".to_string()));
+        assert_eq!(due.get_relative_str(), ("10 days ago".to_string()));
     }
 
     #[test]
     fn test_daytime_in_3_weeks() {
         let dt = Local::now().naive_local() + Duration::weeks(3);
         let due = Date::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("in 3 weeks".to_string()));
+        assert_eq!(due.get_relative_str(), ("in 3 weeks".to_string()));
     }
 
     #[test]
     fn test_daytime_2_months_ago() {
         let dt = Local::now().naive_local() - Duration::weeks(9); // ≈ 2 months
         let due = Date::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("2 months ago".to_string()));
+        assert_eq!(due.get_relative_str(), ("2 months ago".to_string()));
     }
 }

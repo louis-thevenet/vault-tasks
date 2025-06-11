@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use crate::core::PrettySymbolsConfig;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScoreEntry {
     pub score: i32,
@@ -49,7 +51,22 @@ impl Display for TrackerEntry {
         }
     }
 }
-
+impl TrackerEntry {
+    pub fn pretty_fmt(&self, pretty_symbols: &PrettySymbolsConfig) -> String {
+        match self {
+            TrackerEntry::Score(score_entry) => score_entry.to_string(),
+            TrackerEntry::Bool(bool_entry) => {
+                if bool_entry.value {
+                    pretty_symbols.task_done.clone()
+                } else {
+                    pretty_symbols.task_todo.clone()
+                }
+            }
+            TrackerEntry::Note(note_entry) => note_entry.to_string(),
+            TrackerEntry::Blank => String::new(),
+        }
+    }
+}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TrackerCategory {
     /// Name of the tracker category
