@@ -32,6 +32,7 @@ mod utils;
 pub const FILE_EMOJI: &str = "📄";
 pub const DIRECTORY_EMOJI: &str = "📁";
 pub const WARNING_EMOJI: &str = "⚠️";
+pub const TRACKER_EMOJI: &str = "📊";
 
 /// Struct that helps with drawing the component
 struct ExplorerArea {
@@ -243,7 +244,7 @@ impl ExplorerTab<'_> {
     fn render_preview(&mut self, frame: &mut Frame, area: Rect, highlighted_style: Style) {
         // If we have tasks, then render a TaskList widget
         match self.entries_right_view.first() {
-            Some(VaultData::Task(_) | VaultData::Header(_, _, _)) => {
+            Some(VaultData::Task(_) | VaultData::Header(_, _, _) | VaultData::Tracker(_)) => {
                 TaskList::new(&self.config, &self.entries_right_view, area.width, false).render(
                     area,
                     frame.buffer_mut(),
@@ -266,7 +267,6 @@ impl ExplorerTab<'_> {
                 highlighted_style,
             )
             .render(area, frame.buffer_mut(), &mut ListState::default()),
-            Some(VaultData::Tracker(_)) => todo!(),
             None => (),
         }
     }

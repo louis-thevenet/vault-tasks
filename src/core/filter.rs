@@ -51,20 +51,7 @@ fn filter_task(task: &Task, filter: &Filter) -> bool {
             )
         });
 
-    let name_match = if filter.task.name.is_empty() {
-        true
-    } else {
-        // for each word of the filter_task, if at least one
-        // matches in the task, then validate
-        filter
-            .task
-            .name
-            .to_lowercase()
-            .split_whitespace()
-            .filter(|w| task.name.to_lowercase().contains(w))
-            .count()
-            > 0
-    };
+    let name_match = names_match(&task.name, &filter.task.name);
 
     let today_flag_match = if filter.task.is_today {
         task.is_today
@@ -108,6 +95,23 @@ fn filter_task(task: &Task, filter: &Filter) -> bool {
     state_match && name_match && today_flag_match && date_match && tags_match && priority_match
 }
 
+fn names_match(name: &str, filter_name: &str) -> bool {
+    if filter_name.is_empty() {
+        true
+    } else {
+        // for each word of the filter_task, if at least one
+        // matches in the task, then validate
+        filter_name
+            .to_lowercase()
+            .split_whitespace()
+            .filter(|w| name.to_lowercase().contains(w))
+            .count()
+            > 0
+    }
+}
+
+/// Collects all tasks matching the provided `Filter` from the `VaultData` in a `Vec<Task>`.
+/// If `explore_children` is true, it will also explore subtasks of tasks.
 fn filter_to_vec_layer(
     vault_data: &VaultData,
     task_filter: &Filter,
@@ -136,7 +140,9 @@ fn filter_to_vec_layer(
                 res.push(task.clone());
             }
         }
-        VaultData::Tracker(tracker) => todo!(),
+        VaultData::Tracker(_tracker) => (), // Don't collect trackers in the result
+                                            // It's only used by the Filter and Calendar
+                                            // tabs and we don't want to display trackers there
     }
 }
 
@@ -147,6 +153,8 @@ pub fn filter_to_vec(vault_data: &VaultData, filter: &Filter) -> Vec<Task> {
     res.clone()
 }
 
+/// Filters a `VaultData` structure based on the provided `Filter`.
+/// Only keeps the `VaultData` entries that match the filter criteria.
 pub fn filter(vault_data: &VaultData, task_filter: &Filter) -> Option<VaultData> {
     match vault_data {
         VaultData::Header(level, name, children) => {
@@ -198,7 +206,17 @@ pub fn filter(vault_data: &VaultData, task_filter: &Filter) -> Option<VaultData>
                 }))
             }
         }
-        VaultData::Tracker(tracker) => todo!(),
+        VaultData::Tracker(tracker) => {
+            // We keep the tracker if its name matches the filter task's name
+            // But we don't look at the task's state
+            // I might want to refactor the Filter to allow parsing a Tracker from
+            // the input string later.
+            if names_match(&tracker.name, &task_filter.task.name) {
+                Some(VaultData::Tracker(tracker.clone()))
+            } else {
+                None
+            }
+        }
     }
 }
 

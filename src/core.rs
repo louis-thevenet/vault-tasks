@@ -1,4 +1,4 @@
-use color_eyre::{Result, eyre::bail};
+use color_eyre::{Result, eyre::bail, owo_colors::colors::xterm::BayLeaf};
 use serde::Deserialize;
 use task::Task;
 use tracker::Tracker;
@@ -255,7 +255,7 @@ impl TaskManager {
                     t.subtasks = vec![]; // Discard subtasks
                     VaultData::Task(t)
                 }
-                VaultData::Tracker(tracker) => todo!(),
+                VaultData::Tracker(tracker) => VaultData::Tracker(tracker.clone()),
             })
             .collect::<Vec<VaultData>>())
     }
@@ -349,7 +349,15 @@ impl TaskManager {
                         }
                         bail!("Couldn't find corresponding entry");
                     }
-                    VaultData::Tracker(tracker) => todo!(),
+                    VaultData::Tracker(tracker) => {
+                        if tracker.name == selected_header_path[path_index] {
+                            if path_index + 1 == selected_header_path.len() {
+                                return Ok(file_entry.clone());
+                            }
+                            bail!("Path was too long while we went down on a tracker")
+                        }
+                        bail!("Tracker name not matching")
+                    }
                 }
             }
         }
