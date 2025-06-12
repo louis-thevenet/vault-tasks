@@ -13,10 +13,12 @@ use filter::{Filter, filter};
 use tracing::{debug, error};
 use vault_parser::VaultParser;
 
+pub mod date;
 pub mod filter;
 pub mod parser;
 pub mod sorter;
 pub mod task;
+pub mod tracker;
 pub mod vault_data;
 mod vault_parser;
 
@@ -176,6 +178,7 @@ impl TaskManager {
                     .iter()
                     .for_each(|task| Self::collect_tags(&VaultData::Task(task.clone()), tags));
             }
+            VaultData::Tracker(_tracker) => (),
         }
     }
 
@@ -213,6 +216,9 @@ impl TaskManager {
                                 );
                             }
                         }
+                        VaultData::Tracker(tracker) => {
+                            bail!("Tried to list a Tracker's entries: {tracker}")
+                        } // We can't enter Trackers so we won't ever have to resolve a path to one
                     }
                 }
                 bail!("Couldn't find corresponding entry");
@@ -254,6 +260,7 @@ impl TaskManager {
                     t.subtasks = vec![]; // Discard subtasks
                     VaultData::Task(t)
                 }
+                VaultData::Tracker(tracker) => VaultData::Tracker(tracker.clone()),
             })
             .collect::<Vec<VaultData>>())
     }
@@ -288,6 +295,7 @@ impl TaskManager {
                         .iter()
                         .try_for_each(|c| explore_tasks_rec(config, &mut filename.clone(), c))?;
                 }
+                VaultData::Tracker(tracker) => tracker.fix_tracker_attributes(config, filename)?,
             }
             Ok(())
         }
@@ -309,7 +317,6 @@ impl TaskManager {
                 Ok(file_entry)
             } else {
                 match &file_entry {
-                    // Both variants are very similar
                     VaultData::Header(_, name, children) | VaultData::Directory(name, children) => {
                         if *name == selected_header_path[path_index] {
                             if path_index + 1 == selected_header_path.len() {
@@ -346,6 +353,15 @@ impl TaskManager {
                             }
                         }
                         bail!("Couldn't find corresponding entry");
+                    }
+                    VaultData::Tracker(tracker) => {
+                        if tracker.name == selected_header_path[path_index] {
+                            if path_index + 1 == selected_header_path.len() {
+                                return Ok(file_entry.clone());
+                            }
+                            bail!("Path was too long while we went down on a tracker")
+                        }
+                        bail!("Tracker name not matching")
                     }
                 }
             }
@@ -403,6 +419,8 @@ impl TaskManager {
                         }
                         false
                     }
+                    VaultData::Tracker(_tracker) => false, // Trackers can't be entered at the moment
+                                                           // I plan on giving access to its categories someday
                 }
             }
         }
@@ -454,9 +472,11 @@ impl TaskManager {
                     // Either it's the first layer and the path is wrong or we recursively called on the wrong entry which is impossible
                     bail!("Couldn't find corresponding entry in Header {name}");
                 }
-
                 VaultData::Task(_task) => {
                     bail!("Adding subtasks from CLI is not supported yet");
+                }
+                VaultData::Tracker(_tracker) => {
+                    bail!("Tried to add a task to a tracker")
                 }
             }
         }
