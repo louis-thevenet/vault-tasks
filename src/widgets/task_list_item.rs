@@ -173,8 +173,7 @@ impl TaskListItem {
         let mut date = tracker.start_date.clone();
         let rat_skin = RatSkin::default();
         let rows = (0..tracker.length).map(|n| {
-            date = tracker.frequency.next_date(&date);
-            Row::new(
+            let res = Row::new(
                 [
                     vec![Cell::from(
                         Span::raw(date.to_string_format(self.not_american_format).to_string())
@@ -198,15 +197,16 @@ impl TaskListItem {
                         .collect(),
                 ]
                 .concat(),
-            )
+            );
+            date = tracker.frequency.next_date(&date);
+            res
         });
         let mut date = tracker.start_date.clone();
         let widths = [
             vec![
                 (0..tracker.length)
                     .map(|_n| {
-                        date = tracker.frequency.next_date(&date);
-                        if self.show_relative_due_dates {
+                        let res = if self.show_relative_due_dates {
                             format!(
                                 "{} ({})",
                                 date.to_string_format(self.not_american_format),
@@ -215,7 +215,9 @@ impl TaskListItem {
                         } else {
                             date.to_string_format(self.not_american_format).to_string()
                         }
-                        .len() as u16
+                        .len() as u16;
+                        date = tracker.frequency.next_date(&date);
+                        res
                     })
                     .max()
                     .unwrap_or_default(),
