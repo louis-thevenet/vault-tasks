@@ -217,7 +217,9 @@ impl TaskManager {
                                 );
                             }
                         }
-                        VaultData::Tracker(tracker) => todo!(),
+                        VaultData::Tracker(tracker) => {
+                            bail!("Tried to list a Tracker's entries: {tracker}")
+                        } // We can't enter Trackers so we won't ever have to resolve a path to one
                     }
                 }
                 bail!("Couldn't find corresponding entry");
@@ -418,7 +420,8 @@ impl TaskManager {
                         }
                         false
                     }
-                    VaultData::Tracker(tracker) => todo!(),
+                    VaultData::Tracker(_tracker) => false, // Trackers can't be entered at the moment
+                                                           // I plan on giving access to its categories someday
                 }
             }
         }
@@ -473,7 +476,9 @@ impl TaskManager {
                 VaultData::Task(_task) => {
                     bail!("Adding subtasks from CLI is not supported yet");
                 }
-                VaultData::Tracker(tracker) => todo!(),
+                VaultData::Tracker(_tracker) => {
+                    bail!("Tried to add a task to a tracker")
+                }
             }
         }
 
