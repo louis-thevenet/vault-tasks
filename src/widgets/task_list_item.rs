@@ -204,7 +204,7 @@ impl TaskListItem {
         let widths = [
             vec![
                 (0..tracker.length)
-                    .map(|n| {
+                    .map(|_n| {
                         date = tracker.frequency.next_date(&date);
                         if self.show_relative_due_dates {
                             format!(

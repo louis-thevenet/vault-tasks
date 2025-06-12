@@ -713,8 +713,7 @@ impl ParserFileEntry<'_> {
                     return None;
                 }
             }
-            VaultData::Task(_) => (),
-            VaultData::Tracker(_) => (),
+            VaultData::Task(_) | VaultData::Tracker(_) => (),
         }
         Some(file_entry.to_owned())
     }

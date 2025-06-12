@@ -15,7 +15,6 @@ use crate::core::TasksConfig;
 use crate::widgets::timer::TimerWidget;
 use crate::{action::Action, app::Mode, cli::Cli};
 use color_eyre::{Result, eyre::bail};
-use config::ConfigError;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use derive_deref::{Deref, DerefMut};
 use directories::ProjectDirs;
@@ -160,14 +159,13 @@ impl Config {
 
         cfg.config.show_fps = args.show_fps;
 
-        cfg.check_config()?;
+        cfg.check_config();
         Ok(cfg)
     }
-    fn check_config(&mut self) -> Result<(), ConfigError> {
+    fn check_config(&mut self) {
         if self.tasks_config.indent_length == 0 {
             self.tasks_config.indent_length = Self::default().tasks_config.indent_length;
         }
-        Ok(())
     }
 
     pub fn generate_config(path: Option<PathBuf>) -> Result<()> {
@@ -184,7 +182,8 @@ impl Config {
             bail!("Failed to create default config at {dest:?}".to_owned());
         }
         println!(
-            "Configuration has been created at {dest:?}. You can fill the `vault-path` value to set a default vault."
+            "Configuration has been created at {}. You can fill the `vault-path` value to set a default vault.",
+            dest.display()
         );
         Ok(())
     }
@@ -268,7 +267,7 @@ fn extract_modifiers(raw: &str) -> (&str, KeyModifiers) {
                 current = &rest[6..];
             }
             _ => break, // break out of the loop if no known prefix is detected
-        };
+        }
     }
 
     (current, modifiers)
@@ -349,16 +348,16 @@ pub fn key_event_to_string(key_event: &KeyEvent) -> String {
             &char
         }
         KeyCode::Esc => "esc",
-        KeyCode::Null => "",
-        KeyCode::CapsLock => "",
-        KeyCode::Menu => "",
-        KeyCode::ScrollLock => "",
-        KeyCode::Media(_) => "",
-        KeyCode::NumLock => "",
-        KeyCode::PrintScreen => "",
-        KeyCode::Pause => "",
-        KeyCode::KeypadBegin => "",
-        KeyCode::Modifier(_) => "",
+        KeyCode::Null
+        | KeyCode::CapsLock
+        | KeyCode::Menu
+        | KeyCode::ScrollLock
+        | KeyCode::Media(_)
+        | KeyCode::NumLock
+        | KeyCode::PrintScreen
+        | KeyCode::Pause
+        | KeyCode::KeypadBegin
+        | KeyCode::Modifier(_) => "",
     };
 
     let mut modifiers = Vec::with_capacity(3);

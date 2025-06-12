@@ -141,7 +141,7 @@ impl ExplorerTab<'_> {
             let mut item = Paragraph::new(entries_to_display[context.index].clone());
             if context.is_selected {
                 item = item.style(highlighted_style);
-            };
+            }
             let main_axis_size = 1;
             (item, main_axis_size)
         });
