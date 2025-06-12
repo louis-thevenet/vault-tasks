@@ -237,7 +237,7 @@ impl TaskListItem {
         Table::new(rows, widths)
             .header(header)
             .column_spacing(2)
-            .block(Block::bordered())
+            .block(Block::bordered().title(tracker.name.clone()))
     }
     fn compute_height(item: &VaultData, max_width: u16) -> u16 {
         let rat_skin = RatSkin::default();
