@@ -1,11 +1,9 @@
 use crate::core::tracker::frequency::Frequency;
 
-use color_eyre::eyre::bail;
 use winnow::{
     Parser, Result,
     ascii::{digit1, space0, space1},
-    combinator::{alt, fail, preceded, repeat},
-    token::any,
+    combinator::{alt, preceded},
 };
 
 fn parse_literal_generic<'a>(input: &mut &'a str) -> Result<&'a str> {

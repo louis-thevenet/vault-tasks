@@ -206,7 +206,7 @@ impl TaskListItem {
                 (0..tracker.length)
                     .map(|n| {
                         date = tracker.frequency.next_date(&date);
-                        (if self.show_relative_due_dates {
+                        if self.show_relative_due_dates {
                             format!(
                                 "{} ({})",
                                 date.to_string_format(self.not_american_format),
@@ -215,7 +215,7 @@ impl TaskListItem {
                         } else {
                             date.to_string_format(self.not_american_format).to_string()
                         }
-                        .len() as u16)
+                        .len() as u16
                     })
                     .max()
                     .unwrap(),

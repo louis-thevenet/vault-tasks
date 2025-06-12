@@ -1,12 +1,11 @@
-use std::any::Any;
 
 use chrono::NaiveDateTime;
-use tracing::{debug, error};
+use tracing::error;
 use winnow::{
     Parser, Result,
     ascii::{digit1, space0},
     combinator::{alt, delimited, opt, preceded, repeat, separated},
-    token::{self, none_of, take_while},
+    token::{none_of, take_while},
 };
 mod parse_frequency;
 
@@ -57,7 +56,7 @@ pub fn parse_header(
         delimited(space0, parse_frequency::parse_frequency, space0),
     )
     .parse_next(input)?;
-    let mut categories: Vec<String> = preceded(
+    let categories: Vec<String> = preceded(
         '|',
         separated(
             0..,
@@ -469,7 +468,7 @@ mod tests {
     #[test]
     fn test_parse_entries_mixed_types() {
         // Create a tracker with existing categories to test type matching
-        let mut tracker = Tracker {
+        let tracker = Tracker {
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
             length: 1,
@@ -523,7 +522,7 @@ mod tests {
 
     #[test]
     fn test_parse_entries_with_blank_entries() {
-        let mut tracker = Tracker {
+        let tracker = Tracker {
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
             length: 1,
@@ -563,7 +562,7 @@ mod tests {
     #[test]
     fn test_parse_entries_first_time_type_inference() {
         // Tracker with no existing entries - should infer types
-        let mut tracker = Tracker {
+        let tracker = Tracker {
             filename: String::new(),
             line_number: 0,
             name: "New Tracker".to_string(),
@@ -611,7 +610,7 @@ mod tests {
 
     #[test]
     fn test_parse_entries_with_datetime() {
-        let mut tracker = Tracker {
+        let tracker = Tracker {
             filename: String::new(),
             line_number: 0,
             name: "Test Tracker".to_string(),
@@ -640,7 +639,7 @@ mod tests {
 
     #[test]
     fn test_parse_entries_empty_first_entry_becomes_blank() {
-        let mut tracker = Tracker {
+        let tracker = Tracker {
             filename: String::new(),
             line_number: 0,
             name: "Test Tracker".to_string(),
@@ -668,7 +667,7 @@ mod tests {
 
     #[test]
     fn test_parse_entries_note_with_special_characters() {
-        let mut tracker = Tracker {
+        let tracker = Tracker {
             filename: String::new(),
             line_number: 0,
             name: "Test Tracker".to_string(),
@@ -698,7 +697,7 @@ mod tests {
 
     #[test]
     fn test_parse_entries_score_type_mismatch_error() {
-        let mut tracker = Tracker {
+        let tracker = Tracker {
             filename: String::new(),
             line_number: 0,
             name: "Test Tracker".to_string(),
@@ -721,7 +720,7 @@ mod tests {
 
     #[test]
     fn test_parse_entries_trimming_whitespace() {
-        let mut tracker = Tracker {
+        let tracker = Tracker {
             filename: String::new(),
             line_number: 0,
             name: "Test Tracker".to_string(),

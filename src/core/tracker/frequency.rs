@@ -143,7 +143,7 @@ impl Frequency {
 mod tests {
     use super::*;
     use crate::core::date::Date;
-    use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+    use chrono::{NaiveDate, NaiveDateTime};
 
     // Helper function to create a NaiveDateTime from date and time components
     fn datetime(year: i32, month: u32, day: u32, hour: u32, min: u32, sec: u32) -> NaiveDateTime {
