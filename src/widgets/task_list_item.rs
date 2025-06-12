@@ -218,7 +218,7 @@ impl TaskListItem {
                         .len() as u16
                     })
                     .max()
-                    .unwrap(),
+                    .unwrap_or_default(),
             ],
             tracker
                 .categories
@@ -228,7 +228,7 @@ impl TaskListItem {
                         .iter()
                         .map(|ent| ent.to_string().len())
                         .max()
-                        .unwrap())
+                        .unwrap_or_default())
                     .max(cat.name.len()) as u16
                 })
                 .collect::<Vec<u16>>(),
