@@ -1,7 +1,6 @@
-use color_eyre::{Result, eyre::bail, owo_colors::colors::xterm::BayLeaf};
+use color_eyre::{Result, eyre::bail};
 use serde::Deserialize;
 use task::Task;
-use tracker::Tracker;
 
 use std::{
     collections::HashSet,

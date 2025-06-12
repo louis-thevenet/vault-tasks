@@ -4,7 +4,6 @@ use std::fs::read_to_string;
 use std::io::Write;
 use std::{fmt::Display, fs::File, path};
 use tabled::{builder::Builder, settings::Style};
-use tracing::error;
 use tracker_category::{NoteEntry, TrackerCategory, TrackerEntry};
 
 use super::TasksConfig;
