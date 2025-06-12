@@ -176,15 +176,14 @@ impl TaskListItem {
             date = tracker.frequency.next_date(&date);
             Row::new(
                 [
-                    vec![Cell::from(Text::from(if self.show_relative_due_dates {
-                        format!(
-                            "{} ({})",
-                            date.to_string_format(self.not_american_format),
-                            date.get_relative_str()
-                        )
-                    } else {
-                        date.to_string_format(self.not_american_format).to_string()
-                    }))],
+                    vec![Cell::from(
+                        Span::raw(date.to_string_format(self.not_american_format).to_string())
+                            + if self.show_relative_due_dates {
+                                Span::raw(format!(" ({})", date.get_relative_str())).dim()
+                            } else {
+                                Span::raw("")
+                            },
+                    )],
                     tracker
                         .categories
                         .iter()
