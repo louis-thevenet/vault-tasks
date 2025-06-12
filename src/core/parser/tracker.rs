@@ -472,7 +472,7 @@ mod tests {
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
             length: 1,
-            frequency: Frequency::EveryXDays(1),
+            frequency: Frequency::Days(1),
             categories: vec![
                 TrackerCategory {
                     name: "bool_cat".to_string(),
@@ -526,7 +526,7 @@ mod tests {
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
             length: 1,
-            frequency: Frequency::EveryXDays(1),
+            frequency: Frequency::Days(1),
             categories: vec![
                 TrackerCategory {
                     name: "bool_cat".to_string(),
@@ -568,7 +568,7 @@ mod tests {
             name: "New Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
             length: 0,
-            frequency: Frequency::EveryXDays(1),
+            frequency: Frequency::Days(1),
             categories: vec![
                 TrackerCategory {
                     name: "cat1".to_string(),
@@ -616,7 +616,7 @@ mod tests {
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
             length: 1,
-            frequency: Frequency::EveryXDays(1),
+            frequency: Frequency::Days(1),
             categories: vec![TrackerCategory {
                 name: "activity".to_string(),
                 entries: vec![TrackerEntry::Bool(BoolEntry { value: false })],
@@ -645,7 +645,7 @@ mod tests {
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
             length: 0,
-            frequency: Frequency::EveryXDays(1),
+            frequency: Frequency::Days(1),
             categories: vec![TrackerCategory {
                 name: "cat1".to_string(),
                 entries: vec![],
@@ -673,7 +673,7 @@ mod tests {
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
             length: 1,
-            frequency: Frequency::EveryXDays(1),
+            frequency: Frequency::Days(1),
             categories: vec![TrackerCategory {
                 name: "notes".to_string(),
                 entries: vec![TrackerEntry::Note(NoteEntry {
@@ -703,7 +703,7 @@ mod tests {
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
             length: 1,
-            frequency: Frequency::EveryXDays(1),
+            frequency: Frequency::Days(1),
             categories: vec![TrackerCategory {
                 name: "score_cat".to_string(),
                 entries: vec![TrackerEntry::Score(ScoreEntry { score: 1 })],
@@ -726,7 +726,7 @@ mod tests {
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
             length: 1,
-            frequency: Frequency::EveryXDays(1),
+            frequency: Frequency::Days(1),
             categories: vec![
                 TrackerCategory {
                     name: "notes".to_string(),
