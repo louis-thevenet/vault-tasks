@@ -1,4 +1,3 @@
-
 use chrono::NaiveDateTime;
 use tracing::error;
 use winnow::{
@@ -60,13 +59,10 @@ pub fn parse_header(
         '|',
         separated(
             0..,
-            repeat(1.., delimited(space0, none_of('|'), space0)).fold(
-                String::new,
-                |mut string, c| {
-                    string.push(c);
-                    string
-                },
-            ),
+            repeat(1.., none_of('|')).fold(String::new, |mut string, c| {
+                string.push(c);
+                string
+            }),
             '|',
         ),
     )
