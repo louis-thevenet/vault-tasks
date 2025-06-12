@@ -44,7 +44,7 @@ impl FpsCounter {
         }
     }
 
-    fn app_tick(&mut self) -> Result<()> {
+    fn app_tick(&mut self) {
         self.tick_count += 1;
         let now = Instant::now();
         let elapsed = (now - self.last_tick_update).as_secs_f64();
@@ -53,10 +53,9 @@ impl FpsCounter {
             self.last_tick_update = now;
             self.tick_count = 0;
         }
-        Ok(())
     }
 
-    fn render_tick(&mut self) -> Result<()> {
+    fn render_tick(&mut self) {
         self.frame_count += 1;
         let now = Instant::now();
         let elapsed = (now - self.last_frame_update).as_secs_f64();
@@ -65,7 +64,6 @@ impl FpsCounter {
             self.last_frame_update = now;
             self.frame_count = 0;
         }
-        Ok(())
     }
 }
 
@@ -73,10 +71,10 @@ impl Component for FpsCounter {
     fn update(&mut self, _tui: Option<&mut Tui>, action: Action) -> Result<Option<Action>> {
         if self.enabled {
             match action {
-                Action::Tick => self.app_tick()?,
-                Action::Render => self.render_tick()?,
+                Action::Tick => self.app_tick(),
+                Action::Render => self.render_tick(),
                 _ => {}
-            };
+            }
         }
         Ok(None)
     }

@@ -133,7 +133,7 @@ impl Tui {
                         CrosstermEvent::FocusLost => Event::FocusLost,
                         CrosstermEvent::FocusGained => Event::FocusGained,
                         CrosstermEvent::Paste(s) => Event::Paste(s),
-                        _ => continue, // ignore other events
+                        CrosstermEvent::Key(_) => continue, // ignore other events
                     }
                     Some(Err(_)) => Event::Error,
                     None => break, // the event stream has stopped and will not produce any more events
@@ -147,7 +147,7 @@ impl Tui {
         cancellation_token.cancel();
     }
 
-    pub fn stop(&self) -> Result<()> {
+    pub fn stop(&self) {
         self.cancel();
         let mut counter = 0;
         while !self.task.is_finished() {
@@ -161,7 +161,6 @@ impl Tui {
                 break;
             }
         }
-        Ok(())
     }
 
     pub fn enter(&mut self) -> Result<()> {
@@ -178,7 +177,7 @@ impl Tui {
     }
 
     pub fn exit(&mut self) -> Result<()> {
-        self.stop()?;
+        self.stop();
         if crossterm::terminal::is_raw_mode_enabled()? {
             self.flush()?;
             if self.paste {

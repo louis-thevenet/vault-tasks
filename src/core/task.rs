@@ -1,10 +1,10 @@
 use color_eyre::{Result, eyre::bail};
 use core::fmt;
+use std::fmt::Write;
 use std::{
     cmp::Ordering,
     fmt::Display,
     fs::{File, read_to_string},
-    io::Write,
     path::PathBuf,
 };
 use tracing::{debug, info};
@@ -116,16 +116,17 @@ impl fmt::Display for Task {
         };
         data_line.push_str(&is_today);
         if let Some(date) = &self.due_date {
-            data_line.push_str(&format!(
+            write!(
+                data_line,
                 "{} {} ({}) ",
                 default_symbols.due_date,
                 date,
                 date.get_relative_str()
-            ));
+            )?;
         }
 
         if self.priority > 0 {
-            data_line.push_str(&format!("{}{} ", default_symbols.priority, self.priority));
+            write!(data_line, "{}{} ", default_symbols.priority, self.priority)?;
         }
         if let Some(bar) = self.get_completion_bar(
             5,
@@ -282,7 +283,7 @@ impl Task {
             lines.push(String::new()); // Empty line
         }
         let mut file = File::create(path)?;
-        file.write_all(lines.join("\n").as_bytes())?;
+        std::io::Write::write_all(&mut file, lines.join("\n").as_bytes())?;
 
         Ok(())
     }
