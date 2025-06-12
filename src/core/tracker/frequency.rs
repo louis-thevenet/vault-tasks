@@ -8,35 +8,35 @@ use crate::core::date::Date;
 #[derive(Clone, Copy, FromRepr, EnumIter, Debug, PartialEq, Eq)]
 pub enum Frequency {
     #[strum(to_string = "minute")]
-    EveryXMinutes(u64),
+    Minutes(u64),
     #[strum(to_string = "hour")]
-    EveryXHours(u64),
+    Hours(u64),
     #[strum(to_string = "day")]
-    EveryXDays(u64),
+    Days(u64),
     #[strum(to_string = "week")]
-    EveryXWeeks(u64),
+    Weeks(u64),
     #[strum(to_string = "month")]
-    EveryXMonths(u64),
+    Months(u64),
     #[strum(to_string = "yeah")]
-    EveryXYears(u64),
+    Years(u64),
 }
 impl Display for Frequency {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let word = match self {
-            Frequency::EveryXMinutes(_) => "minute",
-            Frequency::EveryXHours(_) => "hour",
-            Frequency::EveryXDays(_) => "day",
-            Frequency::EveryXWeeks(_) => "week",
-            Frequency::EveryXMonths(_) => "month",
-            Frequency::EveryXYears(_) => "year",
+            Frequency::Minutes(_) => "minute",
+            Frequency::Hours(_) => "hour",
+            Frequency::Days(_) => "day",
+            Frequency::Weeks(_) => "week",
+            Frequency::Months(_) => "month",
+            Frequency::Years(_) => "year",
         };
         match self {
-            Frequency::EveryXMinutes(n)
-            | Frequency::EveryXHours(n)
-            | Frequency::EveryXDays(n)
-            | Frequency::EveryXWeeks(n)
-            | Frequency::EveryXMonths(n)
-            | Frequency::EveryXYears(n) => {
+            Frequency::Minutes(n)
+            | Frequency::Hours(n)
+            | Frequency::Days(n)
+            | Frequency::Weeks(n)
+            | Frequency::Months(n)
+            | Frequency::Years(n) => {
                 if *n == 1 {
                     write!(f, "Every {word}")
                 } else {
@@ -53,16 +53,16 @@ impl Frequency {
         // There are cases where it doesn't make sense to have a minute-based frequency and a Date without time for example.
         let fixed_date = match date {
             Date::Day(naive_date) => match self {
-                Frequency::EveryXHours(_) | Frequency::EveryXMinutes(_) => {
+                Frequency::Hours(_) | Frequency::Minutes(_) => {
                     Date::DayTime(NaiveDateTime::new(*naive_date, now.time()))
                 }
                 _ => date.clone(),
             },
             Date::DayTime(naive_date_time) => match self {
-                Frequency::EveryXMonths(_)
-                | Frequency::EveryXYears(_)
-                | Frequency::EveryXWeeks(_)
-                | Frequency::EveryXDays(_) => Date::Day(naive_date_time.date()),
+                Frequency::Months(_)
+                | Frequency::Years(_)
+                | Frequency::Weeks(_)
+                | Frequency::Days(_) => Date::Day(naive_date_time.date()),
                 _ => date.clone(),
             },
         };
@@ -71,13 +71,13 @@ impl Frequency {
         match fixed_date {
             Date::Day(naive_date) => {
                 match *self {
-                    Frequency::EveryXDays(days) => {
+                    Frequency::Days(days) => {
                         Date::Day(naive_date + TimeDelta::days(days as i64))
                     }
-                    Frequency::EveryXWeeks(weeks) => {
+                    Frequency::Weeks(weeks) => {
                         Date::Day(naive_date + TimeDelta::weeks(weeks as i64))
                     }
-                    Frequency::EveryXMonths(months) => {
+                    Frequency::Months(months) => {
                         // Handle month addition more carefully since months have different lengths
                         let mut year = naive_date.year();
                         let mut month = naive_date.month() as i32 + months as i32;
@@ -111,7 +111,7 @@ impl Frequency {
                             });
                         Date::Day(new_date)
                     }
-                    Frequency::EveryXYears(years) => {
+                    Frequency::Years(years) => {
                         let new_year = naive_date.year() + years as i32;
                         let new_date =
                             NaiveDate::from_ymd_opt(new_year, naive_date.month(), naive_date.day())
@@ -127,10 +127,10 @@ impl Frequency {
             }
             Date::DayTime(naive_date_time) => {
                 match *self {
-                    Frequency::EveryXMinutes(minutes) => {
+                    Frequency::Minutes(minutes) => {
                         Date::DayTime(naive_date_time + TimeDelta::minutes(minutes as i64))
                     }
-                    Frequency::EveryXHours(hours) => {
+                    Frequency::Hours(hours) => {
                         Date::DayTime(naive_date_time + TimeDelta::hours(hours as i64))
                     }
                     _ => fixed_date, // Should not happen due to type conversion above
@@ -164,23 +164,23 @@ mod tests {
         let start_date = Date::DayTime(start_datetime);
 
         // Test 1 minute
-        let freq = Frequency::EveryXMinutes(1);
+        let freq = Frequency::Minutes(1);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::DayTime(datetime(2024, 6, 15, 10, 31, 0)));
 
         // Test 15 minutes
-        let freq = Frequency::EveryXMinutes(15);
+        let freq = Frequency::Minutes(15);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::DayTime(datetime(2024, 6, 15, 10, 45, 0)));
 
         // Test 60 minutes (1 hour)
-        let freq = Frequency::EveryXMinutes(60);
+        let freq = Frequency::Minutes(60);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::DayTime(datetime(2024, 6, 15, 11, 30, 0)));
 
         // Test crossing day boundary
         let late_start = Date::DayTime(datetime(2024, 6, 15, 23, 45, 0));
-        let freq = Frequency::EveryXMinutes(30);
+        let freq = Frequency::Minutes(30);
         let next = freq.next_date(&late_start);
         assert_eq!(next, Date::DayTime(datetime(2024, 6, 16, 0, 15, 0)));
     }
@@ -191,23 +191,23 @@ mod tests {
         let start_date = Date::DayTime(start_datetime);
 
         // Test 1 hour
-        let freq = Frequency::EveryXHours(1);
+        let freq = Frequency::Hours(1);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::DayTime(datetime(2024, 6, 15, 11, 30, 0)));
 
         // Test 12 hours
-        let freq = Frequency::EveryXHours(12);
+        let freq = Frequency::Hours(12);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::DayTime(datetime(2024, 6, 15, 22, 30, 0)));
 
         // Test 24 hours (1 day)
-        let freq = Frequency::EveryXHours(24);
+        let freq = Frequency::Hours(24);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::DayTime(datetime(2024, 6, 16, 10, 30, 0)));
 
         // Test crossing day boundary
         let late_start = Date::DayTime(datetime(2024, 6, 15, 20, 0, 0));
-        let freq = Frequency::EveryXHours(6);
+        let freq = Frequency::Hours(6);
         let next = freq.next_date(&late_start);
         assert_eq!(next, Date::DayTime(datetime(2024, 6, 16, 2, 0, 0)));
     }
@@ -217,23 +217,23 @@ mod tests {
         let start_date = Date::Day(date(2024, 6, 15));
 
         // Test 1 day
-        let freq = Frequency::EveryXDays(1);
+        let freq = Frequency::Days(1);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2024, 6, 16)));
 
         // Test 7 days
-        let freq = Frequency::EveryXDays(7);
+        let freq = Frequency::Days(7);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2024, 6, 22)));
 
         // Test 30 days
-        let freq = Frequency::EveryXDays(30);
+        let freq = Frequency::Days(30);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2024, 7, 15)));
 
         // Test crossing year boundary
         let year_end = Date::Day(date(2024, 12, 25));
-        let freq = Frequency::EveryXDays(10);
+        let freq = Frequency::Days(10);
         let next = freq.next_date(&year_end);
         assert_eq!(next, Date::Day(date(2025, 1, 4)));
     }
@@ -242,7 +242,7 @@ mod tests {
     fn test_every_x_days_with_datetime() {
         // When given a DayTime with day frequency, it should convert to Day
         let start_datetime = Date::DayTime(datetime(2024, 6, 15, 14, 30, 0));
-        let freq = Frequency::EveryXDays(3);
+        let freq = Frequency::Days(3);
         let next = freq.next_date(&start_datetime);
         assert_eq!(next, Date::Day(date(2024, 6, 18)));
     }
@@ -252,23 +252,23 @@ mod tests {
         let start_date = Date::Day(date(2024, 6, 15)); // Saturday
 
         // Test 1 week
-        let freq = Frequency::EveryXWeeks(1);
+        let freq = Frequency::Weeks(1);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2024, 6, 22)));
 
         // Test 2 weeks
-        let freq = Frequency::EveryXWeeks(2);
+        let freq = Frequency::Weeks(2);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2024, 6, 29)));
 
         // Test 4 weeks (about 1 month)
-        let freq = Frequency::EveryXWeeks(4);
+        let freq = Frequency::Weeks(4);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2024, 7, 13)));
 
         // Test crossing year boundary
         let year_end = Date::Day(date(2024, 12, 25));
-        let freq = Frequency::EveryXWeeks(2);
+        let freq = Frequency::Weeks(2);
         let next = freq.next_date(&year_end);
         assert_eq!(next, Date::Day(date(2025, 1, 8)));
     }
@@ -278,27 +278,27 @@ mod tests {
         let start_date = Date::Day(date(2024, 6, 15));
 
         // Test 1 month
-        let freq = Frequency::EveryXMonths(1);
+        let freq = Frequency::Months(1);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2024, 7, 15)));
 
         // Test 3 months
-        let freq = Frequency::EveryXMonths(3);
+        let freq = Frequency::Months(3);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2024, 9, 15)));
 
         // Test 6 months
-        let freq = Frequency::EveryXMonths(6);
+        let freq = Frequency::Months(6);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2024, 12, 15)));
 
         // Test crossing year boundary
-        let freq = Frequency::EveryXMonths(12);
+        let freq = Frequency::Months(12);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2025, 6, 15)));
 
         // Test multiple year crossing
-        let freq = Frequency::EveryXMonths(18);
+        let freq = Frequency::Months(18);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2025, 12, 15)));
     }
@@ -309,7 +309,7 @@ mod tests {
 
         // January 31st + 1 month = February 28th (or 29th in leap year)
         let jan_31 = Date::Day(date(2024, 1, 31));
-        let freq = Frequency::EveryXMonths(1);
+        let freq = Frequency::Months(1);
         let next = freq.next_date(&jan_31);
         assert_eq!(next, Date::Day(date(2024, 2, 29))); // 2024 is a leap year
 
@@ -330,7 +330,7 @@ mod tests {
 
         // Test with multiple months
         let jan_31 = Date::Day(date(2024, 1, 31));
-        let freq = Frequency::EveryXMonths(2);
+        let freq = Frequency::Months(2);
         let next = freq.next_date(&jan_31);
         assert_eq!(next, Date::Day(date(2024, 3, 31))); // Jan + 2 months = March
     }
@@ -340,17 +340,17 @@ mod tests {
         let start_date = Date::Day(date(2024, 6, 15));
 
         // Test 1 year
-        let freq = Frequency::EveryXYears(1);
+        let freq = Frequency::Years(1);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2025, 6, 15)));
 
         // Test 5 years
-        let freq = Frequency::EveryXYears(5);
+        let freq = Frequency::Years(5);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2029, 6, 15)));
 
         // Test 10 years
-        let freq = Frequency::EveryXYears(10);
+        let freq = Frequency::Years(10);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2034, 6, 15)));
     }
@@ -359,18 +359,18 @@ mod tests {
     fn test_every_x_years_leap_year_edge_case() {
         // Test leap year edge case: Feb 29 -> Feb 28 in non-leap year
         let leap_day = Date::Day(date(2024, 2, 29)); // 2024 is a leap year
-        let freq = Frequency::EveryXYears(1);
+        let freq = Frequency::Years(1);
         let next = freq.next_date(&leap_day);
         assert_eq!(next, Date::Day(date(2025, 2, 28))); // 2025 is not a leap year
 
         // Test leap year to leap year
-        let freq = Frequency::EveryXYears(4);
+        let freq = Frequency::Years(4);
         let next = freq.next_date(&leap_day);
         assert_eq!(next, Date::Day(date(2028, 2, 29))); // 2028 is a leap year
 
         // Test non-leap to leap year (should keep Feb 28)
         let feb_28 = Date::Day(date(2023, 2, 28));
-        let freq = Frequency::EveryXYears(1);
+        let freq = Frequency::Years(1);
         let next = freq.next_date(&feb_28);
         assert_eq!(next, Date::Day(date(2024, 2, 28))); // Keeps Feb 28, doesn't become Feb 29
     }
@@ -378,26 +378,26 @@ mod tests {
     #[test]
     fn test_frequency_display() {
         // Test Display implementation
-        assert_eq!(format!("{}", Frequency::EveryXMinutes(1)), "Every minute");
+        assert_eq!(format!("{}", Frequency::Minutes(1)), "Every minute");
         assert_eq!(
-            format!("{}", Frequency::EveryXMinutes(5)),
+            format!("{}", Frequency::Minutes(5)),
             "Every 5 minutes"
         );
 
-        assert_eq!(format!("{}", Frequency::EveryXHours(1)), "Every hour");
-        assert_eq!(format!("{}", Frequency::EveryXHours(3)), "Every 3 hours");
+        assert_eq!(format!("{}", Frequency::Hours(1)), "Every hour");
+        assert_eq!(format!("{}", Frequency::Hours(3)), "Every 3 hours");
 
-        assert_eq!(format!("{}", Frequency::EveryXDays(1)), "Every day");
-        assert_eq!(format!("{}", Frequency::EveryXDays(7)), "Every 7 days");
+        assert_eq!(format!("{}", Frequency::Days(1)), "Every day");
+        assert_eq!(format!("{}", Frequency::Days(7)), "Every 7 days");
 
-        assert_eq!(format!("{}", Frequency::EveryXWeeks(1)), "Every week");
-        assert_eq!(format!("{}", Frequency::EveryXWeeks(2)), "Every 2 weeks");
+        assert_eq!(format!("{}", Frequency::Weeks(1)), "Every week");
+        assert_eq!(format!("{}", Frequency::Weeks(2)), "Every 2 weeks");
 
-        assert_eq!(format!("{}", Frequency::EveryXMonths(1)), "Every month");
-        assert_eq!(format!("{}", Frequency::EveryXMonths(6)), "Every 6 months");
+        assert_eq!(format!("{}", Frequency::Months(1)), "Every month");
+        assert_eq!(format!("{}", Frequency::Months(6)), "Every 6 months");
 
-        assert_eq!(format!("{}", Frequency::EveryXYears(1)), "Every year");
-        assert_eq!(format!("{}", Frequency::EveryXYears(5)), "Every 5 years");
+        assert_eq!(format!("{}", Frequency::Years(1)), "Every year");
+        assert_eq!(format!("{}", Frequency::Years(5)), "Every 5 years");
     }
 
     #[test]
@@ -406,17 +406,17 @@ mod tests {
 
         // December + 1 month = January next year
         let dec_15 = Date::Day(date(2024, 12, 15));
-        let freq = Frequency::EveryXMonths(1);
+        let freq = Frequency::Months(1);
         let next = freq.next_date(&dec_15);
         assert_eq!(next, Date::Day(date(2025, 1, 15)));
 
         // December + 2 months = February next year
-        let freq = Frequency::EveryXMonths(2);
+        let freq = Frequency::Months(2);
         let next = freq.next_date(&dec_15);
         assert_eq!(next, Date::Day(date(2025, 2, 15)));
 
         // Test month overflow with multiple years
-        let freq = Frequency::EveryXMonths(25); // 2 years + 1 month
+        let freq = Frequency::Months(25); // 2 years + 1 month
         let next = freq.next_date(&dec_15);
         assert_eq!(next, Date::Day(date(2027, 1, 15)));
     }
@@ -428,19 +428,19 @@ mod tests {
         // DayTime with day-based frequency should convert to Day
         let datetime_input = Date::DayTime(datetime(2024, 6, 15, 14, 30, 45));
 
-        let day_freq = Frequency::EveryXDays(1);
+        let day_freq = Frequency::Days(1);
         let next = day_freq.next_date(&datetime_input);
         assert_eq!(next, Date::Day(date(2024, 6, 16)));
 
-        let week_freq = Frequency::EveryXWeeks(1);
+        let week_freq = Frequency::Weeks(1);
         let next = week_freq.next_date(&datetime_input);
         assert_eq!(next, Date::Day(date(2024, 6, 22)));
 
-        let month_freq = Frequency::EveryXMonths(1);
+        let month_freq = Frequency::Months(1);
         let next = month_freq.next_date(&datetime_input);
         assert_eq!(next, Date::Day(date(2024, 7, 15)));
 
-        let year_freq = Frequency::EveryXYears(1);
+        let year_freq = Frequency::Years(1);
         let next = year_freq.next_date(&datetime_input);
         assert_eq!(next, Date::Day(date(2025, 6, 15)));
     }
@@ -451,17 +451,17 @@ mod tests {
         let start_date = Date::Day(date(2024, 6, 15));
 
         // 100 days
-        let freq = Frequency::EveryXDays(100);
+        let freq = Frequency::Days(100);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2024, 9, 23)));
 
         // 50 weeks (almost a year)
-        let freq = Frequency::EveryXWeeks(50);
+        let freq = Frequency::Weeks(50);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2025, 5, 31)));
 
         // 24 months (2 years)
-        let freq = Frequency::EveryXMonths(24);
+        let freq = Frequency::Months(24);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2026, 6, 15)));
     }
@@ -473,15 +473,15 @@ mod tests {
         let start_datetime = Date::DayTime(datetime(2024, 6, 15, 12, 0, 0));
 
         // 1 of each unit
-        let freq = Frequency::EveryXDays(1);
+        let freq = Frequency::Days(1);
         let next = freq.next_date(&start_date);
         assert_eq!(next, Date::Day(date(2024, 6, 16)));
 
-        let freq = Frequency::EveryXMinutes(1);
+        let freq = Frequency::Minutes(1);
         let next = freq.next_date(&start_datetime);
         assert_eq!(next, Date::DayTime(datetime(2024, 6, 15, 12, 1, 0)));
 
-        let freq = Frequency::EveryXHours(1);
+        let freq = Frequency::Hours(1);
         let next = freq.next_date(&start_datetime);
         assert_eq!(next, Date::DayTime(datetime(2024, 6, 15, 13, 0, 0)));
     }

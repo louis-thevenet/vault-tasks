@@ -203,7 +203,7 @@ mod tests {
             line_number: 1,
             start_date: Date::Day(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()),
             length: 0,
-            frequency: Frequency::EveryXDays(1),
+            frequency: Frequency::Days(1),
             categories: vec![
                 TrackerCategory {
                     name: "Category 1".to_string(),
@@ -359,7 +359,7 @@ mod tests {
             line_number: 1,
             start_date: Date::Day(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()), // Monday
             length: 0,
-            frequency: Frequency::EveryXDays(7),
+            frequency: Frequency::Days(7),
             categories: vec![TrackerCategory {
                 name: "Weekly Cat".to_string(),
                 entries: vec![],
@@ -406,7 +406,7 @@ mod tests {
             line_number: 1,
             start_date: Date::Day(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()),
             length: 0,
-            frequency: Frequency::EveryXDays(1),
+            frequency: Frequency::Days(1),
             categories: vec![
                 TrackerCategory {
                     name: "Cat A".to_string(),
@@ -514,7 +514,7 @@ mod tests {
                     .unwrap(),
             ),
             length: 0,
-            frequency: Frequency::EveryXDays(1),
+            frequency: Frequency::Days(1),
             categories: vec![TrackerCategory {
                 name: "DateTime Cat".to_string(),
                 entries: vec![],
