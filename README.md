@@ -161,6 +161,19 @@ Tracker: Name (today)
 | daily | notes |
 ```
 
+Vault-tasks would reformat it to:
+
+```md
+Tracker: Name (2025-06-15)
+
+| Every day  | notes |
+| ---------- | ----- |
+| 2025-06-15 |       |
+| 2025-06-16 |       |
+| 2025-06-17 |       |
+| 2025-06-18 |       |
+```
+
 Frequencies can be:
 
 - `Every <hour|day|week|month|year>`
