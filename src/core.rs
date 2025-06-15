@@ -97,6 +97,8 @@ pub struct TasksConfig {
     pub task_state_markers: TaskMarkerConfig,
     #[serde(default)]
     pub pretty_symbols: PrettySymbolsConfig,
+    #[serde(default)]
+    pub tracker_extra_blanks: usize,
 }
 impl Default for TasksConfig {
     fn default() -> Self {

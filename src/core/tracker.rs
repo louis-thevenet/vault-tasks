@@ -74,9 +74,6 @@ pub struct Tracker {
     pub categories: Vec<TrackerCategory>,
 }
 impl Tracker {
-    /// Amount of blanks to create when fixing the tracker attributes.
-    const BLANKS_COUNT: usize = 3;
-
     pub fn add_event(&mut self, date: &Date, entries: &[TrackerEntry]) {
         // What date is it supposed to be?
         let parsed_entries_count = self.categories.first().map_or(0, |c| c.entries.len());
@@ -148,8 +145,7 @@ impl Tracker {
         if !path.is_file() {
             bail!("Tried to fix tasks attributes but {path:?} is not a file");
         }
-
-        let new_lines = fixed_tracker
+        let new_lines = self
             .fmt(config.use_american_format)
             .split('\n')
             .map(str::to_owned)
@@ -160,10 +156,10 @@ impl Tracker {
             .map(str::to_owned)
             .collect::<Vec<String>>();
         for (n, new_line) in new_lines.iter().enumerate() {
-            if lines.len() <= fixed_tracker.line_number + n {
+            if lines.len() <= self.line_number + n {
                 lines.push(new_line.to_string());
             } else {
-                lines[n + fixed_tracker.line_number] = new_line.to_string();
+                lines[n + self.line_number] = new_line.to_string();
             }
         }
 
@@ -172,7 +168,7 @@ impl Tracker {
         Ok(())
     }
 
-    pub fn add_blanks(&self) -> Tracker {
+    pub fn add_blanks(&self, config: &TasksConfig) -> Tracker {
         let mut fixed_tracker = self.clone();
         let entries_count = fixed_tracker
             .categories
@@ -187,7 +183,7 @@ impl Tracker {
         let now = chrono::Utc::now();
         let mut target_date = Date::DayTime(NaiveDateTime::new(now.date_naive(), now.time()));
         // increment target_date so we add extra blanks
-        (0..Self::BLANKS_COUNT)
+        (0..config.tracker_extra_blanks)
             .for_each(|_| target_date = fixed_tracker.frequency.next_date(&target_date));
 
         // Add blanks until we reach the current date
@@ -201,7 +197,7 @@ impl Tracker {
 
         // Now we'll ensure we have enough blanks at the end
         let mut blanks_count = 0;
-        for _i in 0..Self::BLANKS_COUNT {
+        for _i in 0..config.tracker_extra_blanks {
             if fixed_tracker.categories.iter().all(|cat| {
                 cat.entries
                     .get(cat.entries.len() - 1 - blanks_count)
@@ -218,7 +214,7 @@ impl Tracker {
         }
 
         // Add missing blanks
-        for _i in 0..(Self::BLANKS_COUNT - blanks_count) {
+        for _i in 0..(config.tracker_extra_blanks - blanks_count) {
             for cat in &mut fixed_tracker.categories {
                 cat.entries.push(TrackerEntry::Blank);
             }
