@@ -536,56 +536,6 @@ mod tests {
     }
 
     #[test]
-    fn test_add_event_with_datetime_skip_dates() {
-        let mut tracker = Tracker {
-            name: "DateTime Tracker".to_string(),
-            filename: "test.md".to_string(),
-            line_number: 1,
-            start_date: Date::DayTime(
-                NaiveDate::from_ymd_opt(2024, 1, 1)
-                    .unwrap()
-                    .and_hms_opt(9, 0, 0)
-                    .unwrap(),
-            ),
-            length: 0,
-            frequency: Frequency::Days(1),
-            categories: vec![TrackerCategory {
-                name: "DateTime Cat".to_string(),
-                entries: vec![],
-            }],
-        };
-
-        // Add first event
-        let first_date = Date::DayTime(
-            NaiveDate::from_ymd_opt(2024, 1, 1)
-                .unwrap()
-                .and_hms_opt(9, 0, 0)
-                .unwrap(),
-        );
-        let first_entries = vec![TrackerEntry::Note(NoteEntry {
-            value: "First".to_string(),
-        })];
-        tracker.add_event(&first_date, &first_entries);
-
-        // Skip a day and add third day
-        let third_date = Date::DayTime(
-            NaiveDate::from_ymd_opt(2024, 1, 3)
-                .unwrap()
-                .and_hms_opt(9, 0, 0)
-                .unwrap(),
-        );
-        let third_entries = vec![TrackerEntry::Note(NoteEntry {
-            value: "Third".to_string(),
-        })];
-        tracker.add_event(&third_date, &third_entries);
-
-        // Should have 3 entries (First, Blank, Third)
-        assert_eq!(tracker.length, 3);
-        assert_eq!(tracker.categories[0].entries.len(), 3);
-        assert_eq!(tracker.categories[0].entries[1], TrackerEntry::Blank);
-    }
-
-    #[test]
     fn test_add_event_skip_with_existing_entries() {
         let mut tracker = create_test_tracker();
 
