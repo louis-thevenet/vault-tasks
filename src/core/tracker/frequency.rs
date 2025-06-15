@@ -48,10 +48,10 @@ impl Display for Frequency {
 }
 
 impl Frequency {
-    pub fn next_date(&self, date: &Date) -> Date {
+    /// There are cases where it doesn't make sense to have a minute-based frequency and a Date without time for example.
+    pub fn fix_date(&self, date: &Date) -> Date {
         let now = chrono::Local::now().naive_local();
-        // There are cases where it doesn't make sense to have a minute-based frequency and a Date without time for example.
-        let fixed_date = match date {
+        match date {
             Date::Day(naive_date) => match self {
                 Frequency::Hours(_) | Frequency::Minutes(_) => {
                     Date::DayTime(NaiveDateTime::new(*naive_date, now.time()))
@@ -65,15 +65,13 @@ impl Frequency {
                 | Frequency::Days(_) => Date::Day(naive_date_time.date()),
                 _ => date.clone(),
             },
-        };
-
-        // Actually compute next date
-        match fixed_date {
+        }
+    }
+    pub fn next_date(&self, date: &Date) -> Date {
+        match *date {
             Date::Day(naive_date) => {
                 match *self {
-                    Frequency::Days(days) => {
-                        Date::Day(naive_date + TimeDelta::days(days as i64))
-                    }
+                    Frequency::Days(days) => Date::Day(naive_date + TimeDelta::days(days as i64)),
                     Frequency::Weeks(weeks) => {
                         Date::Day(naive_date + TimeDelta::weeks(weeks as i64))
                     }
@@ -122,7 +120,7 @@ impl Frequency {
                                 });
                         Date::Day(new_date)
                     }
-                    _ => fixed_date, // Should not happen due to type conversion above
+                    _ => date.clone(), // Should not happen due to type conversion above
                 }
             }
             Date::DayTime(naive_date_time) => {
@@ -133,7 +131,7 @@ impl Frequency {
                     Frequency::Hours(hours) => {
                         Date::DayTime(naive_date_time + TimeDelta::hours(hours as i64))
                     }
-                    _ => fixed_date, // Should not happen due to type conversion above
+                    _ => date.clone(), // Should not happen due to type conversion above
                 }
             }
         }
@@ -379,10 +377,7 @@ mod tests {
     fn test_frequency_display() {
         // Test Display implementation
         assert_eq!(format!("{}", Frequency::Minutes(1)), "Every minute");
-        assert_eq!(
-            format!("{}", Frequency::Minutes(5)),
-            "Every 5 minutes"
-        );
+        assert_eq!(format!("{}", Frequency::Minutes(5)), "Every 5 minutes");
 
         assert_eq!(format!("{}", Frequency::Hours(1)), "Every hour");
         assert_eq!(format!("{}", Frequency::Hours(3)), "Every 3 hours");
