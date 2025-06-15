@@ -85,7 +85,6 @@ See `vault-tasks --help` for basic usage.
 
 ### Writing tasks
 
-```md
 <!-- An example task in your markdown file -->
 
 - [ ] An example task #tag tomorrow p1
@@ -95,7 +94,6 @@ See `vault-tasks --help` for basic usage.
   - [/] Another subtask 10/23 @today c50
     Partly done
   - [-] This one is canceled
-```
 
 | Token                                      | Meaning                                                           |
 | ------------------------------------------ | ----------------------------------------------------------------- |
@@ -129,7 +127,6 @@ This is what you will see in the preview of this `README.md` in `vault-tasks`:
 
 ### Writing Trackers (or recurrent tasks)
 
-```md
 <!-- An example tracker in your markdown file -->
 
 Tracker: Arts Enjoyment (2025-06-08)
@@ -146,7 +143,6 @@ Tracker: Arts Enjoyment (2025-06-08)
 | 2025-06-15 |             |          |          |      |        |        |                            |
 | 2025-06-16 |             |          |          |      |        |        |                            |
 | 2025-06-17 |             |          |          |      |        |        |                            |
-```
 
 You start by writing `Tracker:` followed by your tracker's name. You add a starting date such as an ISO date or a relative date.
 
