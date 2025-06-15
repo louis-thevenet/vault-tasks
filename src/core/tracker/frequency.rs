@@ -79,13 +79,11 @@ impl Frequency {
                         // Handle month addition more carefully since months have different lengths
                         let mut year = naive_date.year();
                         let mut month = naive_date.month() as i32 + months as i32;
-
                         // Handle year overflow
                         while month > 12 {
                             year += 1;
                             month -= 12;
                         }
-
                         let day = naive_date.day();
                         // Handle day overflow for shorter months
                         let new_date = NaiveDate::from_ymd_opt(year, month as u32, day)
@@ -120,7 +118,17 @@ impl Frequency {
                                 });
                         Date::Day(new_date)
                     }
-                    _ => date.clone(), // Should not happen due to type conversion above
+                    // This is a mismatch between the date variant and the type of frequency but we still handle it
+                    Frequency::Minutes(minutes) => {
+                        // Convert to midnight of the day and add minutes
+                        let naive_date_time = naive_date.and_hms_opt(0, 0, 0).unwrap();
+                        Date::DayTime(naive_date_time + TimeDelta::minutes(minutes as i64))
+                    }
+                    Frequency::Hours(hours) => {
+                        // Convert to midnight of the day and add hours
+                        let naive_date_time = naive_date.and_hms_opt(0, 0, 0).unwrap();
+                        Date::DayTime(naive_date_time + TimeDelta::hours(hours as i64))
+                    }
                 }
             }
             Date::DayTime(naive_date_time) => {
@@ -131,7 +139,63 @@ impl Frequency {
                     Frequency::Hours(hours) => {
                         Date::DayTime(naive_date_time + TimeDelta::hours(hours as i64))
                     }
-                    _ => date.clone(), // Should not happen due to type conversion above
+                    // Should not happen either
+                    Frequency::Days(days) => {
+                        Date::DayTime(naive_date_time + TimeDelta::days(days as i64))
+                    }
+                    Frequency::Weeks(weeks) => {
+                        Date::DayTime(naive_date_time + TimeDelta::weeks(weeks as i64))
+                    }
+                    Frequency::Months(months) => {
+                        // Extract date part, do month arithmetic, then reapply time
+                        let date_part = naive_date_time.date();
+                        let time_part = naive_date_time.time();
+
+                        let mut year = date_part.year();
+                        let mut month = date_part.month() as i32 + months as i32;
+                        // Handle year overflow
+                        while month > 12 {
+                            year += 1;
+                            month -= 12;
+                        }
+                        let day = date_part.day();
+                        // Handle day overflow for shorter months
+                        let new_date = NaiveDate::from_ymd_opt(year, month as u32, day)
+                            .unwrap_or_else(|| {
+                                // If day doesn't exist in target month, use last day of that month
+                                NaiveDate::from_ymd_opt(year, month as u32, 1)
+                                    .unwrap()
+                                    .with_day(match month {
+                                        2 => {
+                                            if year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
+                                            {
+                                                29
+                                            } else {
+                                                28
+                                            }
+                                        }
+                                        4 | 6 | 9 | 11 => 30,
+                                        _ => 31,
+                                    })
+                                    .unwrap()
+                            });
+                        Date::DayTime(new_date.and_time(time_part))
+                    }
+                    Frequency::Years(years) => {
+                        // Extract date part, do year arithmetic, then reapply time
+                        let date_part = naive_date_time.date();
+                        let time_part = naive_date_time.time();
+
+                        let new_year = date_part.year() + years as i32;
+                        let new_date =
+                            NaiveDate::from_ymd_opt(new_year, date_part.month(), date_part.day())
+                                .unwrap_or_else(|| {
+                                    // Handle leap year edge case (Feb 29 -> Feb 28)
+                                    NaiveDate::from_ymd_opt(new_year, date_part.month(), 28)
+                                        .unwrap()
+                                });
+                        Date::DayTime(new_date.and_time(time_part))
+                    }
                 }
             }
         }
