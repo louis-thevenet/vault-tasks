@@ -631,7 +631,8 @@ impl ParserFileEntry<'_> {
                                     }
                                     input.next();
                                 }
-                                if Self::insert_tracker_at(file_entry, tracker, header_depth)
+                                let fixed_tracker = tracker.add_blanks();
+                                if Self::insert_tracker_at(file_entry, fixed_tracker, header_depth)
                                     .is_ok()
                                 {
                                     info!("Successfully inserted Tracker");
