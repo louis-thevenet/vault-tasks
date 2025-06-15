@@ -85,6 +85,7 @@ See `vault-tasks --help` for basic usage.
 
 ### Writing tasks
 
+```md
 <!-- An example task in your markdown file -->
 
 - [ ] An example task #tag tomorrow p1
@@ -94,6 +95,7 @@ See `vault-tasks --help` for basic usage.
   - [/] Another subtask 10/23 @today c50
     Partly done
   - [-] This one is canceled
+```
 
 | Token                                      | Meaning                                                           |
 | ------------------------------------------ | ----------------------------------------------------------------- |
@@ -127,22 +129,25 @@ This is what you will see in the preview of this `README.md` in `vault-tasks`:
 
 ### Writing Trackers (or recurrent tasks)
 
+```md
 <!-- An example tracker in your markdown file -->
 
 Tracker: Arts Enjoyment (2025-06-08)
 
-| Every day  | inspiration | medium   | duration | cost | social | energy | notes                      |
-| ---------- | ----------- | -------- | -------- | ---- | ------ | ------ | -------------------------- |
-| 2025-06-08 | 8           | painting | 2.5h     | 15   | [ ]    | high   | watercolor landscape       |
-| 2025-06-09 | 6           | music    | 45min    | 0    | [x]    | medium | street musician downtown   |
-| 2025-06-10 | 9           | theater  | 3h       | 45   | [x]    | medium | incredible Shakespeare     |
-| 2025-06-11 | 7           | digital  | 1h       | 12   | [ ]    | low    | new photography exhibition |
-| 2025-06-12 | 5           | craft    | 30min    | 8    | [ ]    | high   | pottery wheel attempt      |
-| 2025-06-13 | 8           | film     | 2h       | 10   | [x]    | low    | foreign cinema festival    |
-| 2025-06-14 | 9           | dance    | 1.5h     | 20   | [x]    | high   | salsa class breakthrough!  |
-| 2025-06-15 |             |          |          |      |        |        |                            |
-| 2025-06-16 |             |          |          |      |        |        |                            |
-| 2025-06-17 |             |          |          |      |        |        |                            |
+| Every day  | inspiration | medium   | cost | social | notes                      |
+| ---------- | ----------- | -------- | ---- | ------ | -------------------------- |
+| 2025-06-08 | 8           | painting | 15   | [ ]    | watercolor landscape       |
+| 2025-06-09 | 6           | music    | 0    | [x]    | street musician downtown   |
+| 2025-06-10 | 9           | theater  | 45   | [x]    | incredible Shakespeare     |
+| 2025-06-11 | 7           | digital  | 12   | [ ]    | new photography exhibition |
+| 2025-06-12 | 5           | craft    | 8    | [ ]    | pottery wheel attempt      |
+| 2025-06-13 | 8           | film     | 10   | [x]    | foreign cinema festival    |
+| 2025-06-14 | 9           | dance    | 20   | [x]    | salsa class breakthrough!  |
+| 2025-06-15 |             |          |      |        |                            |
+| 2025-06-16 |             |          |      |        |                            |
+| 2025-06-17 |             |          |      |        |                            |
+| 2025-06-18 |             |          |      |        |                            |
+```
 
 You start by writing `Tracker:` followed by your tracker's name. You add a starting date such as an ISO date or a relative date.
 
@@ -169,6 +174,10 @@ Data types are:
 - Blank
 
 Be careful not to change type within a column, vault-tasks will replace the wrong type with a blank entry.
+
+This is what you will see in the preview of this `README.md` in `vault-tasks`:
+
+![](./examples/demo_readme_tracker.png)
 
 ### Default Key Map
 
@@ -280,10 +289,6 @@ vault-tasks time
 vault-tasks calendar
 ```
 
-```
-
-```
-
 You can also output the content of a vault in standard output using
 
 ```bash
@@ -294,32 +299,49 @@ Example output:
 
 ```
 vault-tasks -v ./README.md stdout
-./README.md
-‾‾‾‾‾‾‾‾‾‾‾
-	README.md
-	‾‾‾‾‾‾‾‾‾
-		Vault-tasks
-		‾‾‾‾‾‾‾‾‾‾‾
-			Usage
-			‾‾‾‾‾
-				Writing tasks
-				‾‾‾‾‾‾‾‾‾‾‾‾‾
-					❌ An example task
-					📅 2025-03-31 (tomorrow) ❗1
-					#tag
-					A description
-					of this task
+README.md
+‾‾‾‾‾‾‾‾‾
+  Vault-tasks
+  ‾‾‾‾‾‾‾‾‾‾‾
+        Usage
+        ‾‾‾‾‾
+                Writing tasks
+                ‾‾‾‾‾‾‾‾‾‾‾‾‾
+                        ❌ An example task
+                        📅 2025-06-16 (tomorrow) ❗1
+                        #tag
+                        A description
+                        of this task
 
-						✅ A subtask
-						☀️ 📅 2025-03-30 (today)
+                                ✅ A subtask
+                                ☀️ 📅 2025-06-15 (today)
 
 
-						⏳ Another subtask
-						☀️ 📅 2025-10-23 (in 7 months) [🟩🟩⬜️⬜️⬜️ 50%]
-						Partly done
+                                ⏳ Another subtask
+                                ☀️ 📅 2025-10-23 (in 4 months) [🟩🟩⬜️⬜️⬜️ 50%]
+                                Partly done
 
 
-						🚫 This one is canceled
+                                🚫 This one is canceled
+
+
+                Writing Trackers (or recurrent tasks)
+                ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+                        Tracker: Arts Enjoyment (2025-06-08)
+
+                        | Every day  | inspiration | medium   | cost | social | notes                      |
+                        |------------|-------------|----------|------|--------|----------------------------|
+                        | 2025-06-08 | 8           | painting | 15   | [ ]    | watercolor landscape       |
+                        | 2025-06-09 | 6           | music    | 0    | [x]    | street musician downtown   |
+                        | 2025-06-10 | 9           | theater  | 45   | [x]    | incredible Shakespeare     |
+                        | 2025-06-11 | 7           | digital  | 12   | [ ]    | new photography exhibition |
+                        | 2025-06-12 | 5           | craft    | 8    | [ ]    | pottery wheel attempt      |
+                        | 2025-06-13 | 8           | film     | 10   | [x]    | foreign cinema festival    |
+                        | 2025-06-14 | 9           | dance    | 20   | [x]    | salsa class breakthrough!  |
+                        | 2025-06-15 |             |          |      |        |                            |
+                        | 2025-06-16 |             |          |      |        |                            |
+                        | 2025-06-17 |             |          |      |        |                            |
+                        | 2025-06-18 |             |          |      |        |                            |
 ```
 
 ## Configuration
@@ -333,11 +355,3 @@ In particular, you can set a default vault path.
 ## Contributing
 
 Feel free to submit issues or pull requests. Contributions are welcome!
-
-```
-
-```
-
-```
-
-```
