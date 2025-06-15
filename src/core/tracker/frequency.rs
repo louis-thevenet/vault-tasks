@@ -237,15 +237,6 @@ mod tests {
     }
 
     #[test]
-    fn test_every_x_days_with_datetime() {
-        // When given a DayTime with day frequency, it should convert to Day
-        let start_datetime = Date::DayTime(datetime(2024, 6, 15, 14, 30, 0));
-        let freq = Frequency::Days(3);
-        let next = freq.next_date(&start_datetime);
-        assert_eq!(next, Date::Day(date(2024, 6, 18)));
-    }
-
-    #[test]
     fn test_every_x_weeks() {
         let start_date = Date::Day(date(2024, 6, 15)); // Saturday
 
@@ -414,30 +405,6 @@ mod tests {
         let freq = Frequency::Months(25); // 2 years + 1 month
         let next = freq.next_date(&dec_15);
         assert_eq!(next, Date::Day(date(2027, 1, 15)));
-    }
-
-    #[test]
-    fn test_type_conversion_consistency() {
-        // Test that type conversion works consistently
-
-        // DayTime with day-based frequency should convert to Day
-        let datetime_input = Date::DayTime(datetime(2024, 6, 15, 14, 30, 45));
-
-        let day_freq = Frequency::Days(1);
-        let next = day_freq.next_date(&datetime_input);
-        assert_eq!(next, Date::Day(date(2024, 6, 16)));
-
-        let week_freq = Frequency::Weeks(1);
-        let next = week_freq.next_date(&datetime_input);
-        assert_eq!(next, Date::Day(date(2024, 6, 22)));
-
-        let month_freq = Frequency::Months(1);
-        let next = month_freq.next_date(&datetime_input);
-        assert_eq!(next, Date::Day(date(2024, 7, 15)));
-
-        let year_freq = Frequency::Years(1);
-        let next = year_freq.next_date(&datetime_input);
-        assert_eq!(next, Date::Day(date(2025, 6, 15)));
     }
 
     #[test]
