@@ -48,7 +48,7 @@ impl NewTracker {
             name: self.name.clone(),
             frequency,
             categories: tracker_categories,
-            start_date: self.start_date.clone(),
+            start_date: frequency.fix_date(&self.start_date),
             length: 0,
             filename,
             line_number,
@@ -103,9 +103,43 @@ impl Tracker {
             });
         self.length += 1;
     }
+    fn fmt(&self, american_format: bool) -> String {
+        let mut b = Builder::new();
+        b.push_record(
+            [
+                vec![self.frequency.to_string()],
+                self.categories.iter().map(|c| c.name.clone()).collect(),
+            ]
+            .concat(),
+        );
+        let mut date = self.start_date.clone();
+        for n in 0..self.length {
+            b.push_record(
+                [
+                    vec![date.to_string_format(!american_format)],
+                    self.categories
+                        .iter()
+                        .map(|c| c.entries.get(n).unwrap().to_string())
+                        .collect(),
+                ]
+                .concat(),
+            );
+            date = self.frequency.next_date(&date);
+        }
+
+        [
+            format!(
+                "Tracker: {} ({})\n",
+                self.name,
+                self.start_date.to_string_format(!american_format)
+            ),
+            format!("{}", b.build().with(Style::markdown())),
+        ]
+        .join("\n")
+    }
     pub(crate) fn fix_tracker_attributes(
         &self,
-        _config: &TasksConfig,
+        config: &TasksConfig,
         path: &path::Path,
     ) -> Result<()> {
         if !path.is_file() {
@@ -141,7 +175,7 @@ impl Tracker {
             fixed_tracker.length += 1;
         }
         let new_lines = fixed_tracker
-            .to_string()
+            .fmt(config.use_american_format)
             .split('\n')
             .map(str::to_owned)
             .collect::<Vec<String>>();
