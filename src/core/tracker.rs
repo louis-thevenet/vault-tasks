@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use color_eyre::{Result, eyre::bail};
 use frequency::Frequency;
 use std::fs::read_to_string;
@@ -137,6 +138,8 @@ impl Tracker {
         ]
         .join("\n")
     }
+
+    /// Replaces the input tracker with the parsed and fixed version.
     pub(crate) fn fix_tracker_attributes(
         &self,
         config: &TasksConfig,
@@ -145,41 +148,18 @@ impl Tracker {
         if !path.is_file() {
             bail!("Tried to fix tasks attributes but {path:?} is not a file");
         }
-        let content = read_to_string(path)?;
-        let mut lines = content
-            .split('\n')
-            .map(str::to_owned)
-            .collect::<Vec<String>>();
-        let mut fixed_tracker = self.clone();
-        let mut count = 0;
-        for _i in 0..Self::BLANKS_COUNT {
-            if fixed_tracker.categories.iter().all(|cat| {
-                cat.entries
-                    .get(cat.entries.len() - 1 - count)
-                    .is_some_and(|entry| match entry {
-                        TrackerEntry::Note(NoteEntry { value }) if value.is_empty() => true,
-                        TrackerEntry::Blank => true,
-                        _ => false,
-                    })
-            }) {
-                count += 1;
-            } else {
-                break;
-            }
-        }
+        let fixed_tracker = self.add_blanks();
 
-        for _i in 0..(Self::BLANKS_COUNT - count) {
-            for cat in &mut fixed_tracker.categories {
-                cat.entries.push(TrackerEntry::Blank);
-            }
-            fixed_tracker.length += 1;
-        }
         let new_lines = fixed_tracker
             .fmt(config.use_american_format)
             .split('\n')
             .map(str::to_owned)
             .collect::<Vec<String>>();
-
+        let content = read_to_string(path)?;
+        let mut lines = content
+            .split('\n')
+            .map(str::to_owned)
+            .collect::<Vec<String>>();
         for (n, new_line) in new_lines.iter().enumerate() {
             if lines.len() <= fixed_tracker.line_number + n {
                 lines.push(new_line.to_string());
@@ -191,6 +171,61 @@ impl Tracker {
         let mut file = File::create(path)?;
         file.write_all(lines.join("\n").as_bytes())?;
         Ok(())
+    }
+
+    pub fn add_blanks(&self) -> Tracker {
+        let mut fixed_tracker = self.clone();
+        let entries_count = fixed_tracker
+            .categories
+            .first()
+            .map_or(0, |c| c.entries.len());
+
+        // Compute last parsed entry's date
+        let mut last_parsed_date = fixed_tracker.start_date.clone();
+        (0..entries_count)
+            .for_each(|_| last_parsed_date = fixed_tracker.frequency.next_date(&last_parsed_date));
+
+        let now = chrono::Utc::now();
+        let mut target_date = Date::DayTime(NaiveDateTime::new(now.date_naive(), now.time()));
+        // increment target_date so we add extra blanks
+        (0..Self::BLANKS_COUNT)
+            .for_each(|_| target_date = fixed_tracker.frequency.next_date(&target_date));
+
+        // Add blanks until we reach the current date
+        while target_date >= last_parsed_date {
+            fixed_tracker.categories.iter_mut().for_each(|cat| {
+                cat.entries.push(TrackerEntry::Blank);
+            });
+            fixed_tracker.length += 1;
+            last_parsed_date = fixed_tracker.frequency.next_date(&last_parsed_date);
+        }
+
+        // Now we'll ensure we have enough blanks at the end
+        let mut blanks_count = 0;
+        for _i in 0..Self::BLANKS_COUNT {
+            if fixed_tracker.categories.iter().all(|cat| {
+                cat.entries
+                    .get(cat.entries.len() - 1 - blanks_count)
+                    .is_some_and(|entry| match entry {
+                        TrackerEntry::Note(NoteEntry { value }) if value.is_empty() => true,
+                        TrackerEntry::Blank => true,
+                        _ => false,
+                    })
+            }) {
+                blanks_count += 1;
+            } else {
+                break;
+            }
+        }
+
+        // Add missing blanks
+        for _i in 0..(Self::BLANKS_COUNT - blanks_count) {
+            for cat in &mut fixed_tracker.categories {
+                cat.entries.push(TrackerEntry::Blank);
+            }
+            fixed_tracker.length += 1;
+        }
+        fixed_tracker
     }
 }
 
