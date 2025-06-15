@@ -2,16 +2,12 @@ use std::rc::Rc;
 
 use ratatui::{
     prelude::*,
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Borders, Cell, Paragraph, Row, Table},
 };
 use ratskin::RatSkin;
 use tracing::error;
 
-use crate::core::{
-    PrettySymbolsConfig,
-    task::{DueDate, Task},
-    vault_data::VaultData,
-};
+use crate::core::{PrettySymbolsConfig, task::Task, vault_data::VaultData};
 
 const HEADER_INDENT_RATIO: u16 = 3;
 
@@ -88,19 +84,17 @@ impl TaskListItem {
             data_line.push(Span::raw(format!("{} ", self.symbols.today_tag)));
         }
 
-        let due_date_str = task
-            .due_date
-            .to_display_format(&self.symbols.due_date, self.not_american_format);
-
-        if !due_date_str.is_empty() {
-            data_line.push(Span::from(format!("{due_date_str} ")));
+        if let Some(due_date) = &task.due_date {
+            data_line.push(Span::from(format!(
+                "{} ",
+                due_date.to_display_format(&self.symbols.due_date, self.not_american_format)
+            )));
             if self.show_relative_due_dates {
-                if let Some(due_date_relative) = task.due_date.get_relative_str() {
-                    data_line.push(Span::styled(
-                        format!("({due_date_relative}) "),
-                        Style::new().dim(),
-                    ));
-                }
+                let due_date_relative = due_date.get_relative_str();
+                data_line.push(Span::styled(
+                    format!("({due_date_relative}) "),
+                    Style::new().dim(),
+                ));
             }
         }
         if let Some(bar) = task.get_completion_bar(
@@ -164,6 +158,89 @@ impl TaskListItem {
             },
         )
     }
+    fn tracker_to_table(&self, tracker: &crate::core::tracker::Tracker) -> Table<'_> {
+        let header = [
+            vec!["Dates".to_owned()],
+            tracker.categories.iter().map(|c| c.name.clone()).collect(),
+        ]
+        .concat()
+        .into_iter()
+        .map(Cell::from)
+        .collect::<Row>()
+        .style(self.header_style)
+        .height(1);
+
+        let mut date = tracker.start_date.clone();
+        let rat_skin = RatSkin::default();
+        let rows = (0..tracker.length).map(|n| {
+            let res = Row::new(
+                [
+                    vec![Cell::from(
+                        Span::raw(date.to_string_format(self.not_american_format).to_string())
+                            + if self.show_relative_due_dates {
+                                Span::raw(format!(" ({})", date.get_relative_str())).dim()
+                            } else {
+                                Span::raw("")
+                            },
+                    )],
+                    tracker
+                        .categories
+                        .iter()
+                        .map(|c| {
+                            Cell::from(Text::from(rat_skin.parse(
+                                RatSkin::parse_text(
+                                    &c.entries.get(n).unwrap().pretty_fmt(&self.symbols),
+                                ),
+                                self.max_width,
+                            )))
+                        })
+                        .collect(),
+                ]
+                .concat(),
+            );
+            date = tracker.frequency.next_date(&date);
+            res
+        });
+        let mut date = tracker.start_date.clone();
+        let widths = [
+            vec![
+                (0..tracker.length)
+                    .map(|_n| {
+                        let res = if self.show_relative_due_dates {
+                            format!(
+                                "{} ({})",
+                                date.to_string_format(self.not_american_format),
+                                date.get_relative_str()
+                            )
+                        } else {
+                            date.to_string_format(self.not_american_format).to_string()
+                        }
+                        .len() as u16;
+                        date = tracker.frequency.next_date(&date);
+                        res
+                    })
+                    .max()
+                    .unwrap_or_default(),
+            ],
+            tracker
+                .categories
+                .iter()
+                .map(|cat| {
+                    (cat.entries
+                        .iter()
+                        .map(|ent| ent.to_string().len())
+                        .max()
+                        .unwrap_or_default())
+                    .max(cat.name.len()) as u16
+                })
+                .collect::<Vec<u16>>(),
+        ]
+        .concat();
+        Table::new(rows, widths)
+            .header(header)
+            .column_spacing(2)
+            .block(Block::bordered().title(tracker.name.clone()))
+    }
     fn compute_height(item: &VaultData, max_width: u16) -> u16 {
         let rat_skin = RatSkin::default();
         match &item {
@@ -187,7 +264,7 @@ impl TaskListItem {
                         0
                     });
                 }
-                if task.due_date != DueDate::NoDate
+                if task.due_date.is_some()
                     || task.priority > 0
                     || task.is_today
                     || task.completion.is_some()
@@ -202,6 +279,14 @@ impl TaskListItem {
                 }
                 count.max(3) // If count == 2 then task name will go directly inside a block
                 // Else task name will be the block's title and content will go inside
+            }
+            VaultData::Tracker(tracker) => {
+                2 // block
+                    + 1 // header
+                    + tracker
+                    .categories
+                    .first()
+                    .map_or(0, |c| c.entries.len() as u16) // number of entries
             }
         }
     }
@@ -279,7 +364,10 @@ impl Widget for TaskListItem {
                     sb_widget.render(layout[i + 1], buf);
                 }
             }
-        };
+            VaultData::Tracker(tracker) => {
+                Widget::render(self.tracker_to_table(tracker), area, buf);
+            }
+        }
     }
 }
 
@@ -287,7 +375,8 @@ impl Widget for TaskListItem {
 mod tests {
     use crate::{
         core::{
-            task::{DueDate, State, Task},
+            date::Date,
+            task::{State, Task},
             vault_data::VaultData,
         },
         widgets::task_list_item::TaskListItem,
@@ -306,12 +395,12 @@ mod tests {
             tags: Some(vec![String::from("tag"), String::from("tag2")]),
             priority: 5,
             completion: Some(60),
-            due_date: DueDate::DayTime(
+            due_date: Some(Date::DayTime(
                 NaiveDate::from_ymd_opt(2016, 7, 8)
                     .unwrap()
                     .and_hms_opt(9, 10, 11)
                     .unwrap(),
-            ),
+            )),
             subtasks: vec![
                 Task {
                     name: "subtask with another long title that should wrap around".to_string(),
@@ -326,12 +415,12 @@ mod tests {
                 Task {
                     name: "subtask test with a long title 123456789 1 2 3".to_string(),
                     priority: 5,
-                    due_date: DueDate::DayTime(
+                    due_date: Some(Date::DayTime(
                         NaiveDate::from_ymd_opt(2016, 7, 8)
                             .unwrap()
                             .and_hms_opt(9, 10, 11)
                             .unwrap(),
-                    ),
+                    )),
                     description: Some("test\ndesc".to_string()),
                     ..Default::default()
                 },

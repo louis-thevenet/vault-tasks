@@ -95,7 +95,8 @@ impl StatefulWidget for TaskList {
 #[cfg(test)]
 mod tests {
     use crate::core::{
-        task::{DueDate, State, Task},
+        date::Date,
+        task::{State, Task},
         vault_data::VaultData,
     };
     use chrono::NaiveDate;
@@ -120,12 +121,12 @@ mod tests {
                             state: State::Done,
                             tags: Some(vec![String::from("tag"), String::from("tag2")]),
                             priority: 5,
-                            due_date: DueDate::DayTime(
+                            due_date: Some(Date::DayTime(
                                 NaiveDate::from_ymd_opt(2016, 7, 8)
                                     .unwrap()
                                     .and_hms_opt(9, 10, 11)
                                     .unwrap(),
-                            ),
+                            )),
                             subtasks: vec![
                                 Task {
                                     name: "subtask test with desc".to_string(),
@@ -173,12 +174,12 @@ mod tests {
                                 subtasks: vec![Task {
                                     name: "subtask 2.2".to_string(),
 
-                                    due_date: DueDate::DayTime(
+                                    due_date: Some(Date::DayTime(
                                         NaiveDate::from_ymd_opt(2016, 7, 8)
                                             .unwrap()
                                             .and_hms_opt(9, 10, 11)
                                             .unwrap(),
-                                    ),
+                                    )),
                                     description: Some("test\ndesc".to_string()),
                                     tags: Some(vec![String::from("tag"), String::from("tag2")]),
                                     ..Default::default()

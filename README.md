@@ -20,9 +20,7 @@ It will parse any Markdown file or vault and display the tasks it contains.
 ```
 
 ![Demo explorer](./examples/demo_explorer.gif)
-![Demo filter](./examples/demo_filter_view.png)
 ![Demo calendar](./examples/demo_calendar_view.png)
-![Demo time](./examples/demo_time_view.png)
 
 ## Why
 
@@ -30,7 +28,7 @@ I made this tool because I wanted to integrate my task system directly inside my
 
 Markdown tasks are very easy to integrate with knowledge/projects and are source-control-friendly.
 
-I wrote a [blog post](https://louis-thevenet.github.io/blog/pkms/2025/04/12/personal-knowledge-management-and-tasks.html) explaining my workflow and how I use vault-tasks if you're interested.
+I wrote a [blog post](https://louis-thevenet.github.io/blog/pkms/2025/04/12/personal-knowledge-management-and-tasks.html) explaining my workflow and how I use vault-tasks if you're interested. (It's dated, I introduced new features since then (trackers))
 
 I also spend most of my writing time in the terminal (Helix) and do not rely on heavy external software.
 
@@ -38,18 +36,19 @@ I also spend most of my writing time in the terminal (Helix) and do not rely on 
 
 - Task Parser (see [Usage](https://github.com/louis-thevenet/vault-tasks/tree/main?tab=readme-ov-file#usage))
   - Subtasks
-  - Fixed and relative dates
+  - Supports relative dates
   - special _today_ tag and regular tags
   - descriptions, priority, completion percentage
+- Trackers (or recurrent tasks)
 - Navigate vault
 - Edit tasks or open in default editor
 - Search through tasks (sort and filter)
-- Calendar view and timeline
+- Calendar view
 - Time Management tab (Pomodoro & Flowtime)
 
 ## Planned Features
 
-I'm planning a big refactor this summer. I'm currently gathering ideas and critics from my personal use to improve vault-tasks. If you're using it and want to contribute by requesting a feature or a change, don't hesitate to open an issue or contact me.
+I plan on adding a new tab about Trackers where you'll be able to see nice statistics about your trackers. For now, you can see your trackers in the Explorer tab.
 
 ## Installation
 
@@ -61,7 +60,7 @@ cargo install vault-tasks
 
 ### Nix
 
-You can get it from nixpkgs 24.11 or directly from this repo's flake:
+You can get it from nixpkgs 25.05 or directly from this repo's flake:
 
 ```nix
 vault-tasks = {
@@ -127,6 +126,71 @@ This is what you will see in the preview of this `README.md` in `vault-tasks`:
 
 <!-- Or when filtering for `@today` tasks: -->
 <!-- ![](./examples/demo_filter.png) -->
+
+### Writing Trackers (or recurrent tasks)
+
+```md
+<!-- An example tracker in your markdown file -->
+
+Tracker: Arts Enjoyment (2025-06-08)
+
+| Every day  | inspiration | medium   | cost | social | notes                      |
+| ---------- | ----------- | -------- | ---- | ------ | -------------------------- |
+| 2025-06-08 | 8           | painting | 15   | [ ]    | watercolor landscape       |
+| 2025-06-09 | 6           | music    | 0    | [x]    | street musician downtown   |
+| 2025-06-10 | 9           | theater  | 45   | [x]    | incredible Shakespeare     |
+| 2025-06-11 | 7           | digital  | 12   | [ ]    | new photography exhibition |
+| 2025-06-12 | 5           | craft    | 8    | [ ]    | pottery wheel attempt      |
+| 2025-06-13 | 8           | film     | 10   | [x]    | foreign cinema festival    |
+| 2025-06-14 | 9           | dance    | 20   | [x]    | salsa class breakthrough!  |
+| 2025-06-15 |             |          |      |        |                            |
+| 2025-06-16 |             |          |      |        |                            |
+| 2025-06-17 |             |          |      |        |                            |
+| 2025-06-18 |             |          |      |        |                            |
+```
+
+You start by writing `Tracker:` followed by your tracker's name. You add a starting date such as an ISO date or a relative date.
+
+Then you can start vault-tasks, so it creates blank entries for you. By default, it will fill the entries until the current date + 3 blank entries. This is also useful to reformat your table if you don't have a Markdown formatter.
+
+Here is a basic template:
+
+```md
+Tracker: Name (today)
+
+| daily | notes |
+```
+
+Vault-tasks would reformat it to:
+
+```md
+Tracker: Name (2025-06-15)
+
+| Every day  | notes |
+| ---------- | ----- |
+| 2025-06-15 |       |
+| 2025-06-16 |       |
+| 2025-06-17 |       |
+| 2025-06-18 |       |
+```
+
+Frequencies can be:
+
+- `Every <hour|day|week|month|year>`
+- `hourly`, `daily`, `weekly`, `monthly`, `yearly`
+
+Data types are:
+
+- Boolean type: `[ ]` or `[x]`
+- Score type: any integer
+- Note type: any text
+- Blank
+
+Be careful not to change type within a column, vault-tasks will replace the wrong type with a blank entry.
+
+This is what you will see in the preview of this `README.md` in `vault-tasks`:
+
+![](./examples/demo_readme_tracker.png)
 
 ### Default Key Map
 
@@ -248,32 +312,49 @@ Example output:
 
 ```
 vault-tasks -v ./README.md stdout
-./README.md
-‾‾‾‾‾‾‾‾‾‾‾
-	README.md
-	‾‾‾‾‾‾‾‾‾
-		Vault-tasks
-		‾‾‾‾‾‾‾‾‾‾‾
-			Usage
-			‾‾‾‾‾
-				Writing tasks
-				‾‾‾‾‾‾‾‾‾‾‾‾‾
-					❌ An example task
-					📅 2025-03-31 (tomorrow) ❗1
-					#tag
-					A description
-					of this task
+README.md
+‾‾‾‾‾‾‾‾‾
+  Vault-tasks
+  ‾‾‾‾‾‾‾‾‾‾‾
+        Usage
+        ‾‾‾‾‾
+                Writing tasks
+                ‾‾‾‾‾‾‾‾‾‾‾‾‾
+                        ❌ An example task
+                        📅 2025-06-16 (tomorrow) ❗1
+                        #tag
+                        A description
+                        of this task
 
-						✅ A subtask
-						☀️ 📅 2025-03-30 (today)
+                                ✅ A subtask
+                                ☀️ 📅 2025-06-15 (today)
 
 
-						⏳ Another subtask
-						☀️ 📅 2025-10-23 (in 7 months) [🟩🟩⬜️⬜️⬜️ 50%]
-						Partly done
+                                ⏳ Another subtask
+                                ☀️ 📅 2025-10-23 (in 4 months) [🟩🟩⬜️⬜️⬜️ 50%]
+                                Partly done
 
 
-						🚫 This one is canceled
+                                🚫 This one is canceled
+
+
+                Writing Trackers (or recurrent tasks)
+                ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+                        Tracker: Arts Enjoyment (2025-06-08)
+
+                        | Every day  | inspiration | medium   | cost | social | notes                      |
+                        |------------|-------------|----------|------|--------|----------------------------|
+                        | 2025-06-08 | 8           | painting | 15   | [ ]    | watercolor landscape       |
+                        | 2025-06-09 | 6           | music    | 0    | [x]    | street musician downtown   |
+                        | 2025-06-10 | 9           | theater  | 45   | [x]    | incredible Shakespeare     |
+                        | 2025-06-11 | 7           | digital  | 12   | [ ]    | new photography exhibition |
+                        | 2025-06-12 | 5           | craft    | 8    | [ ]    | pottery wheel attempt      |
+                        | 2025-06-13 | 8           | film     | 10   | [x]    | foreign cinema festival    |
+                        | 2025-06-14 | 9           | dance    | 20   | [x]    | salsa class breakthrough!  |
+                        | 2025-06-15 |             |          |      |        |                            |
+                        | 2025-06-16 |             |          |      |        |                            |
+                        | 2025-06-17 |             |          |      |        |                            |
+                        | 2025-06-18 |             |          |      |        |                            |
 ```
 
 ## Configuration
