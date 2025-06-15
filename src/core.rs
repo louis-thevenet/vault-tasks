@@ -106,6 +106,8 @@ pub struct TasksConfig {
     pub task_state_markers: TaskMarkerConfig,
     #[serde(default)]
     pub pretty_symbols: PrettySymbolsConfig,
+    #[serde(default)]
+    pub tracker_extra_blanks: usize,
 }
 
 pub struct TaskManager {
