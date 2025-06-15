@@ -158,7 +158,7 @@ impl TaskListItem {
             },
         )
     }
-    fn tracker_to_paragraph(&self, tracker: &crate::core::tracker::Tracker) -> Table<'_> {
+    fn tracker_to_table(&self, tracker: &crate::core::tracker::Tracker) -> Table<'_> {
         let header = [
             vec!["Dates".to_owned()],
             tracker.categories.iter().map(|c| c.name.clone()).collect(),
@@ -365,7 +365,7 @@ impl Widget for TaskListItem {
                 }
             }
             VaultData::Tracker(tracker) => {
-                Widget::render(self.tracker_to_paragraph(tracker), area, buf);
+                Widget::render(self.tracker_to_table(tracker), area, buf);
             }
         }
     }
