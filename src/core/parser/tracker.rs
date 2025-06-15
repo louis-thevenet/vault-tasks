@@ -59,10 +59,12 @@ pub fn parse_header(
         '|',
         separated(
             0..,
-            repeat(1.., none_of('|')).fold(String::new, |mut string, c| {
-                string.push(c);
-                string
-            }),
+            repeat(1.., none_of('|'))
+                .fold(String::new, |mut string, c| {
+                    string.push(c);
+                    string
+                })
+                .map(|cat| cat.trim().to_owned()),
             '|',
         ),
     )
@@ -146,7 +148,7 @@ pub fn parse_entries(
                         }
                         TrackerEntry::Bool(_bool_entry) => parse_bool_entry(&mut entry.as_str())?,
                         TrackerEntry::Note(_note_entry) => TrackerEntry::Note(NoteEntry {
-                            value: entry.to_string(),
+                            value: entry.to_string().trim().to_owned(),
                         }),
                         TrackerEntry::Blank => TrackerEntry::Note(NoteEntry {
                             value: entry.to_string(), // The only way to get here is if the first entry was
@@ -169,7 +171,11 @@ pub fn parse_entries(
                                 string.push(c);
                                 string
                             })
-                            .map(|s| TrackerEntry::Note(NoteEntry { value: s }))),
+                            .map(|s| {
+                                TrackerEntry::Note(NoteEntry {
+                                    value: s.trim().to_owned(),
+                                })
+                            })),
                     ))
                     .parse_next(&mut entry.as_str())?
                 }
