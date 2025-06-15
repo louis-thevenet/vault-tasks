@@ -614,7 +614,8 @@ impl ParserFileEntry<'_> {
                             input.next();
                             // Parse separator |---|---|
                             if input.peek().copied().is_some_and(|(_, mut next_line)| {
-                                parse_separator(&mut next_line).is_ok()
+                                let _ = parse_separator(&mut next_line); // useful when we want vault-tasks to create our table
+                                true
                             }) {
                                 input.next();
 
