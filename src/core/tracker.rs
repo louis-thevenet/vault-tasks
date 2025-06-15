@@ -148,7 +148,6 @@ impl Tracker {
         if !path.is_file() {
             bail!("Tried to fix tasks attributes but {path:?} is not a file");
         }
-        let fixed_tracker = self.add_blanks();
 
         let new_lines = fixed_tracker
             .fmt(config.use_american_format)
