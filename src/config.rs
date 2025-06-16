@@ -210,6 +210,11 @@ impl Config {
                 user_config.pretty_symbols,
                 default_config.pretty_symbols,
             ),
+            tracker_extra_blanks: if user_config.tracker_extra_blanks == 0 {
+                default_config.tracker_extra_blanks
+            } else {
+                user_config.tracker_extra_blanks
+            },
         }
     }
 
