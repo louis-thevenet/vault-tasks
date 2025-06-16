@@ -11,11 +11,10 @@ use chrono::NaiveTime;
 use std::{fmt::Display, time::Duration};
 use strum::{EnumIter, FromRepr};
 
-use crate::core::TasksConfig;
+use crate::core::{PrettySymbolsConfig, TasksConfig};
 use crate::widgets::timer::TimerWidget;
 use crate::{action::Action, app::Mode, cli::Cli};
 use color_eyre::{Result, eyre::bail};
-use config::ConfigError;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use derive_deref::{Deref, DerefMut};
 use directories::ProjectDirs;
@@ -153,6 +152,7 @@ impl Config {
                     .clone(),
             );
         }
+        cfg.tasks_config = Self::merge_tasks_config(cfg.tasks_config, default_config.tasks_config);
 
         if let Some(path) = &args.vault_path {
             cfg.tasks_config.vault_path.clone_from(path);
@@ -160,14 +160,110 @@ impl Config {
 
         cfg.config.show_fps = args.show_fps;
 
-        cfg.check_config()?;
         Ok(cfg)
     }
-    fn check_config(&mut self) -> Result<(), ConfigError> {
-        if self.tasks_config.indent_length == 0 {
-            self.tasks_config.indent_length = Self::default().tasks_config.indent_length;
+
+    fn merge_tasks_config(user_config: TasksConfig, default_config: TasksConfig) -> TasksConfig {
+        TasksConfig {
+            parse_dot_files: user_config.parse_dot_files,
+            file_tags_propagation: user_config.file_tags_propagation,
+            ignored: if user_config.ignored.is_empty() {
+                default_config.ignored
+            } else {
+                user_config.ignored
+            },
+            indent_length: if user_config.indent_length == 0 {
+                default_config.indent_length
+            } else {
+                user_config.indent_length
+            },
+            use_american_format: user_config.use_american_format,
+            show_relative_due_dates: user_config.show_relative_due_dates,
+            completion_bar_length: if user_config.completion_bar_length == 0 {
+                default_config.completion_bar_length
+            } else {
+                user_config.completion_bar_length
+            },
+            vault_path: if user_config.vault_path == PathBuf::new() {
+                default_config.vault_path
+            } else {
+                user_config.vault_path
+            },
+            tasks_drop_file: if user_config.tasks_drop_file.is_empty() {
+                default_config.tasks_drop_file
+            } else {
+                user_config.tasks_drop_file
+            },
+            explorer_default_search_string: if user_config.explorer_default_search_string.is_empty()
+            {
+                default_config.explorer_default_search_string
+            } else {
+                user_config.explorer_default_search_string
+            },
+            filter_default_search_string: if user_config.filter_default_search_string.is_empty() {
+                default_config.filter_default_search_string
+            } else {
+                user_config.filter_default_search_string
+            },
+            task_state_markers: user_config.task_state_markers,
+            pretty_symbols: Self::merge_pretty_symbols_config(
+                user_config.pretty_symbols,
+                default_config.pretty_symbols,
+            ),
         }
-        Ok(())
+    }
+
+    fn merge_pretty_symbols_config(
+        user_config: PrettySymbolsConfig,
+        default_config: PrettySymbolsConfig,
+    ) -> PrettySymbolsConfig {
+        PrettySymbolsConfig {
+            task_done: if user_config.task_done.is_empty() {
+                default_config.task_done
+            } else {
+                user_config.task_done
+            },
+            task_todo: if user_config.task_todo.is_empty() {
+                default_config.task_todo
+            } else {
+                user_config.task_todo
+            },
+            task_incomplete: if user_config.task_incomplete.is_empty() {
+                default_config.task_incomplete
+            } else {
+                user_config.task_incomplete
+            },
+            task_canceled: if user_config.task_canceled.is_empty() {
+                default_config.task_canceled
+            } else {
+                user_config.task_canceled
+            },
+            due_date: if user_config.due_date.is_empty() {
+                default_config.due_date
+            } else {
+                user_config.due_date
+            },
+            priority: if user_config.priority.is_empty() {
+                default_config.priority
+            } else {
+                user_config.priority
+            },
+            today_tag: if user_config.today_tag.is_empty() {
+                default_config.today_tag
+            } else {
+                user_config.today_tag
+            },
+            progress_bar_true: if user_config.progress_bar_true.is_empty() {
+                default_config.progress_bar_true
+            } else {
+                user_config.progress_bar_true
+            },
+            progress_bar_false: if user_config.progress_bar_false.is_empty() {
+                default_config.progress_bar_false
+            } else {
+                user_config.progress_bar_false
+            },
+        }
     }
 
     pub fn generate_config(path: Option<PathBuf>) -> Result<()> {

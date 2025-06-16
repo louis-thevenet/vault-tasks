@@ -13,6 +13,8 @@ use filter::{Filter, filter};
 use tracing::{debug, error};
 use vault_parser::VaultParser;
 
+use crate::config::Config;
+
 pub mod filter;
 pub mod parser;
 pub mod sorter;
@@ -63,20 +65,10 @@ pub struct PrettySymbolsConfig {
 }
 impl Default for PrettySymbolsConfig {
     fn default() -> Self {
-        Self {
-            task_done: String::from("✅"),
-            task_todo: String::from("❌"),
-            task_incomplete: String::from("⏳"),
-            task_canceled: String::from("🚫"),
-            due_date: String::from("📅"),
-            priority: String::from("❗"),
-            today_tag: String::from("☀️"),
-            progress_bar_true: String::from("🟩"),
-            progress_bar_false: String::from("⬜️"),
-        }
+        Config::default().tasks_config.pretty_symbols
     }
 }
-#[derive(Clone, Debug, Deserialize, Default)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct TasksConfig {
     #[serde(default)]
     pub parse_dot_files: bool,
@@ -104,6 +96,11 @@ pub struct TasksConfig {
     pub task_state_markers: TaskMarkerConfig,
     #[serde(default)]
     pub pretty_symbols: PrettySymbolsConfig,
+}
+impl Default for TasksConfig {
+    fn default() -> Self {
+        Config::default().tasks_config.clone()
+    }
 }
 
 pub struct TaskManager {
