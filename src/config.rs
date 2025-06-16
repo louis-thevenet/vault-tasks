@@ -210,6 +210,11 @@ impl Config {
                 user_config.pretty_symbols,
                 default_config.pretty_symbols,
             ),
+            tracker_extra_blanks: if user_config.tracker_extra_blanks == 0 {
+                default_config.tracker_extra_blanks
+            } else {
+                user_config.tracker_extra_blanks
+            },
         }
     }
 
@@ -280,7 +285,8 @@ impl Config {
             bail!("Failed to create default config at {dest:?}".to_owned());
         }
         println!(
-            "Configuration has been created at {dest:?}. You can fill the `vault-path` value to set a default vault."
+            "Configuration has been created at {}. You can fill the `vault-path` value to set a default vault.",
+            dest.display()
         );
         Ok(())
     }
@@ -364,7 +370,7 @@ fn extract_modifiers(raw: &str) -> (&str, KeyModifiers) {
                 current = &rest[6..];
             }
             _ => break, // break out of the loop if no known prefix is detected
-        };
+        }
     }
 
     (current, modifiers)
@@ -445,16 +451,16 @@ pub fn key_event_to_string(key_event: &KeyEvent) -> String {
             &char
         }
         KeyCode::Esc => "esc",
-        KeyCode::Null => "",
-        KeyCode::CapsLock => "",
-        KeyCode::Menu => "",
-        KeyCode::ScrollLock => "",
-        KeyCode::Media(_) => "",
-        KeyCode::NumLock => "",
-        KeyCode::PrintScreen => "",
-        KeyCode::Pause => "",
-        KeyCode::KeypadBegin => "",
-        KeyCode::Modifier(_) => "",
+        KeyCode::Null
+        | KeyCode::CapsLock
+        | KeyCode::Menu
+        | KeyCode::ScrollLock
+        | KeyCode::Media(_)
+        | KeyCode::NumLock
+        | KeyCode::PrintScreen
+        | KeyCode::Pause
+        | KeyCode::KeypadBegin
+        | KeyCode::Modifier(_) => "",
     };
 
     let mut modifiers = Vec::with_capacity(3);

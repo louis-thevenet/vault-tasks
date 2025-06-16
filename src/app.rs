@@ -116,7 +116,7 @@ impl App {
                 // tui.mouse(true);
                 tui.enter()?;
             } else if self.should_quit {
-                tui.stop()?;
+                tui.stop();
                 break;
             }
         }
@@ -204,7 +204,7 @@ impl App {
             for component in &mut self.components {
                 if let Some(action) = component.update(Some(tui), action.clone())? {
                     self.action_tx.send(action)?;
-                };
+                }
             }
         }
         Ok(())

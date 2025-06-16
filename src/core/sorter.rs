@@ -5,7 +5,7 @@ use lexical_sort::lexical_cmp;
 use strum::EnumIter;
 use strum_macros::FromRepr;
 
-use super::task::{DueDate, Task};
+use super::{date::Date, task::Task};
 
 #[derive(Default, Clone, Copy, FromRepr, EnumIter, strum_macros::Display)]
 pub enum SortingMode {
@@ -31,18 +31,22 @@ impl SortingMode {
     /// Compare two tasks by due date
     pub fn cmp_due_date(t1: &Task, t2: &Task) -> Ordering {
         match (&t1.due_date, &t2.due_date) {
-            (DueDate::Day(d1), DueDate::Day(d2)) => d1.cmp(d2),
-            (DueDate::DayTime(d1), DueDate::DayTime(d2)) => d1.cmp(d2),
-            (DueDate::Day(d1), DueDate::DayTime(d2)) => d1.and_time(NaiveTime::default()).cmp(d2),
-            (DueDate::DayTime(d1), DueDate::Day(d2)) => d1.cmp(&d2.and_time(NaiveTime::default())),
-            (DueDate::NoDate, DueDate::Day(_) | DueDate::DayTime(_)) => Ordering::Greater,
-            (DueDate::Day(_) | DueDate::DayTime(_), DueDate::NoDate) => Ordering::Less,
+            (Some(Date::Day(d1)), Some(Date::Day(d2))) => d1.cmp(d2),
+            (Some(Date::DayTime(d1)), Some(Date::DayTime(d2))) => d1.cmp(d2),
+            (Some(Date::Day(d1)), Some(Date::DayTime(d2))) => {
+                d1.and_time(NaiveTime::default()).cmp(d2)
+            }
+            (Some(Date::DayTime(d1)), Some(Date::Day(d2))) => {
+                d1.cmp(&d2.and_time(NaiveTime::default()))
+            }
+            (None, Some(Date::Day(_) | Date::DayTime(_))) => Ordering::Greater,
+            (Some(Date::Day(_) | Date::DayTime(_)), None) => Ordering::Less,
             _ => Ordering::Equal,
         }
     }
     /// Compares two tasks with the specified sorting mode
     /// Sorting mode is used first
-    /// If equal, other attribues will be used:
+    /// If equal, other attributes will be used:
     /// - State: `ToDo` < `Done` (in Ord impl of `State`)
     /// - The other sorting mode
     /// - Priority: usual number ordering

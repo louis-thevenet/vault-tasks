@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{fmt::Write, time::Duration};
 
 use chrono::{NaiveTime, TimeDelta};
 use ratatui::widgets::{Block, Gauge, StatefulWidget, Widget};
@@ -106,8 +106,9 @@ impl TimerState {
             TimerState::ClockUp {
                 started_at: _,
                 paused_at: _,
-            } => false,
-            TimerState::NotInitialized | Self::Frozen => false,
+            }
+            | TimerState::NotInitialized
+            | Self::Frozen => false,
         }
     }
 }
@@ -119,9 +120,9 @@ impl TimerWidget {
 
         let mut res = String::new();
         if td.num_hours() > 0 {
-            res.push_str(&format!("{hours:02}:"));
+            write!(res, "{hours:02}:").unwrap();
         }
-        res.push_str(&format!("{minutes:02}:{seconds:02}"));
+        write!(res, "{minutes:02}:{seconds:02}").unwrap();
         res
     }
 }

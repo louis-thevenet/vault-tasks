@@ -1,16 +1,17 @@
-use chrono::{NaiveDate, NaiveDateTime, Timelike};
 use color_eyre::{Result, eyre::bail};
 use core::fmt;
+use std::fmt::Write;
 use std::{
     cmp::Ordering,
     fmt::Display,
     fs::{File, read_to_string},
-    io::Write,
     path::PathBuf,
 };
 use tracing::{debug, info};
 
 use crate::core::{PrettySymbolsConfig, TasksConfig};
+
+use super::date::Date;
 
 /// A task's state
 /// Ordering is `Todo < Done`
@@ -62,126 +63,13 @@ impl Display for State {
         Ok(())
     }
 }
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-/// This type accounts for the case where the task has a due date but no exact due time
-pub enum DueDate {
-    NoDate,
-    Day(NaiveDate),
-    DayTime(NaiveDateTime),
-}
-impl Display for DueDate {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Day(date) => write!(f, "{date}"),
-            Self::DayTime(date) => write!(f, "{date}"),
-            Self::NoDate => Ok(()),
-        }
-    }
-}
-
-impl DueDate {
-    #[must_use]
-    pub fn to_display_format(&self, due_date_symbol: &str, not_american_format: bool) -> String {
-        if matches!(self, Self::NoDate) {
-            String::new()
-        } else {
-            format!(
-                "{due_date_symbol} {}",
-                self.to_string_format(not_american_format)
-            )
-        }
-    }
-    #[must_use]
-    pub fn to_string_format(&self, not_american_format: bool) -> String {
-        let format_date = if not_american_format {
-            "%d/%m/%Y"
-        } else {
-            "%Y/%m/%d"
-        };
-        let format_datetime = if not_american_format {
-            "%d/%m/%Y %T"
-        } else {
-            "%Y/%m/%d %T"
-        };
-
-        match self {
-            Self::Day(date) => date.format(format_date).to_string(),
-            Self::DayTime(date) => date.format(format_datetime).to_string(),
-            Self::NoDate => String::new(),
-        }
-    }
-
-    #[must_use]
-    pub fn get_relative_str(&self) -> Option<String> {
-        // This truncation prevents errors such as 23:59:59:999... instead of 24 hours
-        let now = chrono::Local::now()
-            .with_second(0)
-            .unwrap()
-            .with_nanosecond(0)
-            .unwrap();
-
-        let time_delta = match self {
-            DueDate::Day(naive_date) => now.date_naive().signed_duration_since(*naive_date),
-            DueDate::DayTime(naive_date_time) => {
-                now.date_naive()
-                    .signed_duration_since(naive_date_time.date())
-                    // same truncation here
-                    + now.time().signed_duration_since(
-                        naive_date_time
-                            .time()
-                            .with_second(0)
-                            .unwrap()
-                            .with_nanosecond(0)
-                            .unwrap(),
-                    )
-            }
-            DueDate::NoDate => return None,
-        };
-        let (prefix, suffix) = match time_delta.num_seconds().cmp(&0) {
-            Ordering::Less => (String::from("in "), String::new()),
-            Ordering::Equal => (String::new(), String::new()),
-            Ordering::Greater => (String::new(), String::from(" ago")),
-        };
-
-        let time_delta_abs = time_delta.abs();
-
-        if time_delta_abs.is_zero() {
-            return Some(String::from("today"));
-        }
-        if time_delta.num_seconds() < 0 && time_delta_abs.num_hours() == 24 {
-            return Some(String::from("tomorrow"));
-        }
-        if time_delta.num_seconds() > 0 && time_delta_abs.num_hours() == 24 {
-            return Some(String::from("yesterday"));
-        }
-
-        // >= 13 months -> show years
-        let res = if 4 * 12 < time_delta_abs.num_weeks() {
-            format!("{} years", time_delta_abs.num_weeks() / (12 * 4))
-            // >= 5 weeks -> show months
-        } else if 5 <= time_delta_abs.num_weeks() {
-            format!("{} months", time_delta_abs.num_weeks() / 4)
-            // >= 2 weeks -> show weeks
-        } else if 2 <= time_delta_abs.num_weeks() {
-            format!("{} weeks", time_delta_abs.num_weeks())
-            // >= 2 days -> show days
-        } else if 2 <= time_delta_abs.num_days() {
-            format!("{} days", time_delta_abs.num_days())
-            // >= 2 hours -> show hours
-        } else if 2 <= time_delta_abs.num_hours() {
-            format!("{} hours", time_delta_abs.num_hours())
-        } else {
-            format!("{} minutes", time_delta_abs.num_minutes())
-        };
-        Some(format!("{prefix}{res}{suffix}"))
-    }
-}
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Task {
     pub subtasks: Vec<Task>,
     pub description: Option<String>,
-    pub due_date: DueDate,
+    /// None means the task has no associated due date
+    pub due_date: Option<Date>,
     pub filename: String,
     /// Line number in the file, if None then the task was not
     /// parsed from the file but added from CLI, it should be
@@ -198,7 +86,7 @@ pub struct Task {
 impl Default for Task {
     fn default() -> Self {
         Self {
-            due_date: DueDate::NoDate,
+            due_date: None,
             name: String::new(),
             priority: 0,
             state: State::ToDo,
@@ -227,17 +115,18 @@ impl fmt::Display for Task {
             String::new()
         };
         data_line.push_str(&is_today);
-        let due_date_str = self.due_date.to_string();
-
-        if !due_date_str.is_empty() {
-            data_line.push_str(&format!(
-                "{} {due_date_str} ({}) ",
+        if let Some(date) = &self.due_date {
+            write!(
+                data_line,
+                "{} {} ({}) ",
                 default_symbols.due_date,
-                self.due_date.get_relative_str().unwrap_or_default()
-            ));
+                date,
+                date.get_relative_str()
+            )?;
         }
+
         if self.priority > 0 {
-            data_line.push_str(&format!("{}{} ", default_symbols.priority, self.priority));
+            write!(data_line, "{}{} ", default_symbols.priority, self.priority)?;
         }
         if let Some(bar) = self.get_completion_bar(
             5,
@@ -312,7 +201,11 @@ impl Task {
             None => String::new(),
         };
 
-        let due_date = self.due_date.to_string_format(!config.use_american_format);
+        let due_date = if let Some(due_date) = &self.due_date {
+            due_date.to_string_format(!config.use_american_format)
+        } else {
+            String::new()
+        };
 
         let tags_str = self.tags.as_ref().map_or_else(String::new, |tags| {
             tags.clone()
@@ -390,7 +283,7 @@ impl Task {
             lines.push(String::new()); // Empty line
         }
         let mut file = File::create(path)?;
-        file.write_all(lines.join("\n").as_bytes())?;
+        std::io::Write::write_all(&mut file, lines.join("\n").as_bytes())?;
 
         Ok(())
     }
@@ -403,7 +296,7 @@ mod tests_tasks {
 
     use crate::core::{
         TasksConfig,
-        task::{DueDate, State, Task},
+        task::{Date, State, Task},
     };
 
     #[test]
@@ -413,7 +306,7 @@ mod tests_tasks {
             ..Default::default()
         };
         let task = Task {
-            due_date: DueDate::Day(NaiveDate::from_ymd_opt(2021, 12, 3).unwrap()),
+            due_date: Some(Date::Day(NaiveDate::from_ymd_opt(2021, 12, 3).unwrap())),
             name: String::from("Test Task"),
             priority: 1,
             state: State::ToDo,
@@ -423,7 +316,7 @@ mod tests_tasks {
             ..Default::default()
         };
         let res = task.get_fixed_attributes(&config, 0);
-        assert_eq!(res, "- [ ] Test Task 2021/12/03 p1 #tag1 #tag2");
+        assert_eq!(res, "- [ ] Test Task 2021-12-03 p1 #tag1 #tag2");
     }
 
     #[test]
@@ -432,7 +325,7 @@ mod tests_tasks {
             ..Default::default()
         };
         let task = Task {
-            due_date: DueDate::NoDate,
+            due_date: None,
             name: String::from("Test Task with No Date"),
             priority: 2,
             state: State::Done,
@@ -451,7 +344,7 @@ mod tests_tasks {
             ..Default::default()
         };
         let task = Task {
-            due_date: DueDate::NoDate,
+            due_date: None,
             name: String::from("Test Task with Today tag"),
             priority: 2,
             state: State::Done,
@@ -469,172 +362,166 @@ mod tests_tasks {
 #[cfg(test)]
 mod tests_due_date {
 
-    use crate::core::task::DueDate;
+    use crate::core::task::Date;
     use chrono::{Duration, Local};
-
-    #[test]
-    fn test_get_relative_str_no_date() {
-        let due = DueDate::NoDate;
-        assert_eq!(due.get_relative_str(), None);
-    }
 
     #[test]
     fn test_day_today() {
         let today = Local::now().naive_local().date();
-        let due = DueDate::Day(today);
-        assert_eq!(due.get_relative_str(), Some("today".to_string()));
+        let due = Date::Day(today);
+        assert_eq!(due.get_relative_str(), ("today".to_string()));
     }
 
     #[test]
     fn test_day_tomorrow() {
         let date = Local::now().naive_local().date() + Duration::days(1);
-        let due = DueDate::Day(date);
-        assert_eq!(due.get_relative_str(), Some("tomorrow".to_string()));
+        let due = Date::Day(date);
+        assert_eq!(due.get_relative_str(), ("tomorrow".to_string()));
     }
 
     #[test]
     fn test_day_yesterday() {
         let date = Local::now().naive_local().date() - Duration::days(1);
-        let due = DueDate::Day(date);
-        assert_eq!(due.get_relative_str(), Some("yesterday".to_string()));
+        let due = Date::Day(date);
+        assert_eq!(due.get_relative_str(), ("yesterday".to_string()));
     }
 
     #[test]
     fn test_day_in_three_days() {
         let date = Local::now().naive_local().date() + Duration::days(3);
-        let due = DueDate::Day(date);
-        assert_eq!(due.get_relative_str(), Some("in 3 days".to_string()));
+        let due = Date::Day(date);
+        assert_eq!(due.get_relative_str(), ("in 3 days".to_string()));
     }
 
     #[test]
     fn test_day_two_weeks_ago() {
         let date = Local::now().naive_local().date() - Duration::weeks(2);
-        let due = DueDate::Day(date);
-        assert_eq!(due.get_relative_str(), Some("2 weeks ago".to_string()));
+        let due = Date::Day(date);
+        assert_eq!(due.get_relative_str(), ("2 weeks ago".to_string()));
     }
 
     #[test]
     fn test_day_in_two_months() {
         let date = Local::now().naive_local().date() + Duration::weeks(9); // ~2 months
-        let due = DueDate::Day(date);
-        assert_eq!(due.get_relative_str(), Some("in 2 months".to_string()));
+        let due = Date::Day(date);
+        assert_eq!(due.get_relative_str(), ("in 2 months".to_string()));
     }
 
     #[test]
     fn test_day_three_years_ago() {
         let date = Local::now().naive_local().date() - Duration::weeks(4 * 12 * 3);
-        let due = DueDate::Day(date);
-        assert_eq!(due.get_relative_str(), Some("3 years ago".to_string()));
+        let due = Date::Day(date);
+        assert_eq!(due.get_relative_str(), ("3 years ago".to_string()));
     }
 
     #[test]
     fn test_daytime_now() {
         let now = Local::now().naive_local();
-        let due = DueDate::DayTime(now);
-        assert_eq!(due.get_relative_str(), Some("today".to_string()));
+        let due = Date::DayTime(now);
+        assert_eq!(due.get_relative_str(), ("today".to_string()));
     }
 
     #[test]
     fn test_daytime_in_30_minutes() {
         let dt = Local::now().naive_local() + Duration::minutes(30);
-        let due = DueDate::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("in 30 minutes".to_string()));
+        let due = Date::DayTime(dt);
+        assert_eq!(due.get_relative_str(), ("in 30 minutes".to_string()));
     }
 
     #[test]
     fn test_daytime_three_hours_ago() {
         let dt = Local::now().naive_local() - Duration::hours(3);
-        let due = DueDate::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("3 hours ago".to_string()));
+        let due = Date::DayTime(dt);
+        assert_eq!(due.get_relative_str(), ("3 hours ago".to_string()));
     }
 
     #[test]
     fn test_daytime_tomorrow_same_time() {
         let dt = Local::now().naive_local() + Duration::hours(24);
-        let due = DueDate::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("tomorrow".to_string()));
+        let due = Date::DayTime(dt);
+        assert_eq!(due.get_relative_str(), ("tomorrow".to_string()));
     }
     #[test]
     fn test_daytime_tomorrow_hours() {
         let dt = Local::now().naive_local() + Duration::hours(25);
-        let due = DueDate::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("in 25 hours".to_string()));
+        let due = Date::DayTime(dt);
+        assert_eq!(due.get_relative_str(), ("in 25 hours".to_string()));
     }
 
     #[test]
     fn test_daytime_yesterday_same_time() {
         let dt = Local::now().naive_local() - Duration::hours(24);
-        let due = DueDate::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("yesterday".to_string()));
+        let due = Date::DayTime(dt);
+        assert_eq!(due.get_relative_str(), ("yesterday".to_string()));
     }
 
     #[test]
     fn test_daytime_in_1_minute() {
         let dt = Local::now().naive_local() + Duration::minutes(1);
-        let due = DueDate::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("in 1 minutes".to_string()));
+        let due = Date::DayTime(dt);
+        assert_eq!(due.get_relative_str(), ("in 1 minutes".to_string()));
     }
 
     #[test]
     fn test_daytime_45_minutes_ago() {
         let dt = Local::now().naive_local() - Duration::minutes(45);
-        let due = DueDate::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("45 minutes ago".to_string()));
+        let due = Date::DayTime(dt);
+        assert_eq!(due.get_relative_str(), ("45 minutes ago".to_string()));
     }
 
     #[test]
     fn test_daytime_in_3_hours() {
         let dt = Local::now().naive_local() + Duration::hours(3);
-        let due = DueDate::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("in 3 hours".to_string()));
+        let due = Date::DayTime(dt);
+        assert_eq!(due.get_relative_str(), ("in 3 hours".to_string()));
     }
 
     #[test]
     fn test_daytime_12_hours_ago() {
         let dt = Local::now().naive_local() - Duration::hours(12);
-        let due = DueDate::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("12 hours ago".to_string()));
+        let due = Date::DayTime(dt);
+        assert_eq!(due.get_relative_str(), ("12 hours ago".to_string()));
     }
 
     #[test]
     fn test_daytime_in_1_day_exact() {
         let dt = Local::now().naive_local() + Duration::days(1);
-        let due = DueDate::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("tomorrow".to_string()));
+        let due = Date::DayTime(dt);
+        assert_eq!(due.get_relative_str(), ("tomorrow".to_string()));
     }
 
     #[test]
     fn test_daytime_exactly_yesterday() {
         let dt = Local::now().naive_local() - Duration::days(1);
-        let due = DueDate::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("yesterday".to_string()));
+        let due = Date::DayTime(dt);
+        assert_eq!(due.get_relative_str(), ("yesterday".to_string()));
     }
 
     #[test]
     fn test_daytime_in_2_days() {
         let dt = Local::now().naive_local() + Duration::days(2);
-        let due = DueDate::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("in 2 days".to_string()));
+        let due = Date::DayTime(dt);
+        assert_eq!(due.get_relative_str(), ("in 2 days".to_string()));
     }
 
     #[test]
     fn test_daytime_10_days_ago() {
         let dt = Local::now().naive_local() - Duration::days(10);
-        let due = DueDate::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("10 days ago".to_string()));
+        let due = Date::DayTime(dt);
+        assert_eq!(due.get_relative_str(), ("10 days ago".to_string()));
     }
 
     #[test]
     fn test_daytime_in_3_weeks() {
         let dt = Local::now().naive_local() + Duration::weeks(3);
-        let due = DueDate::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("in 3 weeks".to_string()));
+        let due = Date::DayTime(dt);
+        assert_eq!(due.get_relative_str(), ("in 3 weeks".to_string()));
     }
 
     #[test]
     fn test_daytime_2_months_ago() {
         let dt = Local::now().naive_local() - Duration::weeks(9); // ≈ 2 months
-        let due = DueDate::DayTime(dt);
-        assert_eq!(due.get_relative_str(), Some("2 months ago".to_string()));
+        let due = Date::DayTime(dt);
+        assert_eq!(due.get_relative_str(), ("2 months ago".to_string()));
     }
 }
