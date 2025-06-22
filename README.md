@@ -1,66 +1,67 @@
 # Vault-tasks
 
-`vault-tasks` is a TUI Markdown task manager.
-
-It will parse any Markdown file or vault and display the tasks it contains.
-
-## Demo using `./test-vault`
-
-```
-./test-vault
-├── dir
-│   ├── subdir
-│   │   ├── test_1.md
-│   │   ├── test_2.md
-│   │   └── test_3.md
-│   └── test_0.md
-├── example_physics_class.md
-├── example_vault-tasks_project.md
-└── test.md
-```
+A **Terminal User Interface (TUI) Markdown task manager** that parses any Markdown file or vault to display and manage your tasks seamlessly.
 
 ![Demo explorer](./examples/demo_explorer.gif)
+
+## Table of Contents
+
+- [Why Vault-tasks?](#why-vault-tasks)
+- [Key Features](#key-features)
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Task Syntax](#task-syntax)
+- [Trackers (Recurring Tasks)](#trackers-recurring-tasks)
+- [Navigation & Controls](#navigation--controls)
+- [Usage Modes](#usage-modes)
+- [Configuration](#configuration)
+- [Contributing](#contributing)
+
+## Why Vault-tasks?
+
+**Integrate tasks directly into your Second Brain.** Markdown tasks are easy to integrate with knowledge/projects, source-control-friendly, and work perfectly in terminal-based workflows.
+
+Perfect for users who:
+
+- ✅ Work primarily in terminal environments (Vim, Helix, etc.)
+- ✅ Want lightweight, fast task management
+- ✅ Prefer Markdown-based workflows
+- ✅ Need tasks integrated with their knowledge base
+
+> 📖 Read more about the workflow in this [blog post](https://blog.louis-thevenet.fr/posts/personal-knowledge-management-and-tasks/)
+
+## Key Features
+
+| Feature                  | Description                                                        |
+| ------------------------ | ------------------------------------------------------------------ |
+| 📝 **Smart Task Parser** | Subtasks, relative dates, tags, priorities, completion percentages |
+| 🔄 **Trackers**          | Recurring tasks with customizable frequencies                      |
+| 🗂️ **Vault Navigation**  | Browse and edit tasks across your entire vault                     |
+| 🔍 **Search & Filter**   | Advanced sorting and filtering capabilities                        |
+| 📅 **Calendar View**     | Visual timeline of your tasks                                      |
+| ⏱️ **Time Management**   | Built-in Pomodoro & Flowtime techniques                            |
+
 ![Demo calendar](./examples/demo_calendar_view.png)
 
-## Why
+## Quick Start
 
-I made this tool because I wanted to integrate my task system directly inside my Second Brain.
+```bash
+# Install via cargo
+cargo install vault-tasks
 
-Markdown tasks are very easy to integrate with knowledge/projects and are source-control-friendly.
-
-I wrote a [blog post](https://louis-thevenet.github.io/blog/pkms/2025/04/12/personal-knowledge-management-and-tasks.html) explaining my workflow and how I use vault-tasks if you're interested. (It's dated, I introduced new features since then (trackers))
-
-I also spend most of my writing time in the terminal (Helix) and do not rely on heavy external software.
-
-## Features
-
-- Task Parser (see [Usage](https://github.com/louis-thevenet/vault-tasks/tree/main?tab=readme-ov-file#usage))
-  - Subtasks
-  - Supports relative dates
-  - special _today_ tag and regular tags
-  - descriptions, priority, completion percentage
-- Trackers (or recurrent tasks)
-- Navigate vault
-- Edit tasks or open in default editor
-- Search through tasks (sort and filter)
-- Calendar view
-- Time Management tab (Pomodoro & Flowtime)
-
-## Planned Features
-
-I plan on adding a new tab about Trackers where you'll be able to see nice statistics about your trackers. For now, you can see your trackers in the Explorer tab.
+# Run
+vault-tasks -v /path/to/your/vault
+```
 
 ## Installation
 
 ### Cargo
 
-```
+```bash
 cargo install vault-tasks
 ```
 
-### Nix
-
-You can get it from nixpkgs 25.05 or directly from this repo's flake:
+### Nix (nixpkgs 24.11+)
 
 ```nix
 vault-tasks = {
@@ -69,302 +70,131 @@ vault-tasks = {
 };
 ```
 
-And use the package in your configuration: `inputs.vault-tasks.packages.${pkgs.system}.default`
+### Build from Source
 
-### Build From Source
-
-```
+```bash
 git clone https://github.com/louis-thevenet/vault-tasks.git
 cd vault-tasks
 cargo build --release
 ```
 
-## Usage
+## Task Syntax
 
-See `vault-tasks --help` for basic usage.
+### Basic Task Format
 
-### Writing tasks
-
-```md
-<!-- An example task in your markdown file -->
-
-- [ ] An example task #tag tomorrow p1
-      A description
-      of this task
-  - [x] A subtask today @today
-  - [/] Another subtask 10/23 @today c50
-    Partly done
-  - [-] This one is canceled
+```markdown
+- [ ] Task title #tag tomorrow p1
+      Task description
+      can span multiple lines
+  - [x] Completed subtask today @today
+  - [/] Partial subtask c50
+  - [-] Canceled subtask
 ```
 
-| Token                                      | Meaning                                                           |
-| ------------------------------------------ | ----------------------------------------------------------------- |
-| `- [ ]` (`- [x]`, ...)                     | declares a task and sets its state                                |
-| `p1` (`p10`, ...)                          | sets the priority                                                 |
-| `c50` (`c99`, `c150`, ...)                 | Sets the completion percentage                                    |
-| `#tag`                                     | is a tag, a task can have zero or more tags                       |
-| `@today` (`@tod`, `@t`)                    | is a special tag that will mark the task as part of today's tasks |
-| `23/10` (`2024/23/10`)                     | sets the due date with a literal date                             |
-| `today` (`tdy`)                            | sets the due date to today                                        |
-| `tomorrow` (`tmr`)                         | sets the due date to tomorrow                                     |
-| a day of the week (`monday` or `mon`, etc) | sets the due date to the next occurence of that day               |
-| `3d` (`3m, 3w, 3y`, ...)                   | means "in 3 days" and will set the due date accordingly           |
+### Tokens Reference
 
-- Task states are **Done** (`x`), **To-Do** (` `), **Incomplete** (`/`) and **Canceled** (`-`)
+| Token         | Example                     | Description                             |
+| ------------- | --------------------------- | --------------------------------------- |
+| **States**    | `[ ]` `[x]` `[/]` `[-]`     | To-Do, Done, Incomplete, Canceled       |
+| **Priority**  | `p1` `p5` `p10`             | Task priority (higher = more important) |
+| **Progress**  | `c50` `c75`                 | Completion percentage                   |
+| **Tags**      | `#work` `#urgent`           | Regular tags for organization           |
+| **Today Tag** | `@today` `@tod` `@t`        | Mark for today (shows ☀️)               |
+| **Dates**     | `23/10` `2024/10/23`        | Literal due dates                       |
+| **Relative**  | `today` `tomorrow` `monday` | Dynamic dates                           |
+| **Duration**  | `3d` `2w` `1m` `1y`         | "In X days/weeks/months/years"          |
 
-- `@today` allows you mark a task for today while keeping a due date. It will show up with a ☀️ in `vault-tasks`.
+### Example Output
 
-- Relative dates are always replaced by literal dates once `vault-tasks` is run. Thanks to this, `vault-tasks` does not store any data except its config file.
+![Task example](./examples/demo_readme_explorer.png)
 
-- Other tokens will be part of the title of that task
+## Trackers (Recurring Tasks)
 
-- Descriptions and subtasks are declared using indents (see configuration)
+Track habits and recurring activities with customizable data columns:
 
-This is what you will see in the preview of this `README.md` in `vault-tasks`:
+```markdown
+Tracker: Workout Routine (today)
 
-![](./examples/demo_readme_explorer.png)
-
-<!-- Or when filtering for `@today` tasks: -->
-<!-- ![](./examples/demo_filter.png) -->
-
-### Writing Trackers (or recurrent tasks)
-
-```md
-<!-- An example tracker in your markdown file -->
-
-Tracker: Arts Enjoyment (2025-06-08)
-
-| Every day  | inspiration | medium   | cost | social | notes                      |
-| ---------- | ----------- | -------- | ---- | ------ | -------------------------- |
-| 2025-06-08 | 8           | painting | 15   | [ ]    | watercolor landscape       |
-| 2025-06-09 | 6           | music    | 0    | [x]    | street musician downtown   |
-| 2025-06-10 | 9           | theater  | 45   | [x]    | incredible Shakespeare     |
-| 2025-06-11 | 7           | digital  | 12   | [ ]    | new photography exhibition |
-| 2025-06-12 | 5           | craft    | 8    | [ ]    | pottery wheel attempt      |
-| 2025-06-13 | 8           | film     | 10   | [x]    | foreign cinema festival    |
-| 2025-06-14 | 9           | dance    | 20   | [x]    | salsa class breakthrough!  |
-| 2025-06-15 |             |          |      |        |                            |
-| 2025-06-16 |             |          |      |        |                            |
-| 2025-06-17 |             |          |      |        |                            |
-| 2025-06-18 |             |          |      |        |                            |
+| Every day  | duration | type    | intensity | notes         |
+| ---------- | -------- | ------- | --------- | ------------- |
+| 2025-06-15 | 45       | cardio  | 7         | great session |
+| 2025-06-16 | 30       | weights | 8         | did squats    |
+| 2025-06-17 |          |         |           |               |
 ```
 
-You start by writing `Tracker:` followed by your tracker's name. You add a starting date such as an ISO date or a relative date.
-
-Then you can start vault-tasks, so it creates blank entries for you. By default, it will fill the entries until the current date + 3 blank entries. This is also useful to reformat your table if you don't have a Markdown formatter.
-
-Here is a basic template:
-
-```md
-Tracker: Name (today)
-
-| daily | notes |
-```
-
-Vault-tasks would reformat it to:
-
-```md
-Tracker: Name (2025-06-15)
-
-| Every day  | notes |
-| ---------- | ----- |
-| 2025-06-15 |       |
-| 2025-06-16 |       |
-| 2025-06-17 |       |
-| 2025-06-18 |       |
-```
-
-Frequencies can be:
+### Supported Frequencies
 
 - `Every <hour|day|week|month|year>`
 - `hourly`, `daily`, `weekly`, `monthly`, `yearly`
 
-Data types are:
+### Data Types
 
-- Boolean type: `[ ]` or `[x]`
-- Score type: any integer
-- Note type: any text
-- Blank
+- **Boolean**: `[ ]` or `[x]`
+- **Score**: Any integer (1-10, etc.)
+- **Note**: Any text
+- **Blank**: Empty cell
 
-Be careful not to change type within a column, vault-tasks will replace the wrong type with a blank entry.
+(Every entry in a column must have the same type)
 
-This is what you will see in the preview of this `README.md` in `vault-tasks`:
+![Tracker example](./examples/demo_readme_tracker.png)
 
-![](./examples/demo_readme_tracker.png)
+## Navigation & Controls
 
-### Default Key Map
+### Quick Reference
 
-Check the key map within the app with `?`
+| Action       | Keys                       | Description                            |
+| ------------ | -------------------------- | -------------------------------------- |
+| **Tabs**     | `Shift+H/L` or `Shift+←/→` | Switch between tabs                    |
+| **Navigate** | `hjkl` or arrow keys       | Move around                            |
+| **Search**   | `s`                        | Focus search bar                       |
+| **Edit**     | `e`                        | Quick edit, `o` for default editor     |
+| **States**   | `t/d/i/c`                  | Mark as To-Do/Done/Incomplete/Canceled |
+| **Help**     | `?`                        | Show keybindings for current tab       |
+| **Quit**     | `q` or `Ctrl+C`            | Exit application                       |
 
-#### General
+> Press `?` in any tab for complete keybinding reference
 
-| Key         | Alternate Key | Action                                    |
-| ----------- | ------------- | ----------------------------------------- |
-| `shift-h`   | `shift-←`     | Previous tab                              |
-| `shift-l`   | `shift-→`     | Next tab                                  |
-| `ctrl-k`    | `ctrl-↓`      | Scroll up                                 |
-| `ctrl-j`    | `ctrl-↑`      | Scroll down                               |
-| `page_down` |               | Scroll one page down                      |
-| `page_up`   |               | Scroll one page up                        |
-| `q`         | `ctrl-c`      | Quit the application                      |
-| `?`         |               | Open keybindings menu for the current tab |
+## Usage Modes
 
-#### Explorer Tab
-
-##### Navigation
-
-| Key | Alternate Key     | Action              |
-| --- | ----------------- | ------------------- |
-| `k` | `↑`, `shift-tab`  | Previous entry      |
-| `j` | `↓`, `tab`        | Next entry          |
-| `h` | `←`, `back_space` | Leave current entry |
-| `l` | `→`,`enter`       | Enter current entry |
-
-##### Commands
-
-| Key | Action                                         |
-| --- | ---------------------------------------------- |
-| `s` | Focus search bar (`enter` or `esc` to unfocus) |
-| `o` | Open selection in default editor               |
-| `e` | Quickly edit selection                         |
-| `r` | Reload vault                                   |
-| `t` | Mark task **To-Do**                            |
-| `d` | Mark task **Done**                             |
-| `i` | Mark task **Incomplete**                       |
-| `c` | Mark task **Canceled**                         |
-
-![](./examples/demo_explorer.gif)
-
-#### Filter Tab
-
-##### Commands
-
-| Key       | Action                   |
-| --------- | ------------------------ |
-| `enter`   | Focus/Unfocus search bar |
-| `Shift-s` | Change sorting mode      |
-
-![](./examples/demo_filter_view.png)
-
-#### Calendar Tab
-
-##### Navigation
-
-| Key       | Alternate Key | Action   |
-| --------- | ------------- | -------- |
-| `h`       | `←`           | +1 day   |
-| `l`       | `→`           | -1 day   |
-| `j`       | `↓`           | +7 days  |
-| `k`       | `↑`           | -7 days  |
-| `Shift-j` | `Shift-↓`     | +1 month |
-| `Shift-k` | `Shift-↑`     | -1 month |
-| `n`       |               | +1 year  |
-| `Shift-n` |               | -1 year  |
-
-##### Commands
-
-| Key | Action     |
-| --- | ---------- |
-| `t` | Goto Today |
-
-![](./examples/demo_calendar_view.png)
-
-#### Time Management Tab
-
-##### Navigation
-
-| Key | Alternate Key | Action           |
-| --- | ------------- | ---------------- |
-| `k` | `↑`           | Previous setting |
-| `j` | `↓`           | Next setting     |
-
-##### Commands
-
-| Key         | Action                             |
-| ----------- | ---------------------------------- |
-| `space`     | Next segment (skip current)        |
-| `p`         | Pause timer                        |
-| `e`         | Edit selected setting              |
-| `shift-tab` | Previous time management technique |
-| `tab`       | Next time management technique     |
-
-![](./examples/demo_time_view.png)
-
-### Modes
-
-You can start already focused on a tab by using one of the CLI subcommands:
+### Interactive Modes
 
 ```bash
-vault-tasks explorer # is the default
-# Or
-vault-tasks filter
-vault-tasks time
-vault-tasks calendar
+vault-tasks explorer  # Default: browse vault structure
+vault-tasks filter    # Search and filter tasks
+vault-tasks calendar  # Calendar view of tasks
+vault-tasks time      # Time management tools
 ```
 
-You can also output the content of a vault in standard output using
+### Output Mode
 
 ```bash
-vault-tasks stdout
-```
-
-Example output:
-
-```
-vault-tasks -v ./README.md stdout
-README.md
-‾‾‾‾‾‾‾‾‾
-  Vault-tasks
-  ‾‾‾‾‾‾‾‾‾‾‾
-        Usage
-        ‾‾‾‾‾
-                Writing tasks
-                ‾‾‾‾‾‾‾‾‾‾‾‾‾
-                        ❌ An example task
-                        📅 2025-06-16 (tomorrow) ❗1
-                        #tag
-                        A description
-                        of this task
-
-                                ✅ A subtask
-                                ☀️ 📅 2025-06-15 (today)
-
-
-                                ⏳ Another subtask
-                                ☀️ 📅 2025-10-23 (in 4 months) [🟩🟩⬜️⬜️⬜️ 50%]
-                                Partly done
-
-
-                                🚫 This one is canceled
-
-
-                Writing Trackers (or recurrent tasks)
-                ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-                        Tracker: Arts Enjoyment (2025-06-08)
-
-                        | Every day  | inspiration | medium   | cost | social | notes                      |
-                        |------------|-------------|----------|------|--------|----------------------------|
-                        | 2025-06-08 | 8           | painting | 15   | [ ]    | watercolor landscape       |
-                        | 2025-06-09 | 6           | music    | 0    | [x]    | street musician downtown   |
-                        | 2025-06-10 | 9           | theater  | 45   | [x]    | incredible Shakespeare     |
-                        | 2025-06-11 | 7           | digital  | 12   | [ ]    | new photography exhibition |
-                        | 2025-06-12 | 5           | craft    | 8    | [ ]    | pottery wheel attempt      |
-                        | 2025-06-13 | 8           | film     | 10   | [x]    | foreign cinema festival    |
-                        | 2025-06-14 | 9           | dance    | 20   | [x]    | salsa class breakthrough!  |
-                        | 2025-06-15 |             |          |      |        |                            |
-                        | 2025-06-16 |             |          |      |        |                            |
-                        | 2025-06-17 |             |          |      |        |                            |
-                        | 2025-06-18 |             |          |      |        |                            |
+vault-tasks stdout    # Print tasks to terminal
 ```
 
 ## Configuration
 
-The [`config.toml`](./.config/config.toml) contains the default configuration which can be generated using `vault-tasks generate-config`.
+Generate default config:
 
-In `$HOME/.config/vault-tasks/config.toml`, you can override the default settings, keybindings and colorscheme.
+```bash
+vault-tasks generate-config
+```
 
-In particular, you can set a default vault path.
+Customize at `$HOME/.config/vault-tasks/config.toml`:
+
+- Default vault path
+- Custom keybindings
+- Color schemes
+- Behavior settings
 
 ## Contributing
 
-Feel free to submit issues or pull requests. Contributions are welcome!
+Contributions welcome! Feel free to:
+
+- 🐛 Submit bug reports
+- 💡 Request features
+- 🔧 Submit pull requests
+- 📚 Improve documentation
+
+---
+
+**[⭐ Star on GitHub](https://github.com/louis-thevenet/vault-tasks)** • **[📖 Full Documentation](https://github.com/louis-thevenet/vault-tasks/wiki)** • **[🐛 Report Issues](https://github.com/louis-thevenet/vault-tasks/issues)**
