@@ -19,10 +19,8 @@
 
       perSystem =
         {
+          self,
           config,
-          self',
-          pkgs,
-          lib,
           system,
           ...
         }:
@@ -47,10 +45,10 @@
               pkgs.cargo-edit
             ];
           };
-          buildInputs = with pkgs; [ ];
-          nativeBuildInputs = with pkgs; [ ];
+          buildInputs = [ ];
+          nativeBuildInputs = with pkgs; [ installShellFiles ];
         in
-        rec {
+        {
           # Rust package
           packages.default = pkgs.rustPlatform.buildRustPackage {
             inherit (cargoToml.package) name version;
@@ -61,7 +59,19 @@
 
             nativeBuildInputs = nativeBuildInputs;
             buildInputs = buildInputs;
-            postInstall = "install -Dm444 desktop/vault-tasks.desktop -t $out/share/applications";
+            postInstall =
+              ''
+                install -Dm444 desktop/vault-tasks.desktop -t $out/share/applications
+              ''
+              + ''
+                # vault-tasks tries to load a config file from ~/.config/ before generating completions
+                export HOME="$(mktemp -d)"
+
+                installShellCompletion --cmd vault-tasks \
+                  --bash <($out/bin/vault-tasks generate-completions bash) \
+                  --fish <($out/bin/vault-tasks generate-completions fish) \
+                  --zsh <($out/bin/vault-tasks generate-completions zsh)
+              '';
           };
 
           # Rust dev environment
