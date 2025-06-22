@@ -1,7 +1,7 @@
 use crate::core::TasksConfig;
-use crate::core::task::DueDate;
 
 use super::{
+    date::Date,
     parser::task::parse_task,
     task::{State, Task},
     vault_data::VaultData,
@@ -51,20 +51,7 @@ fn filter_task(task: &Task, filter: &Filter) -> bool {
             )
         });
 
-    let name_match = if filter.task.name.is_empty() {
-        true
-    } else {
-        // for each word of the filter_task, if at least one
-        // matches in the task, then validate
-        filter
-            .task
-            .name
-            .to_lowercase()
-            .split_whitespace()
-            .filter(|w| task.name.to_lowercase().contains(w))
-            .count()
-            > 0
-    };
+    let name_match = names_match(&task.name, &filter.task.name);
 
     let today_flag_match = if filter.task.is_today {
         task.is_today
@@ -73,13 +60,15 @@ fn filter_task(task: &Task, filter: &Filter) -> bool {
     };
 
     let date_match = match (task.due_date.clone(), filter.task.due_date.clone()) {
-        (_, DueDate::NoDate) => true,
-        (DueDate::DayTime(task_date), DueDate::DayTime(search_date))
+        (_, None) => true,
+        (Some(Date::DayTime(task_date)), Some(Date::DayTime(search_date)))
             if task_date == search_date =>
         {
             true
         }
-        (DueDate::Day(task_date), DueDate::Day(search_date)) if task_date == search_date => true,
+        (Some(Date::Day(task_date)), Some(Date::Day(search_date))) if task_date == search_date => {
+            true
+        }
         (_, _) => false,
     };
 
@@ -106,6 +95,23 @@ fn filter_task(task: &Task, filter: &Filter) -> bool {
     state_match && name_match && today_flag_match && date_match && tags_match && priority_match
 }
 
+fn names_match(name: &str, filter_name: &str) -> bool {
+    if filter_name.is_empty() {
+        true
+    } else {
+        // for each word of the filter_task, if at least one
+        // matches in the task, then validate
+        filter_name
+            .to_lowercase()
+            .split_whitespace()
+            .filter(|w| name.to_lowercase().contains(w))
+            .count()
+            > 0
+    }
+}
+
+/// Collects all tasks matching the provided `Filter` from the `VaultData` in a `Vec<Task>`.
+/// If `explore_children` is true, it will also explore subtasks of tasks.
 fn filter_to_vec_layer(
     vault_data: &VaultData,
     task_filter: &Filter,
@@ -134,6 +140,9 @@ fn filter_to_vec_layer(
                 res.push(task.clone());
             }
         }
+        VaultData::Tracker(_tracker) => (), // Don't collect trackers in the result
+                                            // It's only used by the Filter and Calendar
+                                            // tabs and we don't want to display trackers there
     }
 }
 
@@ -144,6 +153,8 @@ pub fn filter_to_vec(vault_data: &VaultData, filter: &Filter) -> Vec<Task> {
     res.clone()
 }
 
+/// Filters a `VaultData` structure based on the provided `Filter`.
+/// Only keeps the `VaultData` entries that match the filter criteria.
 pub fn filter(vault_data: &VaultData, task_filter: &Filter) -> Option<VaultData> {
     match vault_data {
         VaultData::Header(level, name, children) => {
@@ -195,6 +206,17 @@ pub fn filter(vault_data: &VaultData, task_filter: &Filter) -> Option<VaultData>
                 }))
             }
         }
+        VaultData::Tracker(tracker) => {
+            // We keep the tracker if its name matches the filter task's name
+            // But we don't look at the task's state
+            // I might want to refactor the Filter to allow parsing a Tracker from
+            // the input string later.
+            if names_match(&tracker.name, &task_filter.task.name) {
+                Some(VaultData::Tracker(tracker.clone()))
+            } else {
+                None
+            }
+        }
     }
 }
 
@@ -204,8 +226,9 @@ mod tests {
 
     use crate::core::{
         TasksConfig,
+        date::Date,
         filter::{Filter, filter},
-        task::{DueDate, State, Task},
+        task::{State, Task},
         vault_data::VaultData,
     };
 
@@ -218,7 +241,7 @@ mod tests {
         let res = parse_search_input(input, &config);
         let expected = Filter {
             task: Task {
-                due_date: DueDate::Day(chrono::Local::now().date_naive()),
+                due_date: Some(Date::Day(chrono::Local::now().date_naive())),
                 name: String::from("name"),
                 priority: 5,
                 state: State::ToDo,
@@ -237,7 +260,7 @@ mod tests {
         let res = parse_search_input(input, &config);
         let expected = Filter {
             task: Task {
-                due_date: DueDate::Day(chrono::Local::now().date_naive()),
+                due_date: Some(Date::Day(chrono::Local::now().date_naive())),
                 name: String::from("name"),
                 priority: 5,
                 state: State::ToDo,
@@ -428,9 +451,9 @@ mod tests {
                                 vec![VaultData::Task(Task {
                                     name: "hfdgqskhjfg1".to_string(),
                                     line_number: Some(8),
-                                    due_date: DueDate::Day(
+                                    due_date: Some(Date::Day(
                                         NaiveDate::from_ymd_opt(2020, 2, 2).unwrap(),
-                                    ),
+                                    )),
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
@@ -468,7 +491,7 @@ mod tests {
         let expected = vec![Task {
             name: "hfdgqskhjfg1".to_string(),
             line_number: Some(8),
-            due_date: DueDate::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap()),
+            due_date: Some(Date::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap())),
             description: Some("test\ndesc".to_string()),
             ..Default::default()
         }];
@@ -476,7 +499,7 @@ mod tests {
             &input,
             &Filter {
                 task: Task {
-                    due_date: DueDate::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap()),
+                    due_date: Some(Date::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap())),
                     ..Default::default()
                 },
                 state: None,
@@ -503,9 +526,9 @@ mod tests {
                                     name: "real target".to_string(),
                                     line_number: Some(8),
                                     tags: Some(vec!["test".to_string()]),
-                                    due_date: DueDate::Day(
+                                    due_date: Some(Date::Day(
                                         NaiveDate::from_ymd_opt(2020, 2, 2).unwrap(),
-                                    ),
+                                    )),
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
@@ -543,7 +566,7 @@ mod tests {
         let expected = vec![Task {
             name: "real target".to_string(),
             line_number: Some(8),
-            due_date: DueDate::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap()),
+            due_date: Some(Date::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap())),
             tags: Some(vec!["test".to_string()]),
             description: Some("test\ndesc".to_string()),
             ..Default::default()
@@ -554,7 +577,7 @@ mod tests {
                 task: Task {
                     name: String::from("target"),
                     tags: Some(vec!["test".to_string()]),
-                    due_date: DueDate::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap()),
+                    due_date: Some(Date::Day(NaiveDate::from_ymd_opt(2020, 2, 2).unwrap())),
                     ..Default::default()
                 },
                 state: None,

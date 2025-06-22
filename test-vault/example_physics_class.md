@@ -37,7 +37,7 @@ The second law states that the total entropy of an isolated system can never dec
   - [x] Gas expansion in vacuum
   - [x] Heat transfer between bodies
 
-- [ ] Create a diagram showing entropy increase in a closed system 2025/06/06 c60 p1 #visual
+- [ ] Create a diagram showing entropy increase in a closed system 2025-06-06 c60 p1 #visual
       Use drawing software and add a caption
   - [ ] Sketch on paper
   - [/] Redraw neatly in drawing software c60
@@ -51,7 +51,7 @@ The second law states that the total entropy of an isolated system can never dec
 
 Entropy has practical implications in various fields, including information theory, cosmology, and chemical reactions.
 
-- [ ] Research how entropy applies to information theory 2025/06/06 c20 p2 #research
+- [ ] Research how entropy applies to information theory 2025-06-06 c20 p2 #research
       Add at least one quote or diagram
 
   - [ ] Look up Shannon entropy
@@ -67,21 +67,21 @@ Entropy has practical implications in various fields, including information theo
 
 ## 📝 Homework Tasks
 
-- [ ] Complete problem set 4 on entropy 2025/04/25 p1 #homework
+- [ ] Complete problem set 4 on entropy 2025-04-25 p1 #homework
       Includes multiple choice and theory questions
 
   - [ ] Do questions 1–3
   - [ ] Do questions 4–6 (challenging)
   - [ ] Review with classmate
 
-- [ ] Prepare a 5-minute presentation on entropy for next class 2025/06/09 p2 #presentation
+- [ ] Prepare a 5-minute presentation on entropy for next class 2025-06-09 p2 #presentation
       Slides + dry run + timer
 
   - [ ] Create slides
   - [ ] Practice once
   - [ ] Time the presentation
 
-- [ ] Quiz on entropy concepts scheduled 2025/04/29 #quiz
+- [ ] Quiz on entropy concepts scheduled 2025-04-29 #quiz
       Closed book format
   - [ ] Review notes
   - [ ] Solve past quiz
