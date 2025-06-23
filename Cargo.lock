@@ -620,6 +620,20 @@ dependencies = [
  "itoa",
  "rustversion",
  "ryu",
+ "static_assertions",
+]
+
+[[package]]
+name = "compact_str"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3fdb1325a1cece981e8a296ab8f0f9b63ae357bd0784a9faaf548cc7b480707a"
+dependencies = [
+ "castaway",
+ "cfg-if",
+ "itoa",
+ "rustversion",
+ "ryu",
  "serde",
  "static_assertions",
 ]
@@ -640,7 +654,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "595aae20e65c3be792d05818e8c63025294ac3cb7e200f11459063a352a6ef80"
 dependencies = [
  "async-trait",
- "convert_case",
+ "convert_case 0.6.0",
  "json5",
  "pathdiff",
  "ron",
@@ -694,12 +708,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "convert_case"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb402b8d4c85569410425650ce3eddc7d698ed96d39a73f941b08fb63082f1e7"
+dependencies = [
+ "unicode-segmentation",
+]
+
+[[package]]
 name = "coolor"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "691defa50318376447a73ced869862baecfab35f6aabaa91a4cd726b315bfe1a"
 dependencies = [
- "crossterm",
+ "crossterm 0.28.1",
 ]
 
 [[package]]
@@ -733,7 +756,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c5ff945e42bb93d29b10ba509970066a269903a932f0ea07d99d8621f97e90d7"
 dependencies = [
  "crokey-proc_macros",
- "crossterm",
+ "crossterm 0.28.1",
  "once_cell",
  "serde",
  "strict",
@@ -745,7 +768,7 @@ version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "665f2180fd82d0ba2bf3deb45fafabb18f23451024ff71ee47f6bfdfb4bbe09e"
 dependencies = [
- "crossterm",
+ "crossterm 0.28.1",
  "proc-macro2",
  "quote",
  "strict",
@@ -820,6 +843,25 @@ dependencies = [
  "mio",
  "parking_lot",
  "rustix 0.38.44",
+ "serde",
+ "signal-hook",
+ "signal-hook-mio",
+ "winapi",
+]
+
+[[package]]
+name = "crossterm"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8b9f2e4c67f833b660cdb0a3523065869fb35570177239812ed4c905aeff87b"
+dependencies = [
+ "bitflags 2.9.0",
+ "crossterm_winapi",
+ "derive_more",
+ "document-features",
+ "mio",
+ "parking_lot",
+ "rustix 1.0.5",
  "serde",
  "signal-hook",
  "signal-hook-mio",
@@ -968,6 +1010,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive_more"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "093242cf7570c207c83073cf82f79706fe7b8317e98620a47d5be7c3d8497678"
+dependencies = [
+ "derive_more-impl",
+]
+
+[[package]]
+name = "derive_more-impl"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bda628edc44c4bb645fbe0f758797143e4e07926f7ebf4e9bdfbd3d2ce621df3"
+dependencies = [
+ "convert_case 0.7.1",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.100",
+]
+
+[[package]]
 name = "diff"
 version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1032,6 +1095,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "442039f5147480ba31067cb00ada1adae6892028e40e45fc5de7b7df6dcc1b5f"
 dependencies = [
  "const-random",
+]
+
+[[package]]
+name = "document-features"
+version = "0.2.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95249b50c6c185bee49034bcb378a49dc2b5dff0be90ff6616d31d64febab05d"
+dependencies = [
+ "litrs",
 ]
 
 [[package]]
@@ -2466,6 +2538,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2531,6 +2612,16 @@ dependencies = [
  "pest",
  "pest_derive",
  "serde",
+]
+
+[[package]]
+name = "kasuari"
+version = "0.4.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "def1b67294a9fdc95eeeeafd1209c7a1b8a82aa0bf80ac2ab2a7d0318e9c7622"
+dependencies = [
+ "hashbrown 0.15.2",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -2605,9 +2696,9 @@ dependencies = [
 
 [[package]]
 name = "line-clipping"
-version = "0.2.1"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76364bf78d7ed059f98564fc5fb94c5a6eb2b6c9edd621cb1528febe1e918b29"
+checksum = "51a1679740111eb63b7b4cb3c97b1d5d9f82e142292a25edcfdb4120a48b3880"
 dependencies = [
  "bitflags 2.9.0",
 ]
@@ -2631,6 +2722,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23fb14cb19457329c82206317a5663005a4d404783dc74f4252769b0d5f42856"
 
 [[package]]
+name = "litrs"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4ce301924b7887e9d637144fdade93f9dfff9b60981d4ac161db09720d39aa5"
+
+[[package]]
 name = "lock_api"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2651,6 +2748,15 @@ name = "lru"
 version = "0.12.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "234cf4f4a04dc1f57e24b96cc0cd600cf2af460d4161ac5ecdd0af8e1f3b2a38"
+dependencies = [
+ "hashbrown 0.15.2",
+]
+
+[[package]]
+name = "lru"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f8cc7106155f10bdf99a6f379688f543ad6596a415375b36a59a054ceda1198"
 dependencies = [
  "hashbrown 0.15.2",
 ]
@@ -2853,6 +2959,12 @@ checksum = "5c7398b9c8b70908f6371f47ed36737907c87c52af34c268fed0bf0ceb92ead9"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "numtoa"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6aa2c4e539b869820a2b82e1aef6ff40aa85e65decdd5185e83fb4b1249cd00f"
 
 [[package]]
 name = "objc2"
@@ -3287,16 +3399,14 @@ checksum = "eabd94c2f37801c20583fc49dd5cd6b0ba68c716787c2dd6ed18571e1e63117b"
 dependencies = [
  "bitflags 2.9.0",
  "cassowary",
- "compact_str",
- "crossterm",
+ "compact_str 0.8.1",
+ "crossterm 0.28.1",
  "indoc",
  "instability",
- "itertools",
- "lru",
+ "itertools 0.13.0",
+ "lru 0.12.5",
  "paste",
- "serde",
  "strum 0.26.3",
- "time",
  "unicode-segmentation",
  "unicode-truncate 1.1.0",
  "unicode-width 0.2.0",
@@ -3304,33 +3414,35 @@ dependencies = [
 
 [[package]]
 name = "ratatui"
-version = "0.30.0-alpha.2"
+version = "0.30.0-alpha.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12ad516b947c599840ea2e258c935428bc2f842111c5c9370ddee2117e634aca"
+checksum = "63bfff7501cc6892821f54f1133661e0534413342c8e8efbb41af0ffccdcea45"
 dependencies = [
  "instability",
  "ratatui-core",
  "ratatui-crossterm",
  "ratatui-macros",
+ "ratatui-termion",
  "ratatui-termwiz",
  "ratatui-widgets",
- "time",
+ "serde",
 ]
 
 [[package]]
 name = "ratatui-core"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97f3a4e1bfb70ffad2cba06d71ec11c0b5e2a4a8644d9ddae181a61726289ce8"
+checksum = "353047185fbfb81ee05a3f8c573956adb2aa9a505da47fb150c18388806f5e22"
 dependencies = [
  "bitflags 2.9.0",
- "cassowary",
- "compact_str",
+ "compact_str 0.9.0",
+ "hashbrown 0.15.2",
  "indoc",
- "itertools",
- "lru",
- "paste",
- "strum 0.26.3",
+ "itertools 0.14.0",
+ "kasuari",
+ "lru 0.14.0",
+ "serde",
+ "strum 0.27.1",
  "thiserror 2.0.12",
  "unicode-segmentation",
  "unicode-truncate 2.0.0",
@@ -3339,30 +3451,41 @@ dependencies = [
 
 [[package]]
 name = "ratatui-crossterm"
-version = "0.1.0-alpha.2"
+version = "0.1.0-alpha.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36224e9526a56d73f31456751b0e1db8587407ae9668cf9df0a6effd31b06385"
+checksum = "6c729303ad253dd928b75f5866feb41c73d0e72b62ec91b13a5d91141ff5bfd1"
 dependencies = [
- "crossterm",
+ "crossterm 0.29.0",
  "instability",
  "ratatui-core",
 ]
 
 [[package]]
 name = "ratatui-macros"
-version = "0.7.0-alpha.1"
+version = "0.7.0-alpha.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "838b0ba06759a48a773afd376941b3e884a78a36b791a03bfd29fa084a3f43e3"
+checksum = "058564a94bc18220b5c37caf05ec334e362bc87711522703fbed1ec9c43a0eae"
 dependencies = [
  "ratatui-core",
  "ratatui-widgets",
 ]
 
 [[package]]
-name = "ratatui-termwiz"
-version = "0.1.0-alpha.2"
+name = "ratatui-termion"
+version = "0.1.0-alpha.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28bd9f7c9dfe497c9ea5816dbf2e6ac40af557d4dd08bdb2c86eeb13f3575f64"
+checksum = "6ae9ba345f35c517222870d9dbfd93a0b5078a558099df5aeb491187bbaf9ec1"
+dependencies = [
+ "instability",
+ "ratatui-core",
+ "termion",
+]
+
+[[package]]
+name = "ratatui-termwiz"
+version = "0.1.0-alpha.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca620dea5f1b7e949fc60a7d78626946dc0273707d28eed4ce3ee458ae0218ca"
 dependencies = [
  "ratatui-core",
  "termwiz",
@@ -3370,17 +3493,19 @@ dependencies = [
 
 [[package]]
 name = "ratatui-widgets"
-version = "0.3.0-alpha.2"
+version = "0.3.0-alpha.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0d4fed374a3d7851c4152daf92fcb24440e6d4390192a5601e9d19683a3fa0a"
+checksum = "fab55e77e0421bb88944cc0262317688e039d0e58518195f13a6e689f3e22f42"
 dependencies = [
  "bitflags 2.9.0",
+ "hashbrown 0.15.2",
  "indoc",
  "instability",
- "itertools",
+ "itertools 0.14.0",
  "line-clipping",
  "ratatui-core",
- "strum 0.26.3",
+ "serde",
+ "strum 0.27.1",
  "time",
  "unicode-segmentation",
  "unicode-width 0.2.0",
@@ -3392,7 +3517,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "36a3cd657406c40a186425bae2a4520df1b886089286d08bb8564fab57cfd715"
 dependencies = [
- "crossterm",
+ "crossterm 0.28.1",
  "ratatui 0.29.0",
  "regex",
  "termimad",
@@ -3406,6 +3531,12 @@ checksum = "d2f103c6d277498fbceb16e84d317e2a400f160f46904d5f5410848c829511a3"
 dependencies = [
  "bitflags 2.9.0",
 ]
+
+[[package]]
+name = "redox_termios"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20145670ba436b55d91fc92d25e71160fbfbdd57831631c8d7d36377a476f1cb"
 
 [[package]]
 name = "redox_users"
@@ -3968,6 +4099,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "termion"
+version = "4.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3669a69de26799d6321a5aa713f55f7e2cd37bd47be044b50f2acafc42c122bb"
+dependencies = [
+ "libc",
+ "libredox",
+ "numtoa",
+ "redox_termios",
+ "serde",
+]
+
+[[package]]
 name = "termios"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4001,6 +4145,7 @@ dependencies = [
  "pest",
  "pest_derive",
  "phf",
+ "serde",
  "sha2",
  "signal-hook",
  "siphasher",
@@ -4311,7 +4456,7 @@ version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dce25d24adf2c5350c57426f25cf12bc767455a6d9202be155458fc768ea1268"
 dependencies = [
- "ratatui 0.30.0-alpha.2",
+ "ratatui 0.30.0-alpha.4",
  "unicode-width 0.2.0",
 ]
 
@@ -4397,7 +4542,7 @@ version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3644627a5af5fa321c95b9b235a72fd24cd29c648c2c379431e6628655627bf"
 dependencies = [
- "itertools",
+ "itertools 0.13.0",
  "unicode-segmentation",
  "unicode-width 0.1.14",
 ]
@@ -4408,7 +4553,7 @@ version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fbf03860ff438702f3910ca5f28f8dac63c1c11e7efb5012b8b175493606330"
 dependencies = [
- "itertools",
+ "itertools 0.13.0",
  "unicode-segmentation",
  "unicode-width 0.2.0",
 ]
@@ -4462,6 +4607,7 @@ checksum = "458f7a779bf54acc9f347480ac654f68407d3aab21269a6e3c9f922acd9e2da9"
 dependencies = [
  "atomic",
  "getrandom 0.3.2",
+ "serde",
 ]
 
 [[package]]
@@ -4481,7 +4627,7 @@ dependencies = [
  "clap_complete",
  "color-eyre",
  "config",
- "crossterm",
+ "crossterm 0.28.1",
  "derive_deref",
  "directories",
  "edit",
@@ -4493,7 +4639,7 @@ dependencies = [
  "libc",
  "notify-rust",
  "pretty_assertions",
- "ratatui 0.29.0",
+ "ratatui 0.30.0-alpha.4",
  "ratskin",
  "serde",
  "signal-hook",
@@ -4681,6 +4827,7 @@ checksum = "692daff6d93d94e29e4114544ef6d5c942a7ed998b37abdc19b17136ea428eb7"
 dependencies = [
  "getrandom 0.3.2",
  "mac_address",
+ "serde",
  "sha2",
  "thiserror 1.0.69",
  "uuid",
@@ -4695,6 +4842,7 @@ dependencies = [
  "csscolorparser",
  "deltae",
  "lazy_static",
+ "serde",
  "wezterm-dynamic",
 ]
 
