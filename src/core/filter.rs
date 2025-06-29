@@ -10,6 +10,7 @@ use super::{
 #[derive(Default, PartialEq, Eq, Debug)]
 pub struct Filter {
     pub task: Task,
+    inverted: bool,
     state: Option<State>,
 }
 
@@ -17,9 +18,11 @@ pub struct Filter {
 #[must_use]
 pub fn parse_search_input(input: &str, config: &TasksConfig) -> Filter {
     // Are searching for a specific state ?
-    let has_state = input.starts_with("- [");
+    let inverted = input.starts_with('!');
+    let input = input.strip_prefix('!').unwrap_or(input);
 
-    // Make the input parsable, add a task state if needed
+    // Is a state specified ? If not, add a default state to make it parseable but we won't take it into account
+    let has_state = input.starts_with("- [");
     let input_value = format!("{}{}", if has_state { "" } else { "- [ ]" }, input);
 
     // Parse the input
@@ -32,6 +35,7 @@ pub fn parse_search_input(input: &str, config: &TasksConfig) -> Filter {
     };
     Filter {
         task: task.clone(),
+        inverted,
         state: if has_state { Some(task.state) } else { None },
     }
 }
@@ -91,8 +95,13 @@ fn filter_task(task: &Task, filter: &Filter) -> bool {
     } else {
         true
     };
-
-    state_match && name_match && today_flag_match && date_match && tags_match && priority_match
+    filter.inverted
+        ^ (state_match
+            && name_match
+            && today_flag_match
+            && date_match
+            && tags_match
+            && priority_match)
 }
 
 fn names_match(name: &str, filter_name: &str) -> bool {
