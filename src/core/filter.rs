@@ -11,13 +11,15 @@ use super::{
 pub struct Filter {
     pub task: Task,
     inverted: bool,
+    /// Separate state in case we're not filtering by state
+    /// Since tasks require a state to be valid, we'll add a default one but use this one
     state: Option<State>,
 }
 
-/// Parses a [`Task`] from an input `&str`. Returns the `Task` and whether the input specify a task state (- [X] or - [ ]) or not.
+/// Parses a [`Task`] from an input `&str`. Returns a [`Filter`] object.
 #[must_use]
 pub fn parse_search_input(input: &str, config: &TasksConfig) -> Filter {
-    // Are searching for a specific state ?
+    // Invert results ? If so, remove the `!` prefix
     let inverted = input.starts_with('!');
     let input = input.strip_prefix('!').unwrap_or(input);
 
