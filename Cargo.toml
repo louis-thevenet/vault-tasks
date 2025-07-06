@@ -34,7 +34,6 @@ tracing-subscriber = {version = "0.3.19", features = ["env-filter", "serde"]}
 chrono = {version="0.4.41"}
 tui-widget-list = "0.13.2"
 tui-input = "0.12.1"
-edit = "0.1.5"
 tui-scrollview = "=0.5.1"
 toml = "0.8.23"
 color-eyre = "0.6.5"
@@ -50,6 +49,7 @@ time = "0.3.41"
 ratskin = "0.2.0"
 clap_complete = "4.5.54"
 tabled = "0.20.0"
+open-editor = "1.0.0"
 
 [dev-dependencies]
 insta = {version = "1.43.1", features = ["yaml"]}
@@ -65,8 +65,6 @@ edition = "2024"
 repository = "https://github.com/louis-thevenet/vault-tasks"
 authors = ["Louis Thevenet <louis.tvnt@gmail.com>"]
 license = "MIT"
-
-[profile.dev]
 
 [profile.dev.package]
 insta.opt-level = 3

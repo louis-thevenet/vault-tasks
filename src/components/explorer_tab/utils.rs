@@ -80,11 +80,13 @@ impl ExplorerTab<'_> {
         let Some(tui) = tui_opt else {
             bail!("Could not open current entry, Tui was None")
         };
-        let path = self.get_current_path_to_file();
+        let (path, line_number) = self.get_current_path_to_file();
         info!("Opening {:?} in default editor.", path);
         if let Some(tx) = &self.command_tx {
             tui.exit()?;
-            edit::edit_file(path)?;
+            open_editor::EditorCallBuilder::new()
+                .at_line(line_number)
+                .open_file(&path)?;
             tui.enter()?;
             tx.send(Action::ClearScreen)?;
         } else {
@@ -95,7 +97,10 @@ impl ExplorerTab<'_> {
         }
         Ok(())
     }
-    pub(super) fn get_current_path_to_file(&self) -> PathBuf {
+    pub(super) fn get_selected_task_line_number(&self) -> Option<usize> {
+        self.get_selected_task().and_then(|t| t.line_number)
+    }
+    pub(super) fn get_current_path_to_file(&self) -> (PathBuf, usize) {
         let mut path = self.config.tasks_config.vault_path.clone();
         for e in &self
             .get_preview_path()
@@ -109,7 +114,10 @@ impl ExplorerTab<'_> {
             }
             path.push(e);
         }
-        path
+        let line_number = self
+            .get_selected_task()
+            .map_or(0, |t| t.line_number.unwrap_or_default());
+        (path, line_number)
     }
     pub(super) fn get_selected_task(&self) -> Option<Task> {
         let path = match self.get_preview_path() {
