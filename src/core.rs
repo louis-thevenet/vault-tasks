@@ -165,7 +165,7 @@ impl TaskManager {
     /// Explores the vault and fills a `&mut HashSet<String>` with every tags found.
     pub fn collect_tags(tasks: &VaultData, tags: &mut HashSet<String>) {
         match tasks {
-            VaultData::Directory(_, children) | VaultData::Header(_, _, children) => {
+            VaultData::Directory(_, children) | VaultData::Header { children, .. } => {
                 children.iter().for_each(|c| Self::collect_tags(c, tags));
             }
             VaultData::Task(task) => {
@@ -197,7 +197,7 @@ impl TaskManager {
                 for entry in file_entry {
                     match entry {
                         VaultData::Directory(name, children)
-                        | VaultData::Header(_, name, children) => {
+                        | VaultData::Header { text: name, children, .. } => {
                             if name == selected_header_path[path_index] {
                                 return aux(children, selected_header_path, path_index + 1);
                             }
@@ -250,8 +250,8 @@ impl TaskManager {
             .iter() // Discard every children
             .map(|vd| match vd {
                 VaultData::Directory(name, _) => VaultData::Directory(name.clone(), vec![]),
-                VaultData::Header(level, name, _) => {
-                    VaultData::Header(*level, name.clone(), vec![])
+                VaultData::Header { line_number, text: name, .. } => {
+                    VaultData::Header { line_number: *line_number, text: name.clone(), children: vec![] }
                 }
                 VaultData::Task(t) => {
                     let mut t = t.clone();
@@ -271,9 +271,9 @@ impl TaskManager {
             file_entry: &VaultData,
         ) -> Result<()> {
             match file_entry {
-                VaultData::Header(level, name, children) => {
+                VaultData::Header { line_number, text: name, children } => {
                     let mut filename = filename.clone();
-                    if *level == 0 {
+                    if *line_number == 0 {
                         filename.push(name);
                     }
                     children
@@ -315,7 +315,7 @@ impl TaskManager {
                 Ok(file_entry)
             } else {
                 match &file_entry {
-                    VaultData::Header(_, name, children) | VaultData::Directory(name, children) => {
+                    VaultData::Header { text: name, children, .. } | VaultData::Directory(name, children) => {
                         if *name == selected_header_path[path_index] {
                             if path_index + 1 == selected_header_path.len() {
                                 return Ok(file_entry.clone());
@@ -397,7 +397,7 @@ impl TaskManager {
                 true
             } else {
                 match file_entry {
-                    VaultData::Directory(name, children) | VaultData::Header(_, name, children) => {
+                    VaultData::Directory(name, children) | VaultData::Header { text: name, children, .. } => {
                         if name == selected_header_path[path_index] {
                             return children
                                 .iter()
@@ -452,7 +452,7 @@ impl TaskManager {
                     // Either it's the first layer and the path is wrong or we recursively called on the wrong entry which is impossible
                     bail!("Couldn't find corresponding entry in Directory {name}");
                 }
-                VaultData::Header(_, name, children) => {
+                VaultData::Header { text: name, children, .. } => {
                     if *name == filename {
                         debug! {"Adding task to {name}"
                         };
@@ -561,28 +561,28 @@ mod tests {
                 ..Default::default()
             }),
         ];
-        let expected_header = VaultData::Header(2, "2".to_string(), vec![]);
+        let expected_header = VaultData::Header { line_number: 2, text: "2".to_string(), children: vec![] };
         let input = VaultData::Directory(
             "test".to_owned(),
-            vec![VaultData::Header(
-                0,
-                "Test".to_string(),
-                vec![
-                    VaultData::Header(
-                        1,
-                        "1".to_string(),
-                        vec![VaultData::Header(2, "2".to_string(), vec![])],
-                    ),
-                    VaultData::Header(
-                        1,
-                        "1.2".to_string(),
-                        vec![
-                            VaultData::Header(3, "3".to_string(), vec![]),
-                            VaultData::Header(2, "4".to_string(), expected_tasks.clone()),
+            vec![VaultData::Header {
+                line_number: 0,
+                text: "Test".to_string(),
+                children: vec![
+                    VaultData::Header {
+                        line_number: 1,
+                        text: "1".to_string(),
+                        children: vec![VaultData::Header { line_number: 2, text: "2".to_string(), children: vec![] }],
+                    },
+                    VaultData::Header {
+                        line_number: 1,
+                        text: "1.2".to_string(),
+                        children: vec![
+                            VaultData::Header { line_number: 3, text: "3".to_string(), children: vec![] },
+                            VaultData::Header { line_number: 2, text: "4".to_string(), children: expected_tasks.clone() },
                         ],
-                    ),
+                    },
                 ],
-            )],
+            }],
         );
 
         let task_mgr = TaskManager {
@@ -597,7 +597,7 @@ mod tests {
 
         let path = vec![String::from("Test"), String::from("1.2"), String::from("4")];
         let res = task_mgr.get_vault_data_from_path(&path).unwrap();
-        let expected_header = VaultData::Header(2, "4".to_string(), expected_tasks.clone());
+        let expected_header = VaultData::Header { line_number: 2, text: "4".to_string(), children: expected_tasks.clone() };
         assert_eq!(expected_header, res);
     }
 }
