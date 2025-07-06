@@ -244,7 +244,7 @@ impl ExplorerTab<'_> {
     fn render_preview(&mut self, frame: &mut Frame, area: Rect, highlighted_style: Style) {
         // If we have tasks, then render a TaskList widget
         match self.entries_right_view.first() {
-            Some(VaultData::Task(_) | VaultData::Header(_, _, _) | VaultData::Tracker(_)) => {
+            Some(VaultData::Task(_) | VaultData::Header { .. } | VaultData::Tracker(_)) => {
                 TaskList::new(&self.config, &self.entries_right_view, area.width, false).render(
                     area,
                     frame.buffer_mut(),

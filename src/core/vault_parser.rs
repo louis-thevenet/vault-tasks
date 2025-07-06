@@ -37,7 +37,7 @@ impl VaultParser {
                 )
             }
 
-            Some(VaultData::Header(_, _, content)) => {
+            Some(VaultData::Header { children: content, .. }) => {
                 // Files are always parsed as Headers
                 if content.len() != 1 {
                     bail!("Expected single task in header, got: {content:?}");

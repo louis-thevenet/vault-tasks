@@ -245,7 +245,7 @@ impl TaskListItem {
         let rat_skin = RatSkin::default();
         match &item {
             VaultData::Directory(_, _) => 1,
-            VaultData::Header(_, _, children) => {
+            VaultData::Header { children, .. } => {
                 children
                     .iter()
                     .map(|c| Self::compute_height(c, max_width * (100 - HEADER_INDENT_RATIO) / 100))
@@ -299,7 +299,7 @@ impl Widget for TaskListItem {
         let rat_skin = RatSkin::default();
         match &self.item {
             VaultData::Directory(name, _) => error!("TaskList widget received a directory: {name}"),
-            VaultData::Header(_level, name, children) => {
+            VaultData::Header { text: name, children, .. } => {
                 let surrounding_block = Block::default().borders(Borders::TOP).title(
                     rat_skin
                         .parse(RatSkin::parse_text(name), area.width)
