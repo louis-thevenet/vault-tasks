@@ -130,7 +130,7 @@ fn filter_to_vec_layer(
     res: &mut Vec<Task>,
 ) {
     match vault_data {
-        VaultData::Directory(_, children) | VaultData::Header(_, _, children) => {
+        VaultData::Directory(_, children) | VaultData::Header { children, .. } => {
             for c in children {
                 filter_to_vec_layer(&c.clone(), task_filter, explore_children, res);
             }
@@ -168,7 +168,8 @@ pub fn filter_to_vec(vault_data: &VaultData, filter: &Filter) -> Vec<Task> {
 /// Only keeps the `VaultData` entries that match the filter criteria.
 pub fn filter(vault_data: &VaultData, task_filter: &Filter) -> Option<VaultData> {
     match vault_data {
-        VaultData::Header(level, name, children) => {
+        VaultData::Header { line_number,
+            header_depth, text: name, children } => {
             let mut actual_children = vec![];
             for child in children {
                 let child_clone = child.clone();
@@ -179,7 +180,9 @@ pub fn filter(vault_data: &VaultData, task_filter: &Filter) -> Option<VaultData>
             if actual_children.is_empty() {
                 None
             } else {
-                Some(VaultData::Header(*level, name.to_string(), actual_children))
+                Some(VaultData::Header { line_number: *line_number, text: name.to_string(), children: actual_children,
+                    header_depth: *header_depth,
+                })
             }
         }
         VaultData::Directory(name, children) => {
@@ -330,44 +333,51 @@ mod tests {
         let input = VaultData::Directory(
             "test".to_owned(),
             vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
+                VaultData::Header {
+                    line_number: 0,
+                    header_depth: 0,
+                    text: "Test".to_string(),
+                    children: vec![
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1".to_string(),
+                            children: vec![VaultData::Header {
+                                line_number: 2,
+                                header_depth: 2,
+                                text: "2".to_string(),
+                                children: vec![VaultData::Task(Task {
                                     name: "test 1".to_string(),
                                     line_number: Some(8),
+
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
+                            }],
+                        },
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1.2".to_string(),
+                            children: vec![
+                                VaultData::Header { line_number: 3,
+                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 2,
+                                    header_depth: 2,
+                                    text: "4".to_string(),
+                                    children: vec![VaultData::Task(Task {
                                         name: "test 2".to_string(),
                                         line_number: Some(8),
                                         tags: Some(vec!["test".to_string()]),
                                         description: Some("test\ndesc".to_string()),
                                         ..Default::default()
                                     })],
-                                ),
+                                },
                             ],
-                        ),
+                        },
                     ],
-                ),
+                },
                 VaultData::Task(Task {
                     name: "test 3".to_string(),
                     line_number: Some(8),
@@ -413,44 +423,50 @@ mod tests {
         let input = VaultData::Directory(
             "test".to_owned(),
             vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
+                VaultData::Header {
+                    line_number: 0,
+                    header_depth: 0,
+                    text: "Test".to_string(),
+                    children: vec![
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1".to_string(),
+                            children: vec![VaultData::Header {
+                                line_number: 2,
+                                header_depth: 2,
+                                text: "2".to_string(),
+                                children: vec![VaultData::Task(Task {
                                     name: "test 1".to_string(),
                                     line_number: Some(8),
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
+                            }],
+                        },
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1.2".to_string(),
+                            children: vec![
+                                VaultData::Header { line_number: 3,
+                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 2,
+                                    header_depth: 2,
+                                    text: "4".to_string(),
+                                    children: vec![VaultData::Task(Task {
                                         name: "test 2".to_string(),
                                         line_number: Some(8),
                                         tags: Some(vec!["test".to_string()]),
                                         description: Some("test\ndesc".to_string()),
                                         ..Default::default()
                                     })],
-                                ),
+                                },
                             ],
-                        ),
+                        },
                     ],
-                ),
+                },
                 VaultData::Task(Task {
                     name: "test 3".to_string(),
                     line_number: Some(8),
@@ -486,44 +502,50 @@ mod tests {
         let input = VaultData::Directory(
             "test".to_owned(),
             vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
+                VaultData::Header {
+                    line_number: 0,
+                    header_depth: 0,
+                    text: "Test".to_string(),
+                    children: vec![
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1".to_string(),
+                            children: vec![VaultData::Header {
+                                line_number: 2,
+                                header_depth: 2,
+                                text: "2".to_string(),
+                                children: vec![VaultData::Task(Task {
                                     name: "hfdgqskhjfg1".to_string(),
                                     line_number: Some(8),
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
+                            }],
+                        },
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1.2".to_string(),
+                            children: vec![
+                                VaultData::Header { line_number: 3,
+                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 2,
+                                    header_depth: 2,
+                                    text: "4".to_string(),
+                                    children: vec![VaultData::Task(Task {
                                         name: "test 2".to_string(),
                                         line_number: Some(8),
                                         tags: Some(vec!["test".to_string()]),
                                         description: Some("test\ndesc".to_string()),
                                         ..Default::default()
                                     })],
-                                ),
+                                },
                             ],
-                        ),
+                        },
                     ],
-                ),
+                },
                 VaultData::Task(Task {
                     name: "test 3".to_string(),
                     line_number: Some(8),
@@ -568,44 +590,50 @@ mod tests {
         let input = VaultData::Directory(
             "test".to_owned(),
             vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
+                VaultData::Header {
+                    line_number: 0,
+                    header_depth: 0,
+                    text: "Test".to_string(),
+                    children: vec![
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1".to_string(),
+                            children: vec![VaultData::Header {
+                                line_number: 2,
+                                header_depth: 2,
+                                text: "2".to_string(),
+                                children: vec![VaultData::Task(Task {
                                     name: "hfdgqskhjfg1".to_string(),
                                     line_number: Some(8),
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
+                            }],
+                        },
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1.2".to_string(),
+                            children: vec![
+                                VaultData::Header { line_number: 3,
+                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 2,
+                                    header_depth: 2,
+                                    text: "4".to_string(),
+                                    children: vec![VaultData::Task(Task {
                                         name: "test 2".to_string(),
                                         line_number: Some(8),
                                         tags: Some(vec!["test".to_string()]),
                                         description: Some("test\ndesc".to_string()),
                                         ..Default::default()
                                     })],
-                                ),
+                                },
                             ],
-                        ),
+                        },
                     ],
-                ),
+                },
                 VaultData::Task(Task {
                     name: "test 3".to_string(),
                     line_number: Some(8),
@@ -640,17 +668,20 @@ mod tests {
         let input = VaultData::Directory(
             "test".to_owned(),
             vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
+                VaultData::Header {
+                    line_number: 0,
+                    header_depth: 0,
+                    text: "Test".to_string(),
+                    children: vec![
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1".to_string(),
+                            children: vec![VaultData::Header {
+                                line_number: 2,
+                                header_depth: 2,
+                                text: "2".to_string(),
+                                children: vec![VaultData::Task(Task {
                                     name: "hfdgqskhjfg1".to_string(),
                                     line_number: Some(8),
                                     due_date: Some(Date::Day(
@@ -659,28 +690,31 @@ mod tests {
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
+                            }],
+                        },
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1.2".to_string(),
+                            children: vec![
+                                VaultData::Header { line_number: 3,
+                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 2,
+                                    header_depth: 2,
+                                    text: "4".to_string(),
+                                    children: vec![VaultData::Task(Task {
                                         name: "test 2".to_string(),
                                         line_number: Some(8),
                                         tags: Some(vec!["test".to_string()]),
                                         description: Some("test\ndesc".to_string()),
                                         ..Default::default()
                                     })],
-                                ),
+                                },
                             ],
-                        ),
+                        },
                     ],
-                ),
+                },
                 VaultData::Task(Task {
                     name: "test 3".to_string(),
                     line_number: Some(8),
@@ -716,17 +750,20 @@ mod tests {
         let input = VaultData::Directory(
             "test".to_owned(),
             vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
+                VaultData::Header {
+                    line_number: 0,
+                    header_depth: 0,
+                    text: "Test".to_string(),
+                    children: vec![
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1".to_string(),
+                            children: vec![VaultData::Header {
+                                line_number: 2,
+                                header_depth: 2,
+                                text: "2".to_string(),
+                                children: vec![VaultData::Task(Task {
                                     name: "hfdgqskhjfg1".to_string(),
                                     line_number: Some(8),
                                     due_date: Some(Date::Day(
@@ -735,28 +772,31 @@ mod tests {
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
+                            }],
+                        },
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1.2".to_string(),
+                            children: vec![
+                                VaultData::Header { line_number: 3,
+                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 2,
+                                    header_depth: 2,
+                                    text: "4".to_string(),
+                                    children: vec![VaultData::Task(Task {
                                         name: "test 2".to_string(),
                                         line_number: Some(8),
                                         tags: Some(vec!["test".to_string()]),
                                         description: Some("test\ndesc".to_string()),
                                         ..Default::default()
                                     })],
-                                ),
+                                },
                             ],
-                        ),
+                        },
                     ],
-                ),
+                },
                 VaultData::Task(Task {
                     name: "test 3".to_string(),
                     line_number: Some(8),
@@ -801,17 +841,20 @@ mod tests {
         let input = VaultData::Directory(
             "test".to_owned(),
             vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
+                VaultData::Header {
+                    line_number: 0,
+                    header_depth: 0,
+                    text: "Test".to_string(),
+                    children: vec![
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1".to_string(),
+                            children: vec![VaultData::Header {
+                                line_number: 2,
+                                header_depth: 2,
+                                text: "2".to_string(),
+                                children: vec![VaultData::Task(Task {
                                     name: "real target".to_string(),
                                     line_number: Some(8),
                                     tags: Some(vec!["test".to_string()]),
@@ -821,28 +864,31 @@ mod tests {
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
+                            }],
+                        },
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1.2".to_string(),
+                            children: vec![
+                                VaultData::Header { line_number: 3,
+                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 2,
+                                    header_depth: 2,
+                                    text: "4".to_string(),
+                                    children: vec![VaultData::Task(Task {
                                         name: "false target 2".to_string(),
                                         line_number: Some(8),
                                         tags: Some(vec!["test".to_string()]),
                                         description: Some("test\ndesc".to_string()),
                                         ..Default::default()
                                     })],
-                                ),
+                                },
                             ],
-                        ),
+                        },
                     ],
-                ),
+                },
                 VaultData::Task(Task {
                     name: "test 3".to_string(),
                     line_number: Some(8),
@@ -881,17 +927,20 @@ mod tests {
         let input = VaultData::Directory(
             "test".to_owned(),
             vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
+                VaultData::Header {
+                    line_number: 0,
+                    header_depth: 0,
+                    text: "Test".to_string(),
+                    children: vec![
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1".to_string(),
+                            children: vec![VaultData::Header {
+                                line_number: 2,
+                                header_depth: 2,
+                                text: "2".to_string(),
+                                children: vec![VaultData::Task(Task {
                                     name: "real target".to_string(),
                                     line_number: Some(8),
                                     tags: Some(vec!["test".to_string()]),
@@ -901,28 +950,31 @@ mod tests {
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
+                            }],
+                        },
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1.2".to_string(),
+                            children: vec![
+                                VaultData::Header { line_number: 3,
+                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 2,
+                                    header_depth: 2,
+                                    text: "4".to_string(),
+                                    children: vec![VaultData::Task(Task {
                                         name: "false target 2".to_string(),
                                         line_number: Some(8),
                                         tags: Some(vec!["test".to_string()]),
                                         description: Some("test\ndesc".to_string()),
                                         ..Default::default()
                                     })],
-                                ),
+                                },
                             ],
-                        ),
+                        },
                     ],
-                ),
+                },
                 VaultData::Task(Task {
                     name: "test 3".to_string(),
                     line_number: Some(8),
@@ -969,17 +1021,20 @@ mod tests {
         let input = VaultData::Directory(
             "test".to_owned(),
             vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
+                VaultData::Header {
+                    line_number: 0,
+                    header_depth: 0,
+                    text: "Test".to_string(),
+                    children: vec![
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1".to_string(),
+                            children: vec![VaultData::Header {
+                                line_number: 2,
+                                header_depth: 2,
+                                text: "2".to_string(),
+                                children: vec![VaultData::Task(Task {
                                     name: "task".to_string(),
                                     line_number: Some(8),
                                     tags: Some(vec!["test".to_string()]),
@@ -990,28 +1045,31 @@ mod tests {
                                     }],
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
+                            }],
+                        },
+                        VaultData::Header {
+                            line_number: 1,
+                            header_depth: 1,
+                            text: "1.2".to_string(),
+                            children: vec![
+                                VaultData::Header { line_number: 3,
+                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 2,
+                                    header_depth: 2,
+                                    text: "4".to_string(),
+                                    children: vec![VaultData::Task(Task {
                                         name: "false target 2".to_string(),
                                         line_number: Some(8),
                                         tags: Some(vec!["test".to_string()]),
                                         description: Some("test\ndesc".to_string()),
                                         ..Default::default()
                                     })],
-                                ),
+                                },
                             ],
-                        ),
+                        },
                     ],
-                ),
+                },
                 VaultData::Task(Task {
                     name: "test 3".to_string(),
                     line_number: Some(8),
@@ -1023,16 +1081,19 @@ mod tests {
         );
         let expected = Some(VaultData::Directory(
             "test".to_owned(),
-            vec![VaultData::Header(
-                0,
-                "Test".to_string(),
-                vec![VaultData::Header(
-                    1,
-                    "1".to_string(),
-                    vec![VaultData::Header(
-                        2,
-                        "2".to_string(),
-                        vec![VaultData::Task(Task {
+            vec![VaultData::Header {
+                line_number: 0,
+                header_depth: 0,
+                text: "Test".to_string(),
+                children: vec![VaultData::Header {
+                    line_number: 1,
+                    header_depth: 1,
+                    text: "1".to_string(),
+                    children: vec![VaultData::Header {
+                        line_number: 2,
+                        header_depth: 2,
+                        text: "2".to_string(),
+                        children: vec![VaultData::Task(Task {
                             name: "task".to_string(),
                             line_number: Some(8),
                             tags: Some(vec!["test".to_string()]),
@@ -1043,9 +1104,9 @@ mod tests {
                             }],
                             ..Default::default()
                         })],
-                    )],
-                )],
-            )],
+                    }],
+                }],
+            }],
         ));
         let res = filter(
             &input,
