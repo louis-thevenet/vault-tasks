@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.13.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.12.0...v0.13.0) (2025-07-28)
+
+
+### Features
+
+* add trackers ([#80](https://github.com/louis-thevenet/vault-tasks/issues/80)) ([c764967](https://github.com/louis-thevenet/vault-tasks/commit/c76496780754fcfcb837e7950cc217bbc63c8182))
+* **tui:** Add an invert search terms flag ([#88](https://github.com/louis-thevenet/vault-tasks/issues/88)) ([fa70e09](https://github.com/louis-thevenet/vault-tasks/commit/fa70e09c37306327ff8aa09babcf56d3a51d6768))
+
+
+### Bug Fixes
+
+* missing fields from config did not all properly fall back to default config ([c70b02a](https://github.com/louis-thevenet/vault-tasks/commit/c70b02abe2082d3223e0c2bb42b152764b83aeb3))
+* remove useless prefix strip in --vault-path cli option ([e7d9fe8](https://github.com/louis-thevenet/vault-tasks/commit/e7d9fe86a7a8bcfba0149c3b261ca0bf47336ef5))
+
 ## [0.12.0](https://github.com/louis-thevenet/vault-tasks/compare/v0.11.2...v0.12.0) (2025-06-07)
 
 
