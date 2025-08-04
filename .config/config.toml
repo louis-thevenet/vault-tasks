@@ -173,6 +173,7 @@ ignored = []
 # vault_path= "./test-vault" # default vault path when none is provided
 explorer_default_search_string = "- [ ] "
 filter_default_search_string = ""
+invert_tracker_entries = true
 completion_bar_length = 5
 tracker_extra_blanks = 3
 

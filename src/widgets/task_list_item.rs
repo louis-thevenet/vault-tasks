@@ -19,6 +19,7 @@ pub struct TaskListItem {
     not_american_format: bool,
     completion_bar_length: usize,
     show_relative_due_dates: bool,
+    invert_tracker_entries: bool,
     max_width: u16,
     display_filename: bool,
     header_style: Style,
@@ -36,7 +37,7 @@ impl TaskListItem {
         max_width: u16,
         display_filename: bool,
         show_relative_due_dates: bool,
-
+        invert_tracker_entries: bool,
         completion_bar_length: usize,
     ) -> Self {
         let height = Self::compute_height(&item, max_width);
@@ -50,6 +51,7 @@ impl TaskListItem {
             header_style: Style::default(),
             show_relative_due_dates,
             completion_bar_length,
+            invert_tracker_entries,
         }
     }
     #[allow(clippy::too_many_lines)]
@@ -172,35 +174,40 @@ impl TaskListItem {
 
         let mut date = tracker.start_date.clone();
         let rat_skin = RatSkin::default();
-        let rows = (0..tracker.length).map(|n| {
-            let res = Row::new(
-                [
-                    vec![Cell::from(
-                        Span::raw(date.to_string_format(self.not_american_format).to_string())
-                            + if self.show_relative_due_dates {
-                                Span::raw(format!(" ({})", date.get_relative_str())).dim()
-                            } else {
-                                Span::raw("")
-                            },
-                    )],
-                    tracker
-                        .categories
-                        .iter()
-                        .map(|c| {
-                            Cell::from(Text::from(rat_skin.parse(
-                                RatSkin::parse_text(
-                                    &c.entries.get(n).unwrap().pretty_fmt(&self.symbols),
-                                ),
-                                self.max_width,
-                            )))
-                        })
-                        .collect(),
-                ]
-                .concat(),
-            );
-            date = tracker.frequency.next_date(&date);
-            res
-        });
+        let mut rows = (0..tracker.length)
+            .map(|n| {
+                let res = Row::new(
+                    [
+                        vec![Cell::from(
+                            Span::raw(date.to_string_format(self.not_american_format).to_string())
+                                + if self.show_relative_due_dates {
+                                    Span::raw(format!(" ({})", date.get_relative_str())).dim()
+                                } else {
+                                    Span::raw("")
+                                },
+                        )],
+                        tracker
+                            .categories
+                            .iter()
+                            .map(|c| {
+                                Cell::from(Text::from(rat_skin.parse(
+                                    RatSkin::parse_text(
+                                        &c.entries.get(n).unwrap().pretty_fmt(&self.symbols),
+                                    ),
+                                    self.max_width,
+                                )))
+                            })
+                            .collect(),
+                    ]
+                    .concat(),
+                );
+                date = tracker.frequency.next_date(&date);
+                res
+            })
+            .collect::<Vec<Row>>();
+        if self.invert_tracker_entries {
+            rows.reverse();
+        }
         let mut date = tracker.start_date.clone();
         let widths = [
             vec![
@@ -339,6 +346,7 @@ impl Widget for TaskListItem {
                         self.max_width - indent[0].width,
                         self.display_filename,
                         self.show_relative_due_dates,
+                        self.invert_tracker_entries,
                         self.completion_bar_length,
                     )
                     .header_style(self.header_style);
@@ -357,6 +365,7 @@ impl Widget for TaskListItem {
                         self.max_width - 2, // surrounding block
                         false,
                         self.show_relative_due_dates,
+                        self.invert_tracker_entries,
                         self.completion_bar_length,
                     )
                     .header_style(self.header_style);
@@ -438,6 +447,7 @@ mod tests {
             false,
             config.tasks_config.pretty_symbols,
             max_width,
+            false,
             false,
             false,
             config.tasks_config.completion_bar_length,
