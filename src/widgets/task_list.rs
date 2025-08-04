@@ -25,12 +25,9 @@ impl TaskList {
             .map(|fc| {
                 TaskListItem::new(
                     fc.clone(),
-                    !config.tasks_config.use_american_format,
-                    config.tasks_config.pretty_symbols.clone(),
+                    config.tasks_config.clone(),
                     max_width,
                     display_filename,
-                    config.tasks_config.show_relative_due_dates,
-                    config.tasks_config.completion_bar_length,
                 )
                 .header_style(
                     *config

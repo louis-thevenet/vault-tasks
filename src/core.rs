@@ -99,6 +99,8 @@ pub struct TasksConfig {
     pub pretty_symbols: PrettySymbolsConfig,
     #[serde(default)]
     pub tracker_extra_blanks: usize,
+    #[serde(default)]
+    pub invert_tracker_entries: bool,
 }
 impl Default for TasksConfig {
     fn default() -> Self {

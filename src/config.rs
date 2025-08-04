@@ -215,6 +215,7 @@ impl Config {
             } else {
                 user_config.tracker_extra_blanks
             },
+            invert_tracker_entries: user_config.invert_tracker_entries,
         }
     }
 

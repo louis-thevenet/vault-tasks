@@ -7,7 +7,7 @@ use ratatui::{
 use ratskin::RatSkin;
 use tracing::error;
 
-use crate::core::{PrettySymbolsConfig, task::Task, vault_data::VaultData};
+use crate::core::{TasksConfig, task::Task, vault_data::VaultData};
 
 const HEADER_INDENT_RATIO: u16 = 3;
 
@@ -15,10 +15,7 @@ const HEADER_INDENT_RATIO: u16 = 3;
 pub struct TaskListItem {
     item: VaultData,
     pub height: u16,
-    symbols: PrettySymbolsConfig,
-    not_american_format: bool,
-    completion_bar_length: usize,
-    show_relative_due_dates: bool,
+    config: TasksConfig,
     max_width: u16,
     display_filename: bool,
     header_style: Style,
@@ -31,25 +28,18 @@ impl TaskListItem {
     }
     pub fn new(
         item: VaultData,
-        not_american_format: bool,
-        symbols: PrettySymbolsConfig,
+        config: TasksConfig,
         max_width: u16,
         display_filename: bool,
-        show_relative_due_dates: bool,
-
-        completion_bar_length: usize,
     ) -> Self {
         let height = Self::compute_height(&item, max_width);
         Self {
             item,
             height,
-            not_american_format,
+            config,
             max_width,
             display_filename,
-            symbols,
             header_style: Style::default(),
-            show_relative_due_dates,
-            completion_bar_length,
         }
     }
     #[allow(clippy::too_many_lines)]
@@ -59,7 +49,7 @@ impl TaskListItem {
 
         let rat_skin = RatSkin::default();
 
-        let state = task.state.display(self.symbols.clone());
+        let state = task.state.display(self.config.pretty_symbols.clone());
         let title = state.clone() + " " + &task.name;
         let title_parsed = rat_skin.parse(RatSkin::parse_text(&title), self.max_width);
         let binding = Line::raw(state);
@@ -81,15 +71,21 @@ impl TaskListItem {
                 });
 
         if task.is_today {
-            data_line.push(Span::raw(format!("{} ", self.symbols.today_tag)));
+            data_line.push(Span::raw(format!(
+                "{} ",
+                self.config.pretty_symbols.today_tag
+            )));
         }
 
         if let Some(due_date) = &task.due_date {
             data_line.push(Span::from(format!(
                 "{} ",
-                due_date.to_display_format(&self.symbols.due_date, self.not_american_format)
+                due_date.to_display_format(
+                    &self.config.pretty_symbols.due_date,
+                    !self.config.use_american_format,
+                )
             )));
-            if self.show_relative_due_dates {
+            if self.config.show_relative_due_dates {
                 let due_date_relative = due_date.get_relative_str();
                 data_line.push(Span::styled(
                     format!("({due_date_relative}) "),
@@ -98,10 +94,10 @@ impl TaskListItem {
             }
         }
         if let Some(bar) = task.get_completion_bar(
-            self.completion_bar_length,
+            self.config.completion_bar_length,
             &(
-                self.symbols.progress_bar_false.clone(),
-                self.symbols.progress_bar_true.clone(),
+                self.config.pretty_symbols.progress_bar_false.clone(),
+                self.config.pretty_symbols.progress_bar_true.clone(),
             ),
         ) {
             data_line.push(Span::raw(bar));
@@ -109,7 +105,7 @@ impl TaskListItem {
         if task.priority > 0 {
             data_line.push(Span::raw(format!(
                 "{}{} ",
-                self.symbols.priority, task.priority
+                self.config.pretty_symbols.priority, task.priority
             )));
         }
         if !data_line.is_empty() {
@@ -172,48 +168,61 @@ impl TaskListItem {
 
         let mut date = tracker.start_date.clone();
         let rat_skin = RatSkin::default();
-        let rows = (0..tracker.length).map(|n| {
-            let res = Row::new(
-                [
-                    vec![Cell::from(
-                        Span::raw(date.to_string_format(self.not_american_format).to_string())
-                            + if self.show_relative_due_dates {
+        let mut rows = (0..tracker.length)
+            .map(|n| {
+                let res = Row::new(
+                    [
+                        vec![Cell::from(
+                            Span::raw(
+                                date.to_string_format(!self.config.use_american_format)
+                                    .to_string(),
+                            ) + if self.config.show_relative_due_dates {
                                 Span::raw(format!(" ({})", date.get_relative_str())).dim()
                             } else {
                                 Span::raw("")
                             },
-                    )],
-                    tracker
-                        .categories
-                        .iter()
-                        .map(|c| {
-                            Cell::from(Text::from(rat_skin.parse(
-                                RatSkin::parse_text(
-                                    &c.entries.get(n).unwrap().pretty_fmt(&self.symbols),
-                                ),
-                                self.max_width,
-                            )))
-                        })
-                        .collect(),
-                ]
-                .concat(),
-            );
-            date = tracker.frequency.next_date(&date);
-            res
-        });
+                        )],
+                        tracker
+                            .categories
+                            .iter()
+                            .map(|c| {
+                                Cell::from(Text::from(
+                                    rat_skin.parse(
+                                        RatSkin::parse_text(
+                                            &c.entries
+                                                .get(n)
+                                                .unwrap()
+                                                .pretty_fmt(&self.config.pretty_symbols),
+                                        ),
+                                        self.max_width,
+                                    ),
+                                ))
+                            })
+                            .collect(),
+                    ]
+                    .concat(),
+                );
+                date = tracker.frequency.next_date(&date);
+                res
+            })
+            .collect::<Vec<Row>>();
+        if self.config.invert_tracker_entries {
+            rows.reverse();
+        }
         let mut date = tracker.start_date.clone();
         let widths = [
             vec![
                 (0..tracker.length)
                     .map(|_n| {
-                        let res = if self.show_relative_due_dates {
+                        let res = if self.config.show_relative_due_dates {
                             format!(
                                 "{} ({})",
-                                date.to_string_format(self.not_american_format),
+                                date.to_string_format(!self.config.use_american_format,),
                                 date.get_relative_str()
                             )
                         } else {
-                            date.to_string_format(self.not_american_format).to_string()
+                            date.to_string_format(!self.config.use_american_format)
+                                .to_string()
                         }
                         .len() as u16;
                         date = tracker.frequency.next_date(&date);
@@ -334,12 +343,9 @@ impl Widget for TaskListItem {
                 for (i, child) in children.iter().enumerate() {
                     let sb_widget = Self::new(
                         child.clone(),
-                        self.not_american_format,
-                        self.symbols.clone(),
+                        self.config.clone(),
                         self.max_width - indent[0].width,
                         self.display_filename,
-                        self.show_relative_due_dates,
-                        self.completion_bar_length,
                     )
                     .header_style(self.header_style);
                     sb_widget.render(layout[i], buf);
@@ -352,12 +358,9 @@ impl Widget for TaskListItem {
                 for (i, sb) in task.subtasks.iter().enumerate() {
                     let sb_widget = Self::new(
                         VaultData::Task(sb.clone()),
-                        self.not_american_format,
-                        self.symbols.clone(),
+                        self.config.clone(),
                         self.max_width - 2, // surrounding block
                         false,
-                        self.show_relative_due_dates,
-                        self.completion_bar_length,
                     )
                     .header_style(self.header_style);
 
@@ -433,15 +436,8 @@ mod tests {
         config.tasks_config.show_relative_due_dates = false;
 
         let max_width = 50;
-        let task_list_item = TaskListItem::new(
-            test_task,
-            false,
-            config.tasks_config.pretty_symbols,
-            max_width,
-            false,
-            false,
-            config.tasks_config.completion_bar_length,
-        );
+        let task_list_item =
+            TaskListItem::new(test_task, config.tasks_config.clone(), max_width, false);
         let mut terminal = Terminal::new(TestBackend::new(max_width, 40)).unwrap();
         terminal
             .draw(|frame| {
