@@ -199,7 +199,11 @@ impl TaskManager {
                 for entry in file_entry {
                     match entry {
                         VaultData::Directory(name, children)
-                        | VaultData::Header { text: name, children, .. } => {
+                        | VaultData::Header {
+                            text: name,
+                            children,
+                            ..
+                        } => {
                             if name == selected_header_path[path_index] {
                                 return aux(children, selected_header_path, path_index + 1);
                             }
@@ -252,12 +256,17 @@ impl TaskManager {
             .iter() // Discard every children
             .map(|vd| match vd {
                 VaultData::Directory(name, _) => VaultData::Directory(name.clone(), vec![]),
-                VaultData::Header { line_number, text: name,
-                    header_depth, .. } => {
-                    VaultData::Header { line_number: *line_number, text: name.clone(), children: vec![],
-                        header_depth: *header_depth,
-                    }
-                }
+                VaultData::Header {
+                    line_number,
+                    text: name,
+                    header_depth,
+                    ..
+                } => VaultData::Header {
+                    line_number: *line_number,
+                    text: name.clone(),
+                    children: vec![],
+                    header_depth: *header_depth,
+                },
                 VaultData::Task(t) => {
                     let mut t = t.clone();
                     t.subtasks = vec![]; // Discard subtasks
@@ -276,8 +285,12 @@ impl TaskManager {
             file_entry: &VaultData,
         ) -> Result<()> {
             match file_entry {
-                VaultData::Header { line_number,
-                    header_depth: _, text: name, children } => {
+                VaultData::Header {
+                    line_number,
+                    header_depth: _,
+                    text: name,
+                    children,
+                } => {
                     let mut filename = filename.clone();
                     if *line_number == 0 {
                         filename.push(name);
@@ -321,7 +334,12 @@ impl TaskManager {
                 Ok(file_entry)
             } else {
                 match &file_entry {
-                    VaultData::Header { text: name, children, .. } | VaultData::Directory(name, children) => {
+                    VaultData::Header {
+                        text: name,
+                        children,
+                        ..
+                    }
+                    | VaultData::Directory(name, children) => {
                         if *name == selected_header_path[path_index] {
                             if path_index + 1 == selected_header_path.len() {
                                 return Ok(file_entry.clone());
@@ -403,7 +421,12 @@ impl TaskManager {
                 true
             } else {
                 match file_entry {
-                    VaultData::Directory(name, children) | VaultData::Header { text: name, children, .. } => {
+                    VaultData::Directory(name, children)
+                    | VaultData::Header {
+                        text: name,
+                        children,
+                        ..
+                    } => {
                         if name == selected_header_path[path_index] {
                             return children
                                 .iter()
@@ -458,7 +481,11 @@ impl TaskManager {
                     // Either it's the first layer and the path is wrong or we recursively called on the wrong entry which is impossible
                     bail!("Couldn't find corresponding entry in Directory {name}");
                 }
-                VaultData::Header { text: name, children, .. } => {
+                VaultData::Header {
+                    text: name,
+                    children,
+                    ..
+                } => {
                     if *name == filename {
                         debug! {"Adding task to {name}"
                         };

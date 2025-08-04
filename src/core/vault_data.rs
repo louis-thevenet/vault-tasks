@@ -45,7 +45,11 @@ impl Display for VaultData {
             depth: usize,
         ) -> std::fmt::Result {
             match file_entry {
-                VaultData::Header { text: header, children: entries, .. } => {
+                VaultData::Header {
+                    text: header,
+                    children: entries,
+                    ..
+                } => {
                     write_underline_with_indent(&header.to_string(), depth, f)?;
                     for entry in entries {
                         fmt_aux(entry, f, depth + 1)?;

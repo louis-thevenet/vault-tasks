@@ -168,8 +168,12 @@ pub fn filter_to_vec(vault_data: &VaultData, filter: &Filter) -> Vec<Task> {
 /// Only keeps the `VaultData` entries that match the filter criteria.
 pub fn filter(vault_data: &VaultData, task_filter: &Filter) -> Option<VaultData> {
     match vault_data {
-        VaultData::Header { line_number,
-            header_depth, text: name, children } => {
+        VaultData::Header {
+            line_number,
+            header_depth,
+            text: name,
+            children,
+        } => {
             let mut actual_children = vec![];
             for child in children {
                 let child_clone = child.clone();
@@ -180,7 +184,10 @@ pub fn filter(vault_data: &VaultData, task_filter: &Filter) -> Option<VaultData>
             if actual_children.is_empty() {
                 None
             } else {
-                Some(VaultData::Header { line_number: *line_number, text: name.to_string(), children: actual_children,
+                Some(VaultData::Header {
+                    line_number: *line_number,
+                    text: name.to_string(),
+                    children: actual_children,
                     header_depth: *header_depth,
                 })
             }
@@ -360,8 +367,12 @@ mod tests {
                             header_depth: 1,
                             text: "1.2".to_string(),
                             children: vec![
-                                VaultData::Header { line_number: 3,
-                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 3,
+                                    header_depth: 3,
+                                    text: "3".to_string(),
+                                    children: vec![],
+                                },
                                 VaultData::Header {
                                     line_number: 2,
                                     header_depth: 2,
@@ -449,8 +460,12 @@ mod tests {
                             header_depth: 1,
                             text: "1.2".to_string(),
                             children: vec![
-                                VaultData::Header { line_number: 3,
-                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 3,
+                                    header_depth: 3,
+                                    text: "3".to_string(),
+                                    children: vec![],
+                                },
                                 VaultData::Header {
                                     line_number: 2,
                                     header_depth: 2,
@@ -528,8 +543,12 @@ mod tests {
                             header_depth: 1,
                             text: "1.2".to_string(),
                             children: vec![
-                                VaultData::Header { line_number: 3,
-                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 3,
+                                    header_depth: 3,
+                                    text: "3".to_string(),
+                                    children: vec![],
+                                },
                                 VaultData::Header {
                                     line_number: 2,
                                     header_depth: 2,
@@ -616,8 +635,12 @@ mod tests {
                             header_depth: 1,
                             text: "1.2".to_string(),
                             children: vec![
-                                VaultData::Header { line_number: 3,
-                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 3,
+                                    header_depth: 3,
+                                    text: "3".to_string(),
+                                    children: vec![],
+                                },
                                 VaultData::Header {
                                     line_number: 2,
                                     header_depth: 2,
@@ -697,8 +720,12 @@ mod tests {
                             header_depth: 1,
                             text: "1.2".to_string(),
                             children: vec![
-                                VaultData::Header { line_number: 3,
-                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 3,
+                                    header_depth: 3,
+                                    text: "3".to_string(),
+                                    children: vec![],
+                                },
                                 VaultData::Header {
                                     line_number: 2,
                                     header_depth: 2,
@@ -779,8 +806,12 @@ mod tests {
                             header_depth: 1,
                             text: "1.2".to_string(),
                             children: vec![
-                                VaultData::Header { line_number: 3,
-                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 3,
+                                    header_depth: 3,
+                                    text: "3".to_string(),
+                                    children: vec![],
+                                },
                                 VaultData::Header {
                                     line_number: 2,
                                     header_depth: 2,
@@ -871,8 +902,12 @@ mod tests {
                             header_depth: 1,
                             text: "1.2".to_string(),
                             children: vec![
-                                VaultData::Header { line_number: 3,
-                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 3,
+                                    header_depth: 3,
+                                    text: "3".to_string(),
+                                    children: vec![],
+                                },
                                 VaultData::Header {
                                     line_number: 2,
                                     header_depth: 2,
@@ -957,8 +992,12 @@ mod tests {
                             header_depth: 1,
                             text: "1.2".to_string(),
                             children: vec![
-                                VaultData::Header { line_number: 3,
-                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 3,
+                                    header_depth: 3,
+                                    text: "3".to_string(),
+                                    children: vec![],
+                                },
                                 VaultData::Header {
                                     line_number: 2,
                                     header_depth: 2,
@@ -1052,8 +1091,12 @@ mod tests {
                             header_depth: 1,
                             text: "1.2".to_string(),
                             children: vec![
-                                VaultData::Header { line_number: 3,
-                                    header_depth: 3, text: "3".to_string(), children: vec![] },
+                                VaultData::Header {
+                                    line_number: 3,
+                                    header_depth: 3,
+                                    text: "3".to_string(),
+                                    children: vec![],
+                                },
                                 VaultData::Header {
                                     line_number: 2,
                                     header_depth: 2,

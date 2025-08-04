@@ -306,7 +306,11 @@ impl Widget for TaskListItem {
         let rat_skin = RatSkin::default();
         match &self.item {
             VaultData::Directory(name, _) => error!("TaskList widget received a directory: {name}"),
-            VaultData::Header { text: name, children, .. } => {
+            VaultData::Header {
+                text: name,
+                children,
+                ..
+            } => {
                 let surrounding_block = Block::default().borders(Borders::TOP).title(
                     rat_skin
                         .parse(RatSkin::parse_text(name), area.width)

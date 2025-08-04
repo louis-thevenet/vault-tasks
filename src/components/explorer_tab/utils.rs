@@ -20,7 +20,11 @@ impl ExplorerTab<'_> {
     fn vault_data_to_prefix_name(vd: &VaultData) -> (String, String) {
         match vd {
             VaultData::Directory(name, _) => (DIRECTORY_EMOJI.to_owned(), name.clone()),
-            VaultData::Header { line_number, text: name, .. } => (
+            VaultData::Header {
+                line_number,
+                text: name,
+                ..
+            } => (
                 if name.contains(".md") {
                     FILE_EMOJI.to_owned()
                 } else {

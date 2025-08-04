@@ -170,8 +170,12 @@ mod tests {
                     header_depth: 1,
                     text: "2".to_string(),
                     children: vec![
-                        VaultData::Header { line_number: 3,
-                            header_depth: 3, text: "2.1".to_string(), children: vec![] },
+                        VaultData::Header {
+                            line_number: 3,
+                            header_depth: 3,
+                            text: "2.1".to_string(),
+                            children: vec![],
+                        },
                         VaultData::Header {
                             line_number: 2,
                             header_depth: 2,
