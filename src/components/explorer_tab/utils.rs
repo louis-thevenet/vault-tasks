@@ -21,14 +21,14 @@ impl ExplorerTab<'_> {
         match vd {
             VaultData::Directory(name, _) => (DIRECTORY_EMOJI.to_owned(), name.clone()),
             VaultData::Header {
-                line_number,
+                header_depth,
                 text: name,
                 ..
             } => (
                 if name.contains(".md") {
                     FILE_EMOJI.to_owned()
                 } else {
-                    "#".repeat(*line_number).clone()
+                    "#".repeat(*header_depth).clone()
                 },
                 name.clone(),
             ),
