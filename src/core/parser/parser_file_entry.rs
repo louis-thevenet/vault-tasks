@@ -284,7 +284,8 @@ impl ParserFileEntry<'_> {
                     line_number: _,
                     text: _,
                     children: header_children,
-                    header_depth: _, } => {
+                    header_depth: _,
+                } => {
                     match (current_header_depth).cmp(&target_header_depth) {
                         std::cmp::Ordering::Greater => error!(
                             "bad call to `insert_at`, file_entry:{file_entry}\nobject:{object}"
@@ -591,7 +592,7 @@ impl ParserFileEntry<'_> {
                         file_entry,
                         VaultData::Header {
                             header_depth: new_depth,
-                            line_number,
+                            line_number: line_number + 1,
                             text: header,
                             children: vec![],
                         },
@@ -640,7 +641,7 @@ impl ParserFileEntry<'_> {
                         if let Ok(mut tracker) = parse_header(
                             &tracker_def,
                             self.filename.clone(),
-                            line_number,
+                            line_number + 1,
                             &mut next_line,
                         ) {
                             input.next();
@@ -856,7 +857,7 @@ mod tests {
             ..Default::default()
         };
         let mut res = VaultData::Header {
-            line_number: 0,
+            line_number: 1,
             header_depth: 0,
             text: "Test".to_string(),
             children: vec![],
@@ -866,20 +867,20 @@ mod tests {
             filename: String::new(),
         };
         let expected = VaultData::Header {
-            line_number: 0,
+            line_number: 1,
             header_depth: 0,
             text: "Test".to_string(),
             children: vec![
                 VaultData::Header {
-                    line_number: 0,
+                    line_number: 1,
                     header_depth: 1,
                     text: "1 useless".to_string(),
                     children: vec![VaultData::Header {
-                        line_number: 1,
+                        line_number: 2,
                         header_depth: 2,
                         text: "2 useless".to_string(),
                         children: vec![VaultData::Header {
-                            line_number: 2,
+                            line_number: 3,
                             header_depth: 3,
                             text: "3 useless".to_string(),
                             children: vec![],
@@ -887,18 +888,18 @@ mod tests {
                     }],
                 },
                 VaultData::Header {
-                    line_number: 4,
+                    line_number: 5,
                     header_depth: 1,
                     text: "2 useful".to_string(),
                     children: vec![
                         VaultData::Header {
-                            line_number: 5,
+                            line_number: 6,
                             header_depth: 3,
                             text: "3 useless".to_string(),
                             children: vec![],
                         },
                         VaultData::Header {
-                            line_number: 6,
+                            line_number: 7,
                             header_depth: 2,
                             text: "4 useful".to_string(),
                             children: vec![VaultData::Task(Task {
@@ -916,15 +917,15 @@ mod tests {
         assert_eq!(res, expected);
 
         let expected_after_cleaning = VaultData::Header {
-            line_number: 0,
+            line_number: 1,
             header_depth: 0,
             text: "Test".to_string(),
             children: vec![VaultData::Header {
-                line_number: 4,
+                line_number: 5,
                 header_depth: 1,
                 text: "2 useful".to_string(),
                 children: vec![VaultData::Header {
-                    line_number: 6,
+                    line_number: 7,
                     header_depth: 2,
                     text: "4 useful".to_string(),
                     children: vec![VaultData::Task(Task {
@@ -962,7 +963,7 @@ mod tests {
             ..Default::default()
         };
         let mut res = VaultData::Header {
-            line_number: 0,
+            line_number: 1,
             header_depth: 0,
             text: "Test".to_string(),
             children: vec![],
@@ -972,11 +973,11 @@ mod tests {
             filename: String::new(),
         };
         let expected = VaultData::Header {
-            line_number: 0,
+            line_number: 1,
             header_depth: 0,
             text: "Test".to_string(),
             children: vec![VaultData::Header {
-                line_number: 0,
+                line_number: 1,
                 header_depth: 1,
                 text: "1 Header".to_string(),
                 children: vec![
@@ -986,11 +987,11 @@ mod tests {
                         ..Default::default()
                     }),
                     VaultData::Header {
-                        line_number: 3,
+                        line_number: 4,
                         header_depth: 2,
                         text: "2 Header".to_string(),
                         children: vec![VaultData::Header {
-                            line_number: 4,
+                            line_number: 5,
                             header_depth: 3,
                             text: "3 Header".to_string(),
                             children: vec![
@@ -1008,7 +1009,7 @@ mod tests {
                         }],
                     },
                     VaultData::Header {
-                        line_number: 7,
+                        line_number: 8,
                         header_depth: 2,
                         text: "2 Header 2".to_string(),
                         children: vec![VaultData::Task(Task {
@@ -1078,7 +1079,7 @@ mod tests {
             ..Default::default()
         };
         let mut res = VaultData::Header {
-            line_number: 0,
+            line_number: 1,
             header_depth: 0,
             text: "Test".to_string(),
             children: vec![],
@@ -1088,11 +1089,11 @@ mod tests {
             filename: String::new(),
         };
         let expected = VaultData::Header {
-            line_number: 0,
+            line_number: 1,
             header_depth: 0,
             text: "Test".to_string(),
             children: vec![VaultData::Header {
-                line_number: 0,
+                line_number: 1,
                 header_depth: 1,
                 text: "1 Header".to_string(),
                 children: vec![
@@ -1102,7 +1103,7 @@ mod tests {
                         ..Default::default()
                     }),
                     VaultData::Header {
-                        line_number: 4,
+                        line_number: 5,
                         header_depth: 2,
                         text: "2 Header".to_string(),
                         children: vec![],
@@ -1130,7 +1131,7 @@ mod tests {
             ..Default::default()
         };
         let mut res = VaultData::Header {
-            line_number: 0,
+            line_number: 1,
             header_depth: 0,
             text: "Test".to_string(),
             children: vec![],
@@ -1140,15 +1141,15 @@ mod tests {
             filename: String::new(),
         };
         let expected = VaultData::Header {
-            line_number: 0,
+            line_number: 1,
             header_depth: 0,
             text: "Test".to_string(),
             children: vec![VaultData::Header {
-                line_number: 0,
+                line_number: 1,
                 header_depth: 1,
                 text: "1 Header".to_string(),
                 children: vec![VaultData::Header {
-                    line_number: 1,
+                    line_number: 2,
                     header_depth: 2,
                     text: "Test".to_string(),
                     children: vec![VaultData::Task(Task {
