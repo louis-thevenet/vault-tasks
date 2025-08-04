@@ -20,11 +20,15 @@ impl ExplorerTab<'_> {
     fn vault_data_to_prefix_name(vd: &VaultData) -> (String, String) {
         match vd {
             VaultData::Directory(name, _) => (DIRECTORY_EMOJI.to_owned(), name.clone()),
-            VaultData::Header(level, name, _) => (
+            VaultData::Header {
+                header_depth,
+                text: name,
+                ..
+            } => (
                 if name.contains(".md") {
                     FILE_EMOJI.to_owned()
                 } else {
-                    "#".repeat(*level).clone()
+                    "#".repeat(*header_depth).clone()
                 },
                 name.clone(),
             ),
@@ -80,11 +84,14 @@ impl ExplorerTab<'_> {
         let Some(tui) = tui_opt else {
             bail!("Could not open current entry, Tui was None")
         };
-        let path = self.get_current_path_to_file();
+        let (path, line_number, column_number) = self.get_current_path_to_file();
         info!("Opening {:?} in default editor.", path);
         if let Some(tx) = &self.command_tx {
             tui.exit()?;
-            edit::edit_file(path)?;
+            open_editor::EditorCallBuilder::new()
+                .at_line(line_number)
+                .at_column(column_number)
+                .open_file(&path)?;
             tui.enter()?;
             tx.send(Action::ClearScreen)?;
         } else {
@@ -95,23 +102,7 @@ impl ExplorerTab<'_> {
         }
         Ok(())
     }
-    pub(super) fn get_current_path_to_file(&self) -> PathBuf {
-        let mut path = self.config.tasks_config.vault_path.clone();
-        for e in &self
-            .get_preview_path()
-            .unwrap_or_else(|_| self.current_path.clone())
-        {
-            if path
-                .extension()
-                .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
-            {
-                break;
-            }
-            path.push(e);
-        }
-        path
-    }
-    pub(super) fn get_selected_task(&self) -> Option<Task> {
+    pub fn get_selected_task(&self) -> Option<Task> {
         let path = match self.get_preview_path() {
             Ok(path) => path,
             Err(e) => {
@@ -125,12 +116,54 @@ impl ExplorerTab<'_> {
             error!("Error while collecting tasks from path");
             return None;
         };
-
         if let VaultData::Task(task) = entry {
-            Some(task.clone())
+            Some(task)
         } else {
-            info!("Selected object is not a Task");
+            error!("Selected entry is not a task");
             None
+        }
+    }
+    pub(super) fn get_current_path_to_file(&self) -> (PathBuf, usize, usize) {
+        let mut path = self.config.tasks_config.vault_path.clone();
+        for e in &self
+            .get_preview_path()
+            .unwrap_or_else(|_| self.current_path.clone())
+        {
+            if path
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
+            {
+                break;
+            }
+            path.push(e);
+        }
+        let (line_number, column_number) = self.get_position().unwrap_or((0, 0));
+        (path, line_number, column_number)
+    }
+    pub(super) fn get_position(&self) -> Option<(usize, usize)> {
+        let path = match self.get_preview_path() {
+            Ok(path) => path,
+            Err(e) => {
+                error!("Error while getting path for selected task: {}", e);
+                return None;
+            }
+        };
+        debug!("Getting selected task from current path: {:?}", path);
+
+        let Ok(entry) = self.task_mgr.get_vault_data_from_path(&path) else {
+            error!("Error while collecting tasks from path");
+            return None;
+        };
+        match entry {
+            VaultData::Directory(_, _) => None,
+            VaultData::Header {
+                header_depth,
+                line_number,
+                text: _,
+                children: _,
+            } => Some((line_number, header_depth)),
+            VaultData::Task(task) => Some((task.line_number.unwrap_or(0), 0)),
+            VaultData::Tracker(tracker) => Some((tracker.line_number, 0)),
         }
     }
 }

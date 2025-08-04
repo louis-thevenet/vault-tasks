@@ -109,14 +109,16 @@ mod tests {
 
     #[test]
     fn test_task_list() {
-        let test_vault = VaultData::Header(
-            0,
-            "Test".to_string(),
-            vec![
-                VaultData::Header(
-                    1,
-                    "1".to_string(),
-                    vec![
+        let test_vault = VaultData::Header {
+            line_number: 0,
+            header_depth: 0,
+            text: "Test".to_string(),
+            children: vec![
+                VaultData::Header {
+                    line_number: 1,
+                    header_depth: 1,
+                    text: "1".to_string(),
+                    children: vec![
                         VaultData::Task(Task {
                             name: "task 1".to_string(),
                             state: State::Done,
@@ -146,30 +148,39 @@ mod tests {
                             ],
                             ..Default::default()
                         }),
-                        VaultData::Header(
-                            2,
-                            "1.1".to_string(),
-                            vec![VaultData::Header(
-                                3,
-                                "1.1.1".to_string(),
-                                vec![VaultData::Task(Task {
+                        VaultData::Header {
+                            line_number: 2,
+                            header_depth: 2,
+                            text: "1.1".to_string(),
+                            children: vec![VaultData::Header {
+                                line_number: 3,
+                                header_depth: 3,
+                                text: "1.1.1".to_string(),
+                                children: vec![VaultData::Task(Task {
                                     name: "test 1.1.1".to_string(),
                                     description: Some("test\ndesc\n🥃".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
+                            }],
+                        },
                     ],
-                ),
-                VaultData::Header(
-                    1,
-                    "2".to_string(),
-                    vec![
-                        VaultData::Header(3, "2.1".to_string(), vec![]),
-                        VaultData::Header(
-                            2,
-                            "2.2".to_string(),
-                            vec![VaultData::Task(Task {
+                },
+                VaultData::Header {
+                    line_number: 1,
+                    header_depth: 1,
+                    text: "2".to_string(),
+                    children: vec![
+                        VaultData::Header {
+                            line_number: 3,
+                            header_depth: 3,
+                            text: "2.1".to_string(),
+                            children: vec![],
+                        },
+                        VaultData::Header {
+                            line_number: 2,
+                            header_depth: 2,
+                            text: "2.2".to_string(),
+                            children: vec![VaultData::Task(Task {
                                 name: "test 2.2".to_string(),
                                 description: Some("test\ndesc".to_string()),
                                 subtasks: vec![Task {
@@ -187,11 +198,11 @@ mod tests {
                                 }],
                                 ..Default::default()
                             })],
-                        ),
+                        },
                     ],
-                ),
+                },
             ],
-        );
+        };
 
         let mut config = Config::default();
 

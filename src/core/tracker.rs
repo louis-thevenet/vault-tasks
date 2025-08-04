@@ -156,13 +156,13 @@ impl Tracker {
             .map(str::to_owned)
             .collect::<Vec<String>>();
         for (n, new_line) in new_lines.iter().enumerate() {
-            if lines.len() <= self.line_number + n {
+            if lines.len() <= self.line_number - 1 + n {
                 lines.push(new_line.to_string());
             } else {
-                lines[n + self.line_number] = new_line.to_string();
+                lines[n + self.line_number - 1] = new_line.to_string();
             }
         }
-
+        lines.push("\n".to_owned());
         let mut file = File::create(path)?;
         file.write_all(lines.join("\n").as_bytes())?;
         Ok(())
