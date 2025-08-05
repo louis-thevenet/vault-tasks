@@ -51,6 +51,10 @@ async fn main() -> Result<()> {
             generate(shell, &mut Cli::command(), "vault-tasks", &mut io::stdout());
             Ok(())
         }
+        Some(cli::Commands::Fix) => {
+            TaskManager::load_from_config(&config.tasks_config)?;
+            Ok(())
+        }
         _ => {
             let mut app = App::new(&args)?;
             app.run().await

@@ -61,6 +61,8 @@ pub enum Commands {
         /// Tasks to create, use usual vault-tasks syntax
         tasks: Vec<String>,
     },
+    /// Fix your tasks without opening the TUI
+    Fix,
 }
 
 const VERSION_MESSAGE: &str = env!("CARGO_PKG_VERSION");
