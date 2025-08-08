@@ -18,7 +18,7 @@ lto = "thin"
 [workspace]
 resolver = "2"
 members = [
-  # "vault-tasks-core",
+  "vault-tasks-core",
   "vault-tasks-tui"
 ]
 default-members = [
