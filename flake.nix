@@ -30,7 +30,7 @@
             inherit system overlays;
           };
           cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
-          rustToolchain = pkgs.rust-bin.stable."1.87.0".default;
+          rustToolchain = pkgs.rust-bin.stable."1.89.0".default;
 
           rust-toolchain = pkgs.symlinkJoin {
             name = "rust-toolchain";
