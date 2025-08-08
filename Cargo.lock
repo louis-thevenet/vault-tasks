@@ -4080,7 +4080,7 @@ checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 
 [[package]]
 name = "vault-tasks"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "anyhow",
  "better-panic",
