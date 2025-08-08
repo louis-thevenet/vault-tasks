@@ -19,8 +19,8 @@ impl Home {
     }
 
     fn send_new_focused_tab_command(&self) {
-        if let Some(tx) = &self.command_tx {
-            if let Err(e) = tx.send(match self.selected_tab {
+        if let Some(tx) = &self.command_tx
+            && let Err(e) = tx.send(match self.selected_tab {
                 SelectedTab::Explorer => Action::Focus(Mode::Explorer),
                 SelectedTab::Filter => Action::Focus(Mode::Filter),
                 SelectedTab::TimeManagement => Action::Focus(Mode::TimeManagement),
@@ -28,7 +28,6 @@ impl Home {
             }) {
                 error!("Could not focus selected tab: {e}");
             }
-        }
     }
     pub fn next_tab(&mut self) {
         self.selected_tab = self.selected_tab.next();

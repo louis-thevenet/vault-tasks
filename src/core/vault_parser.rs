@@ -86,11 +86,10 @@ impl VaultParser {
                 let mut new_child = VaultData::Directory(name.to_string(), vec![]);
                 self.scan(&entry_path, &mut new_child)?;
 
-                if let VaultData::Directory(_, c) = &new_child {
-                    if !c.is_empty() {
+                if let VaultData::Directory(_, c) = &new_child
+                    && !c.is_empty() {
                         children.push(new_child);
                     }
-                }
             } else {
                 let ext = entry_path.extension().and_then(|s| s.to_str());
                 if ext.is_none_or(|e| !e.eq_ignore_ascii_case("md")) {

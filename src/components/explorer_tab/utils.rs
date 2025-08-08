@@ -39,8 +39,8 @@ impl ExplorerTab<'_> {
             .map(Self::vault_data_to_prefix_name)
             .collect::<Vec<(String, String)>>();
 
-        if let Some(entry) = res.first() {
-            if entry.0 == DIRECTORY_EMOJI || entry.0 == FILE_EMOJI {
+        if let Some(entry) = res.first()
+            && (entry.0 == DIRECTORY_EMOJI || entry.0 == FILE_EMOJI) {
                 res.sort_by(|a, b| {
                     if a.0 == DIRECTORY_EMOJI {
                         if b.0 == DIRECTORY_EMOJI {
@@ -55,7 +55,6 @@ impl ExplorerTab<'_> {
                     }
                 });
             }
-        }
         res
     }
     pub(super) fn get_preview_path(&self) -> Result<Vec<String>> {

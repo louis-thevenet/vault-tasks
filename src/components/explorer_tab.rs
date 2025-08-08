@@ -1,5 +1,5 @@
-use color_eyre::Result;
 use color_eyre::eyre::eyre;
+use color_eyre::Result;
 use crossterm::event::Event;
 use layout::Flex;
 use ratatui::prelude::*;
@@ -8,18 +8,18 @@ use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error, info};
 
 use crate::core::task::State;
-use tui_input::Input;
 use tui_input::backend::crossterm::EventHandler;
+use tui_input::Input;
 use tui_scrollview::ScrollViewState;
 use tui_widget_list::{ListBuilder, ListState, ListView};
 
 use super::Component;
 
 use crate::app::Mode;
-use crate::core::TaskManager;
 use crate::core::filter::parse_search_input;
 use crate::core::parser::task::parse_task;
 use crate::core::vault_data::VaultData;
+use crate::core::TaskManager;
 use crate::tui::Tui;
 use crate::widgets::help_menu::HelpMenu;
 use crate::widgets::input_bar::InputBar;
@@ -148,7 +148,7 @@ impl ExplorerTab<'_> {
 
         ListView::new(builder, item_count).block(surrounding_block)
     }
-    fn path_to_paragraph(&self) -> Paragraph {
+    fn path_to_paragraph(&self) -> Paragraph<'_> {
         Paragraph::new(
             self.current_path
                 .iter()
