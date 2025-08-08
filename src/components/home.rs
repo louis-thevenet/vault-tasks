@@ -25,9 +25,10 @@ impl Home {
                 SelectedTab::Filter => Action::Focus(Mode::Filter),
                 SelectedTab::TimeManagement => Action::Focus(Mode::TimeManagement),
                 SelectedTab::Calendar => Action::Focus(Mode::Calendar),
-            }) {
-                error!("Could not focus selected tab: {e}");
-            }
+            })
+        {
+            error!("Could not focus selected tab: {e}");
+        }
     }
     pub fn next_tab(&mut self) {
         self.selected_tab = self.selected_tab.next();

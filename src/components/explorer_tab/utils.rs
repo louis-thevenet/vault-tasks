@@ -40,21 +40,22 @@ impl ExplorerTab<'_> {
             .collect::<Vec<(String, String)>>();
 
         if let Some(entry) = res.first()
-            && (entry.0 == DIRECTORY_EMOJI || entry.0 == FILE_EMOJI) {
-                res.sort_by(|a, b| {
-                    if a.0 == DIRECTORY_EMOJI {
-                        if b.0 == DIRECTORY_EMOJI {
-                            a.1.cmp(&b.1)
-                        } else {
-                            Ordering::Less
-                        }
-                    } else if b.0 == DIRECTORY_EMOJI {
-                        Ordering::Greater
-                    } else {
+            && (entry.0 == DIRECTORY_EMOJI || entry.0 == FILE_EMOJI)
+        {
+            res.sort_by(|a, b| {
+                if a.0 == DIRECTORY_EMOJI {
+                    if b.0 == DIRECTORY_EMOJI {
                         a.1.cmp(&b.1)
+                    } else {
+                        Ordering::Less
                     }
-                });
-            }
+                } else if b.0 == DIRECTORY_EMOJI {
+                    Ordering::Greater
+                } else {
+                    a.1.cmp(&b.1)
+                }
+            });
+        }
         res
     }
     pub(super) fn get_preview_path(&self) -> Result<Vec<String>> {
