@@ -23,7 +23,7 @@ use ratatui::style::{Color, Modifier, Style};
 use serde::{Deserialize, de::Deserializer};
 use tracing::{debug, info};
 
-const CONFIG: &str = include_str!("../.config/config.toml");
+const CONFIG: &str = include_str!("../../.config/config.toml");
 
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct AppConfig {
