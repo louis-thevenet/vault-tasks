@@ -9,7 +9,8 @@ use std::{
 };
 use tracing::{debug, info};
 
-use crate::core::{PrettySymbolsConfig, TasksConfig};
+use crate::TasksConfig;
+use crate::config::PrettySymbolsConfig;
 
 use super::date::Date;
 
@@ -294,7 +295,7 @@ mod tests_tasks {
     use chrono::NaiveDate;
     use pretty_assertions::assert_eq;
 
-    use crate::core::{
+    use crate::{
         TasksConfig,
         task::{Date, State, Task},
     };
@@ -362,7 +363,7 @@ mod tests_tasks {
 #[cfg(test)]
 mod tests_due_date {
 
-    use crate::core::task::Date;
+    use crate::task::Date;
     use chrono::{Duration, Local};
 
     #[test]

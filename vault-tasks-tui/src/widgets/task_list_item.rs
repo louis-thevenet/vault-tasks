@@ -6,8 +6,7 @@ use ratatui::{
 };
 use ratskin::RatSkin;
 use tracing::error;
-
-use crate::core::{TasksConfig, task::Task, vault_data::VaultData};
+use vault_tasks_core::{config::TasksConfig, task::Task, tracker::Tracker, vault_data::VaultData};
 
 const HEADER_INDENT_RATIO: u16 = 3;
 
@@ -15,6 +14,7 @@ const HEADER_INDENT_RATIO: u16 = 3;
 pub struct TaskListItem {
     item: VaultData,
     pub height: u16,
+    // TODO: here we use stuff that should be in TUI and not core
     config: TasksConfig,
     max_width: u16,
     display_filename: bool,
@@ -154,7 +154,7 @@ impl TaskListItem {
             },
         )
     }
-    fn tracker_to_table(&self, tracker: &crate::core::tracker::Tracker) -> Table<'_> {
+    fn tracker_to_table(&self, tracker: &Tracker) -> Table<'_> {
         let header = [
             vec!["Dates".to_owned()],
             tracker.categories.iter().map(|c| c.name.clone()).collect(),
@@ -376,19 +376,16 @@ impl Widget for TaskListItem {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        core::{
-            date::Date,
-            task::{State, Task},
-            vault_data::VaultData,
-        },
-        widgets::task_list_item::TaskListItem,
-    };
     use chrono::NaiveDate;
     use insta::assert_snapshot;
     use ratatui::{Terminal, backend::TestBackend};
+    use vault_tasks_core::{
+        date::Date,
+        task::{State, Task},
+        vault_data::VaultData,
+    };
 
-    use crate::config::Config;
+    use crate::{config::Config, widgets::task_list_item::TaskListItem};
 
     #[test]
     fn test_task_list_item() {

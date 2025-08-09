@@ -1,4 +1,4 @@
-use crate::core::tracker::frequency::Frequency;
+use crate::tracker::frequency::Frequency;
 
 use winnow::{
     Parser, Result,

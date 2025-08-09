@@ -13,7 +13,7 @@ pub fn parse_today(input: &mut &str) -> Result<Token> {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::parser::task::{parse_today::parse_today, token::Token};
+    use crate::parser::task::{parse_today::parse_today, token::Token};
 
     #[test]
     fn test_parse_today_tag() {

@@ -9,7 +9,7 @@ use winnow::{
     token::{any, take_till, take_until, take_while},
 };
 
-use crate::core::{
+use crate::{
     TasksConfig,
     parser::tracker::{parse_entries, parse_header, parse_separator},
     task::Task,
@@ -782,7 +782,7 @@ mod tests {
 
     use super::ParserFileEntry;
 
-    use crate::core::{
+    use crate::{
         TasksConfig, parser::parser_file_entry::add_global_tag, task::Task, vault_data::VaultData,
     };
     #[test]

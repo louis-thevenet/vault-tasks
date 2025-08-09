@@ -4,7 +4,8 @@ use winnow::{
     token::any,
 };
 
-use crate::core::{TaskMarkerConfig, task::State};
+use crate::config::TaskMarkerConfig;
+use crate::task::State;
 
 use super::token::Token;
 
@@ -35,8 +36,8 @@ pub fn parse_task_state(input: &mut &str, task_marker_config: &TaskMarkerConfig)
 }
 #[cfg(test)]
 mod test {
-    use crate::core::{
-        TaskMarkerConfig,
+    use crate::{
+        config::TaskMarkerConfig,
         parser::task::{parser_state::parse_task_state, token::Token},
         task::State,
     };

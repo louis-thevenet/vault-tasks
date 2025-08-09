@@ -1,4 +1,4 @@
-use crate::core::TasksConfig;
+use crate::TasksConfig;
 
 use super::{
     date::Date,
@@ -235,7 +235,7 @@ pub fn filter(vault_data: &VaultData, task_filter: &Filter) -> Option<VaultData>
 mod tests {
     use chrono::NaiveDate;
 
-    use crate::core::{
+    use crate::{
         TasksConfig,
         date::Date,
         filter::{Filter, filter},

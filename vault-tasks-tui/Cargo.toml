@@ -50,6 +50,7 @@ time = "0.3.41"
 ratskin = "0.2.0"
 clap_complete = "4.5.55"
 tabled = "0.20.0"
+vault-tasks-core = {path = "../vault-tasks-core"}
 
 [dev-dependencies]
 insta = {version = "1.43.1", features = ["yaml"]}

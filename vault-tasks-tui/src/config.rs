@@ -10,8 +10,8 @@ use std::{
 use chrono::NaiveTime;
 use std::{fmt::Display, time::Duration};
 use strum::{EnumIter, FromRepr};
+use vault_tasks_core::config::{PrettySymbolsConfig, TasksConfig};
 
-use crate::core::{PrettySymbolsConfig, TasksConfig};
 use crate::widgets::timer::TimerWidget;
 use crate::{action::Action, app::Mode, cli::Cli};
 use color_eyre::{Result, eyre::bail};

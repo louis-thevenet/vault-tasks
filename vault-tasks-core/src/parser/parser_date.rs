@@ -172,7 +172,7 @@ pub fn parse_naive_date(input: &mut &str, american_format: bool) -> Result<Naive
 mod tests {
     use chrono::Datelike;
 
-    use crate::core::parser::parser_date::*;
+    use crate::parser::parser_date::*;
 
     #[test]
     fn test_parse_literal_day() {

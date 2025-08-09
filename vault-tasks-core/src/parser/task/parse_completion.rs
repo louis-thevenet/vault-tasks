@@ -13,7 +13,7 @@ pub fn parse_completion(input: &mut &str) -> Result<Token> {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::parser::task::{parse_completion::parse_completion, token::Token};
+    use crate::parser::task::{parse_completion::parse_completion, token::Token};
 
     #[test]
     fn test_parse_completion_success() {

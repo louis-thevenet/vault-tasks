@@ -1,6 +1,6 @@
-use crate::core::vault_data::VaultData;
 use ratatui::prelude::*;
 use tui_scrollview::{ScrollView, ScrollViewState};
+use vault_tasks_core::vault_data::VaultData;
 
 use crate::config::Config;
 
@@ -91,15 +91,15 @@ impl StatefulWidget for TaskList {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::{
-        date::Date,
-        task::{State, Task},
-        vault_data::VaultData,
-    };
     use chrono::NaiveDate;
     use insta::assert_snapshot;
     use ratatui::{Terminal, backend::TestBackend};
     use tui_scrollview::ScrollViewState;
+    use vault_tasks_core::{
+        date::Date,
+        task::{State, Task},
+        vault_data::VaultData,
+    };
 
     use crate::{config::Config, widgets::task_list::TaskList};
 

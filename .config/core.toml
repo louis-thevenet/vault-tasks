@@ -1,0 +1,40 @@
+[tasks_config]
+use_american_format = true
+show_relative_due_dates = true
+indent_length = 2
+parse_dot_files = false
+file_tags_propagation = true
+ignored = []
+# vault_path= "./test-vault" # default vault path when none is provided
+explorer_default_search_string = "- [ ] "
+filter_default_search_string = ""
+invert_tracker_entries = true
+completion_bar_length = 5
+tracker_extra_blanks = 3
+
+# Nice if your terminal font doesn't have emojis
+# pretty_symbols.task_done="[x]"
+# pretty_symbols.task_todo="[ ]"
+# pretty_symbols.task_incomplete="[/]"
+# pretty_symbols.task_canceled="[-]"
+# pretty_symbols.due_date="@"
+# pretty_symbols.priority="!"
+# pretty_symbols.today_tag="+"
+# pretty_symbols.progress_bar_true="="
+# pretty_symbols.progress_bar_false=" "
+
+pretty_symbols.task_done = "✅"
+pretty_symbols.task_todo = "❌"
+pretty_symbols.task_incomplete = "⏳"
+pretty_symbols.task_canceled = "🚫"
+pretty_symbols.due_date = "📅"
+pretty_symbols.priority = "❗"
+pretty_symbols.today_tag = "☀️"
+pretty_symbols.progress_bar_true = "🟩"
+pretty_symbols.progress_bar_false = "⬜️"
+
+task_state_markers.todo = ' '
+task_state_markers.done = 'x'
+task_state_markers.incomplete = '/'
+task_state_markers.canceled = '-'
+

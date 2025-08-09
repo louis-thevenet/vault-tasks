@@ -1,6 +1,6 @@
-use crate::core::task::Task;
+use crate::action::Action;
 use crate::tui::Tui;
-use crate::{action::Action, core::vault_data::VaultData};
+use vault_tasks_core::{task::Task, vault_data::VaultData};
 
 use super::{DIRECTORY_EMOJI, ExplorerTab, FILE_EMOJI, TRACKER_EMOJI};
 use color_eyre::Result;

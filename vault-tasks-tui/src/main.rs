@@ -1,4 +1,3 @@
-use core::TaskManager;
 use std::io;
 
 use clap::{CommandFactory, Parser};
@@ -6,6 +5,7 @@ use clap_complete::generate;
 use cli::Cli;
 use color_eyre::Result;
 use config::Config;
+use vault_tasks_core::TaskManager;
 
 use crate::app::App;
 
@@ -17,7 +17,6 @@ mod config;
 mod errors;
 mod logging;
 
-mod core;
 mod time_management;
 mod tui;
 mod widgets;

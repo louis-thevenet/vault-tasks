@@ -19,7 +19,7 @@ use winnow::{
     token::any,
 };
 
-use crate::core::{TasksConfig, date::Date, task::Task};
+use crate::{TasksConfig, date::Date, task::Task};
 
 use super::{
     parser_date::{self},
@@ -125,7 +125,7 @@ mod test {
 
     use chrono::{Datelike, Days, NaiveDate, NaiveDateTime, NaiveTime};
 
-    use crate::core::{
+    use crate::{
         TasksConfig,
         date::Date,
         parser::task::parse_task,

@@ -9,7 +9,7 @@ use winnow::{
 mod parse_frequency;
 
 use super::{parser_date, parser_time::parse_naive_time};
-use crate::core::{
+use crate::{
     TasksConfig,
     date::Date,
     tracker::{
@@ -190,7 +190,7 @@ pub fn parse_entries(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::{
+    use crate::{
         TasksConfig,
         date::Date,
         tracker::{

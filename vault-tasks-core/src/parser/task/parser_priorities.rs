@@ -13,10 +13,10 @@ pub fn parse_priority(input: &mut &str) -> Result<Token> {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::parser::task::{parser_priorities::parse_priority, token::Token};
+    use crate::parser::task::{parser_priorities::parse_priority, token::Token};
 
     #[test]
-    fn test_parse_priority_sucess() {
+    fn test_parse_priority_success() {
         let mut with_tag = "p5";
         assert_eq!(parse_priority(&mut with_tag), Ok(Token::Priority(5)));
     }

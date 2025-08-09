@@ -17,15 +17,15 @@ use crate::{
     action::Action,
     app::Mode,
     config::Config,
-    core::{
-        TaskManager,
-        date::Date,
-        filter::{Filter, filter_to_vec},
-        sorter::SortingMode,
-        task::{State, Task},
-        vault_data::VaultData,
-    },
     widgets::{help_menu::HelpMenu, styled_calendar::StyledCalendar, task_list::TaskList},
+};
+use vault_tasks_core::{
+    TaskManager,
+    date::Date,
+    filter::{Filter, filter_to_vec},
+    sorter::SortingMode,
+    task::{State, Task},
+    vault_data::VaultData,
 };
 
 use super::Component;

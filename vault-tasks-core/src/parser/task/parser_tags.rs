@@ -14,10 +14,10 @@ pub fn parse_tag(input: &mut &str) -> Result<Token> {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::parser::task::{parser_tags::parse_tag, token::Token};
+    use crate::parser::task::{parser_tags::parse_tag, token::Token};
 
     #[test]
-    fn test_parse_tag_sucess() {
+    fn test_parse_tag_success() {
         let mut with_tag = "#test";
         assert_eq!(parse_tag(&mut with_tag), Ok(Token::Tag("test".to_string())));
     }

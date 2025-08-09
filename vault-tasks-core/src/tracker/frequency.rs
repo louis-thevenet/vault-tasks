@@ -3,7 +3,7 @@ use chrono::{NaiveDate, NaiveDateTime, TimeDelta};
 use std::fmt::Display;
 use strum::{EnumIter, FromRepr};
 
-use crate::core::date::Date;
+use crate::date::Date;
 
 #[derive(Clone, Copy, FromRepr, EnumIter, Debug, PartialEq, Eq)]
 pub enum Frequency {
@@ -204,7 +204,7 @@ impl Frequency {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::date::Date;
+    use crate::date::Date;
     use chrono::{NaiveDate, NaiveDateTime};
 
     // Helper function to create a NaiveDateTime from date and time components

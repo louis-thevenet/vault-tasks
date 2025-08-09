@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::core::PrettySymbolsConfig;
+use crate::config::PrettySymbolsConfig;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScoreEntry {

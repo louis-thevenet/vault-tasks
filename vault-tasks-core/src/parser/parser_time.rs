@@ -17,7 +17,7 @@ pub fn parse_naive_time(input: &mut &str) -> Result<NaiveTime> {
 mod tests {
     use chrono::{NaiveTime, Timelike};
 
-    use crate::core::parser::parser_time::parse_naive_time;
+    use crate::parser::parser_time::parse_naive_time;
 
     #[test]
     fn test_parse_wrong_naive_time() {

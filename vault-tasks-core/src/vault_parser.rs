@@ -5,7 +5,7 @@ use std::{
 };
 use tracing::{debug, info};
 
-use crate::core::{TasksConfig, parser::parser_file_entry::ParserFileEntry};
+use crate::{TasksConfig, parser::parser_file_entry::ParserFileEntry};
 
 use super::{task::Task, vault_data::VaultData};
 
