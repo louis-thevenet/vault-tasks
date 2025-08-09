@@ -778,7 +778,7 @@ fn add_global_tag(file_entry: &mut VaultData, tag: &String) {
 #[cfg(test)]
 mod tests {
 
-    use insta::assert_snapshot;
+    use insta::{assert_snapshot, with_settings};
 
     use super::ParserFileEntry;
 

@@ -59,7 +59,7 @@ impl State {
 }
 impl Display for State {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let default_symbols = PrettySymbolsConfig::default();
+        let default_symbols = TasksConfig::default().pretty_symbols.clone();
         write!(f, "{}", self.display(default_symbols))?;
         Ok(())
     }
@@ -104,7 +104,7 @@ impl Default for Task {
 
 impl fmt::Display for Task {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let default_symbols = PrettySymbolsConfig::default();
+        let default_symbols = PrettySymbolsConfig::default(); // TODO: that's bad, shouldn't use this default since it's empty!
         let state = self.state.to_string();
         let title = format!("{state} {}", self.name);
         writeln!(f, "{title}")?;

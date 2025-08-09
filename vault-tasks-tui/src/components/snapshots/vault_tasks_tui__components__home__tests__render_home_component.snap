@@ -1,6 +1,5 @@
 ---
 source: vault-tasks-tui/src/components/home.rs
-assertion_line: 161
 expression: terminal.backend()
 ---
 "  Explorer     Filter     Calendar     Time Management                          "

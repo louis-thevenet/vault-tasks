@@ -1,6 +1,5 @@
 ---
 source: vault-tasks-tui/src/widgets/task_list.rs
-assertion_line: 206
 expression: terminal.backend()
 ---
 "Test────────────────────────────────────"

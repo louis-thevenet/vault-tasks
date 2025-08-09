@@ -1,6 +1,5 @@
 ---
 source: vault-tasks-tui/src/widgets/task_list_item.rs
-assertion_line: 444
 expression: terminal.backend()
 ---
 "┌✅ task with a very long title that should wrap ┐" Hidden by multi-width symbols: [(2, " ")]

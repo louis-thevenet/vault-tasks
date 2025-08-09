@@ -1,0 +1,16 @@
+---
+source: vault-tasks-core/src/sorter.rs
+description: ""
+expression: tasks
+info:
+  - " test"
+  - " test"
+  - " test"
+  - " test"
+---
+[
+    "  - [/] test",
+    "  - [ ] test",
+    "  - [-] test",
+    "  - [x] test",
+]

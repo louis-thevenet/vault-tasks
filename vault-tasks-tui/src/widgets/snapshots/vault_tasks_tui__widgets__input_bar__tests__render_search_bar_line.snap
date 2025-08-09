@@ -1,6 +1,5 @@
 ---
 source: vault-tasks-tui/src/widgets/input_bar.rs
-assertion_line: 86
 expression: terminal.backend()
 ---
 "                                                                                "
