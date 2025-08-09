@@ -104,7 +104,7 @@ pub struct TasksConfig {
     #[serde(default)]
     pub pretty_symbols: PrettySymbolsConfig,
     #[serde(default)]
-    pub task_state_markers: TaskMarkerConfig,
+    pub(crate) task_state_markers: TaskMarkerConfig,
 }
 
 impl Default for TasksConfig {

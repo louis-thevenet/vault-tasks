@@ -10,7 +10,7 @@ use std::{
 use chrono::NaiveTime;
 use std::{fmt::Display, time::Duration};
 use strum::{EnumIter, FromRepr};
-use vault_tasks_core::config::{PrettySymbolsConfig, ProtoConfig, TasksConfig};
+use vault_tasks_core::config::{ProtoConfig, TasksConfig};
 
 use crate::widgets::timer::TimerWidget;
 use crate::{action::Action, app::Mode, cli::Cli};
