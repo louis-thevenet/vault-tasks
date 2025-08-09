@@ -1,5 +1,6 @@
 ---
 source: vault-tasks-tui/src/widgets/input_bar.rs
+assertion_line: 57
 expression: terminal.backend()
 ---
 "┌test──────────────────────────────────────────────────────────────────────────┐"

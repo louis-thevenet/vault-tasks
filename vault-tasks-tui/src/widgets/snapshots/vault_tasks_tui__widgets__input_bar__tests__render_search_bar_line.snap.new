@@ -1,8 +1,8 @@
 ---
-source: src/components/home.rs
+source: vault-tasks-tui/src/widgets/input_bar.rs
+assertion_line: 86
 expression: terminal.backend()
 ---
-"  Explorer     Filter     Calendar     Time Management                          "
 "                                                                                "
 "                                                                                "
 "                                                                                "
@@ -11,6 +11,10 @@ expression: terminal.backend()
 "                                                                                "
 "                                                                                "
 "                                                                                "
+"                ┌test──────────────────────────────────────────┐                "
+"                │initial                                       │                "
+"                │                                              │                "
+"                └──────────────────────────────────────────────┘                "
 "                                                                                "
 "                                                                                "
 "                                                                                "
@@ -19,6 +23,3 @@ expression: terminal.backend()
 "                                                                                "
 "                                                                                "
 "                                                                                "
-"                                                                                "
-"                                                                                "
-"                 Change tab: Shift+<hl|◄►> | Quit: q | Help: ?                  "
