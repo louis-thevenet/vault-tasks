@@ -15,6 +15,7 @@ use crate::config::{CoreConfig, PrettySymbolsConfig};
 use super::date::Date;
 
 /// A task's state
+///
 /// Ordering is `Todo < Done`
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum State {

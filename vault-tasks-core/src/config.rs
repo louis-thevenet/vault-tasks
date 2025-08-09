@@ -16,12 +16,12 @@ const CONFIG: &str = include_str!("../../.config/core.toml");
 const CONFIG_FILE_NAME: &str = "core";
 
 lazy_static! {
-    pub static ref PROJECT_NAME: String = env!("CARGO_CRATE_NAME").to_uppercase();
-    pub static ref DATA_FOLDER: Option<PathBuf> =
+    pub(crate) static ref PROJECT_NAME: String = env!("CARGO_CRATE_NAME").to_uppercase();
+    pub(crate) static ref DATA_FOLDER: Option<PathBuf> =
         env::var(format!("{}_DATA", PROJECT_NAME.clone()))
             .ok()
             .map(PathBuf::from);
-    pub static ref CONFIG_FOLDER: Option<PathBuf> =
+    pub(crate) static ref CONFIG_FOLDER: Option<PathBuf> =
         env::var(format!("{}_CONFIG", PROJECT_NAME.clone()))
             .ok()
             .map(PathBuf::from);
@@ -102,9 +102,9 @@ pub struct TasksConfig {
     #[serde(default)]
     pub display: DisplayConfig,
     #[serde(default)]
-    pub task_state_markers: TaskMarkerConfig,
-    #[serde(default)]
     pub pretty_symbols: PrettySymbolsConfig,
+    #[serde(default)]
+    pub task_state_markers: TaskMarkerConfig,
 }
 
 impl Default for TasksConfig {
@@ -300,7 +300,7 @@ impl TasksConfig {
     }
 }
 
-pub fn get_data_dir() -> PathBuf {
+pub(crate) fn get_data_dir() -> PathBuf {
     DATA_FOLDER.clone().map_or(
         {
             project_directory().map_or_else(
@@ -312,7 +312,7 @@ pub fn get_data_dir() -> PathBuf {
     )
 }
 
-pub fn get_config_dir() -> PathBuf {
+pub(crate) fn get_config_dir() -> PathBuf {
     CONFIG_FOLDER.clone().map_or_else(
         || {
             project_directory().map_or_else(
