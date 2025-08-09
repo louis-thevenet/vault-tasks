@@ -37,22 +37,8 @@ async fn main() -> Result<()> {
             println!("{}", task_mgr.tasks);
             Ok(())
         }
-        Some(cli::Commands::NewTask {
-            tasks,
-            filename: filename_opt,
-        }) => {
-            let mut task_mgr = TaskManager::load_from_config(&config.core)?;
-            tasks
-                .iter()
-                .for_each(|task| task_mgr.add_task(task, filename_opt.clone()));
-            Ok(())
-        }
         Some(cli::Commands::GenerateCompletions { shell }) => {
             generate(shell, &mut Cli::command(), "vault-tasks", &mut io::stdout());
-            Ok(())
-        }
-        Some(cli::Commands::Fix) => {
-            TaskManager::load_from_config(&config.core)?;
             Ok(())
         }
         _ => {
