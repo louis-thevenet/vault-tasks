@@ -203,7 +203,7 @@ impl Task {
         };
 
         let due_date = if let Some(due_date) = &self.due_date {
-            due_date.to_string_format(!config.use_american_format)
+            due_date.to_string_format(!config.core.use_american_format)
         } else {
             String::new()
         };
@@ -303,7 +303,6 @@ mod tests_tasks {
     #[test]
     fn test_fix_attributes() {
         let config = TasksConfig {
-            use_american_format: true,
             ..Default::default()
         };
         let task = Task {

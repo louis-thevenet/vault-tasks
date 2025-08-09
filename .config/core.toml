@@ -1,15 +1,20 @@
-use_american_format = true
-show_relative_due_dates = true
-indent_length = 2
-parse_dot_files = false
-file_tags_propagation = true
-ignored = []
-# vault_path= "./test-vault" # default vault path when none is provided
 explorer_default_search_string = "- [ ] "
 filter_default_search_string = ""
 invert_tracker_entries = true
 completion_bar_length = 5
+
+[core]
+parse_dot_files = false
+file_tags_propagation = true
+ignored = []
+# vault_path= "./test-vault" # default vault path when none is provided
+use_american_format = true
+indent_length = 2
 tracker_extra_blanks = 3
+
+[display]
+show_relative_due_dates = true
+
 
 [task_state_markers]
 todo = ' '

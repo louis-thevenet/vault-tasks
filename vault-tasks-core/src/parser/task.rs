@@ -31,7 +31,7 @@ fn parse_token(input: &mut &str, config: &TasksConfig) -> Result<Token> {
     alt((
         // |input: &mut &str| (parse_naive_date(input, config.use_american_format)),
         |input: &mut &str| {
-            let date = parser_date::parse_naive_date(input, config.use_american_format)?;
+            let date = parser_date::parse_naive_date(input, config.core.use_american_format)?;
             Ok(Token::DueDate(date))
         },
         |input: &mut &str| {
@@ -135,7 +135,6 @@ mod test {
     fn test_parse_task_no_description() {
         let mut input = "- [x] 10/15 task_name #done";
         let config = TasksConfig {
-            use_american_format: true,
             ..Default::default()
         };
         let res = parse_task(&mut input, String::new(), &config);

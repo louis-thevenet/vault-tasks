@@ -103,7 +103,6 @@ mod tests {
             "- [ ] abc",
         ];
         let config = TasksConfig {
-            use_american_format: true,
             ..Default::default()
         };
         let mut tasks: Vec<Task> = source
@@ -143,7 +142,6 @@ mod tests {
             "- [ ] abc",
         ];
         let config = TasksConfig {
-            use_american_format: true,
             ..Default::default()
         };
         let mut tasks: Vec<Task> = source
@@ -170,7 +168,6 @@ mod tests {
     fn task_sort_states() {
         let mut source = ["- [ ] test", "- [x] test", "- [/] test", "- [-] test"];
         let config = TasksConfig {
-            use_american_format: true,
             ..Default::default()
         };
         let mut tasks: Vec<Task> = source

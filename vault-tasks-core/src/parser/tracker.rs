@@ -32,7 +32,7 @@ pub fn parse_tracker_definition(input: &mut &str, config: &TasksConfig) -> Resul
 
 fn parse_date(config: &TasksConfig, input: &mut &str) -> Result<Date, winnow::error::ContextError> {
     // Parse the date first
-    let start_date = parser_date::parse_naive_date(input, config.use_american_format)?;
+    let start_date = parser_date::parse_naive_date(input, config.core.use_american_format)?;
     // Try to parse optional time after the date
     let start_time_opt = opt(preceded(space0, parse_naive_time)).parse_next(input)?;
 
@@ -203,7 +203,6 @@ mod tests {
 
     fn default_config() -> TasksConfig {
         TasksConfig {
-            use_american_format: true,
             ..Default::default()
         }
     }

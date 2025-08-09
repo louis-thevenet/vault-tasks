@@ -544,7 +544,7 @@ impl ParserFileEntry<'_> {
                         file_entry,
                         task,
                         header_depth,
-                        indent_length / self.config.indent_length,
+                        indent_length / self.config.core.indent_length,
                     )
                     .is_err()
                     {
@@ -580,7 +580,7 @@ impl ParserFileEntry<'_> {
                         file_entry,
                         description.clone(),
                         header_depth,
-                        indent_length / self.config.indent_length,
+                        indent_length / self.config.core.indent_length,
                     )
                     .is_err()
                     {
@@ -711,7 +711,7 @@ impl ParserFileEntry<'_> {
                 }
                 *children = actual_children;
                 // If the `config.tasks_drop_file` happens to be empty, don't drop it
-                if children.is_empty() && name != &self.config.tasks_drop_file {
+                if children.is_empty() && name != &self.config.core.tasks_drop_file {
                     return None;
                 }
             }
@@ -735,7 +735,7 @@ impl ParserFileEntry<'_> {
             false,
         );
 
-        if self.config.file_tags_propagation {
+        if self.config.core.file_tags_propagation {
             file_tags.iter().for_each(|t| add_global_tag(&mut res, t));
         }
 
@@ -803,7 +803,6 @@ mod tests {
         .peekable();
 
         let config = TasksConfig {
-            indent_length: 2,
             ..Default::default()
         };
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
@@ -886,7 +885,6 @@ mod tests {
         .peekable();
 
         let config = TasksConfig {
-            indent_length: 2,
             ..Default::default()
         };
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
@@ -961,7 +959,6 @@ mod tests {
         .peekable();
 
         let config = TasksConfig {
-            indent_length: 2,
             ..Default::default()
         };
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
@@ -987,7 +984,6 @@ mod tests {
         .peekable();
 
         let config = TasksConfig {
-            indent_length: 2,
             ..Default::default()
         };
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
@@ -1027,7 +1023,6 @@ mod tests {
         .peekable();
 
         let config = TasksConfig {
-            indent_length: 2,
             ..Default::default()
         };
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
@@ -1092,7 +1087,6 @@ mod tests {
         .peekable();
 
         let config = TasksConfig {
-            indent_length: 2,
             ..Default::default()
         };
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
@@ -1118,7 +1112,6 @@ mod tests {
         .peekable();
 
         let config = TasksConfig {
-            indent_length: 2,
             ..Default::default()
         };
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
@@ -1142,7 +1135,6 @@ mod tests {
         .peekable();
 
         let config = TasksConfig {
-            indent_length: 2,
             ..Default::default()
         };
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);

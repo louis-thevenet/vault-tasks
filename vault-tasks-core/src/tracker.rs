@@ -146,7 +146,7 @@ impl Tracker {
             bail!("Tried to fix tasks attributes but {path:?} is not a file");
         }
         let new_lines = self
-            .fmt(config.use_american_format)
+            .fmt(config.core.use_american_format)
             .split('\n')
             .map(str::to_owned)
             .collect::<Vec<String>>();

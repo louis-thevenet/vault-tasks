@@ -19,9 +19,9 @@ impl VaultParser {
     }
     pub fn scan_vault(&self) -> Result<VaultData> {
         let mut tasks =
-            VaultData::Directory(self.config.vault_path.to_str().unwrap().to_owned(), vec![]);
-        info!("Scanning {:?}", self.config.vault_path);
-        self.scan(&self.config.vault_path, &mut tasks)?;
+            VaultData::Directory(self.config.core.vault_path.to_str().unwrap().to_owned(), vec![]);
+        info!("Scanning {:?}", self.config.core.vault_path);
+        self.scan(&self.config.core.vault_path, &mut tasks)?;
         Ok(tasks)
     }
     pub fn parse_single_task(&self, task: &str, filename: &str) -> Result<Task> {
@@ -59,7 +59,7 @@ impl VaultParser {
     }
 
     fn scan(&self, path: &Path, tasks: &mut VaultData) -> Result<()> {
-        if self.config.ignored.contains(&path.to_path_buf()) {
+        if self.config.core.ignored.contains(&path.to_path_buf()) {
             debug!("Ignoring {path:?} (ignored list)");
             return Ok(());
         }
@@ -69,11 +69,11 @@ impl VaultParser {
             let name = file_name.to_string_lossy();
             let entry_path = entry.path();
 
-            if !self.config.parse_dot_files && name.starts_with('.') {
+            if !self.config.core.parse_dot_files && name.starts_with('.') {
                 debug!("Ignoring {name:?} (dot file)");
                 continue;
             }
-            if self.config.ignored.contains(&entry_path) {
+            if self.config.core.ignored.contains(&entry_path) {
                 debug!("Ignoring {name:?} (ignored list)");
                 continue;
             }

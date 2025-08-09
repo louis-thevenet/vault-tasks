@@ -70,8 +70,10 @@ pub struct PrettySymbolsConfig {
     #[serde(default)]
     pub progress_bar_false: String,
 }
-#[derive(Clone, Debug, Deserialize)]
-pub struct TasksConfig {
+#[derive(Clone, Debug, Deserialize, Default)]
+pub struct CoreConfig {
+    #[serde(default)]
+    pub vault_path: PathBuf,
     #[serde(default)]
     pub parse_dot_files: bool,
     #[serde(default)]
@@ -83,21 +85,30 @@ pub struct TasksConfig {
     #[serde(default)]
     pub use_american_format: bool,
     #[serde(default)]
-    pub show_relative_due_dates: bool,
-    #[serde(default)]
-    pub completion_bar_length: usize,
-    #[serde(default)]
-    pub vault_path: PathBuf,
-    #[serde(default)]
     pub tasks_drop_file: String,
+}
+#[derive(Clone, Debug, Deserialize, Default)]
+pub struct DisplayConfig {
     #[serde(default)]
-    pub explorer_default_search_string: String,
+    pub show_relative_due_dates: bool,
+}
+#[derive(Clone, Debug, Deserialize)]
+pub struct TasksConfig {
     #[serde(default)]
-    pub filter_default_search_string: String,
+    pub core: CoreConfig,
+    #[serde(default)]
+    pub display: DisplayConfig,
     #[serde(default)]
     pub task_state_markers: TaskMarkerConfig,
     #[serde(default)]
     pub pretty_symbols: PrettySymbolsConfig,
+    ////////
+    #[serde(default)]
+    pub completion_bar_length: usize,
+    #[serde(default)]
+    pub explorer_default_search_string: String,
+    #[serde(default)]
+    pub filter_default_search_string: String,
     #[serde(default)]
     pub tracker_extra_blanks: usize,
     #[serde(default)]
@@ -108,7 +119,7 @@ impl Default for TasksConfig {
     fn default() -> Self {
         let mut config: Self = toml::from_str(CONFIG).unwrap();
         if cfg!(test) {
-            config.vault_path = PathBuf::from("./test-vault");
+            config.core.vault_path = PathBuf::from("./test-vault");
         }
         config
     }
@@ -172,7 +183,7 @@ impl TasksConfig {
         cfg = Self::merge_tasks_config(cfg, default_config);
 
         if let Some(path) = &params.vault_path {
-            cfg.vault_path.clone_from(path);
+            cfg.core.vault_path.clone_from(path);
         }
 
         Ok(cfg)
@@ -180,34 +191,39 @@ impl TasksConfig {
 
     fn merge_tasks_config(user_config: TasksConfig, default_config: TasksConfig) -> TasksConfig {
         TasksConfig {
-            parse_dot_files: user_config.parse_dot_files,
-            file_tags_propagation: user_config.file_tags_propagation,
-            ignored: if user_config.ignored.is_empty() {
-                default_config.ignored
-            } else {
-                user_config.ignored
+            core: CoreConfig {
+                parse_dot_files: user_config.core.parse_dot_files,
+                file_tags_propagation: user_config.core.file_tags_propagation,
+                ignored: if user_config.core.ignored.is_empty() {
+                    default_config.core.ignored
+                } else {
+                    user_config.core.ignored
+                },
+                indent_length: if user_config.core.indent_length == 0 {
+                    default_config.core.indent_length
+                } else {
+                    user_config.core.indent_length
+                },
+                use_american_format: user_config.core.use_american_format,
+
+                vault_path: if user_config.core.vault_path == PathBuf::new() {
+                    default_config.core.vault_path
+                } else {
+                    user_config.core.vault_path
+                },
+                tasks_drop_file: if user_config.core.tasks_drop_file.is_empty() {
+                    default_config.core.tasks_drop_file
+                } else {
+                    user_config.core.tasks_drop_file
+                },
             },
-            indent_length: if user_config.indent_length == 0 {
-                default_config.indent_length
-            } else {
-                user_config.indent_length
+            display: DisplayConfig {
+                show_relative_due_dates: user_config.display.show_relative_due_dates,
             },
-            use_american_format: user_config.use_american_format,
-            show_relative_due_dates: user_config.show_relative_due_dates,
             completion_bar_length: if user_config.completion_bar_length == 0 {
                 default_config.completion_bar_length
             } else {
                 user_config.completion_bar_length
-            },
-            vault_path: if user_config.vault_path == PathBuf::new() {
-                default_config.vault_path
-            } else {
-                user_config.vault_path
-            },
-            tasks_drop_file: if user_config.tasks_drop_file.is_empty() {
-                default_config.tasks_drop_file
-            } else {
-                user_config.tasks_drop_file
             },
             explorer_default_search_string: if user_config.explorer_default_search_string.is_empty()
             {
