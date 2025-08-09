@@ -21,7 +21,7 @@ pub struct HelpMenu<'a> {
 impl HelpMenu<'_> {
     fn get_keys_for_action(config: &Config, app_mode: Mode, action: &Action) -> String {
         config
-            .config
+            .tui
             .keybindings
             .get(&app_mode)
             .unwrap()
@@ -43,7 +43,7 @@ impl HelpMenu<'_> {
     }
     pub fn new(app_mode: Mode, config: &Config) -> Self {
         let mut action_set = HashSet::<Action>::new();
-        for kb in config.config.keybindings.get(&app_mode).unwrap().values() {
+        for kb in config.tui.keybindings.get(&app_mode).unwrap().values() {
             action_set.insert(kb.clone());
         }
         let mut action_vec = action_set.iter().collect::<Vec<&Action>>();

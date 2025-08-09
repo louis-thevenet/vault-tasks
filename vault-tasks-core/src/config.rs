@@ -86,6 +86,8 @@ pub struct CoreConfig {
     pub use_american_format: bool,
     #[serde(default)]
     pub tasks_drop_file: String,
+    #[serde(default)]
+    pub tracker_extra_blanks: usize,
 }
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct DisplayConfig {
@@ -102,17 +104,6 @@ pub struct TasksConfig {
     pub task_state_markers: TaskMarkerConfig,
     #[serde(default)]
     pub pretty_symbols: PrettySymbolsConfig,
-    ////////
-    #[serde(default)]
-    pub completion_bar_length: usize,
-    #[serde(default)]
-    pub explorer_default_search_string: String,
-    #[serde(default)]
-    pub filter_default_search_string: String,
-    #[serde(default)]
-    pub tracker_extra_blanks: usize,
-    #[serde(default)]
-    pub invert_tracker_entries: bool,
 }
 
 impl Default for TasksConfig {
@@ -216,37 +207,21 @@ impl TasksConfig {
                 } else {
                     user_config.core.tasks_drop_file
                 },
+                tracker_extra_blanks: if user_config.core.tracker_extra_blanks == 0 {
+                    default_config.core.tracker_extra_blanks
+                } else {
+                    user_config.core.tracker_extra_blanks
+                },
             },
+
             display: DisplayConfig {
                 show_relative_due_dates: user_config.display.show_relative_due_dates,
-            },
-            completion_bar_length: if user_config.completion_bar_length == 0 {
-                default_config.completion_bar_length
-            } else {
-                user_config.completion_bar_length
-            },
-            explorer_default_search_string: if user_config.explorer_default_search_string.is_empty()
-            {
-                default_config.explorer_default_search_string
-            } else {
-                user_config.explorer_default_search_string
-            },
-            filter_default_search_string: if user_config.filter_default_search_string.is_empty() {
-                default_config.filter_default_search_string
-            } else {
-                user_config.filter_default_search_string
             },
             task_state_markers: user_config.task_state_markers,
             pretty_symbols: Self::merge_pretty_symbols_config(
                 user_config.pretty_symbols,
                 default_config.pretty_symbols,
             ),
-            tracker_extra_blanks: if user_config.tracker_extra_blanks == 0 {
-                default_config.tracker_extra_blanks
-            } else {
-                user_config.tracker_extra_blanks
-            },
-            invert_tracker_entries: user_config.invert_tracker_entries,
         }
     }
 

@@ -228,7 +228,8 @@ impl ExplorerTab<'_> {
             if self.search_bar_widget.is_focused {
                 *self
                     .config
-                    .config.styles
+                    .tui
+                    .styles
                     .get(&crate::app::Mode::Home)
                     .unwrap()
                     .get("highlighted_bar_style")
@@ -293,7 +294,8 @@ impl ExplorerTab<'_> {
             Block::bordered().title("Edit").style(
                 *self
                     .config
-                    .config.styles
+                    .tui
+                    .styles
                     .get(&crate::app::Mode::Home)
                     .unwrap()
                     .get("highlighted_bar_style")
@@ -306,7 +308,7 @@ impl ExplorerTab<'_> {
     fn edit_selected_task_state(&mut self, new_state: State) -> Result<()> {
         if let Some(mut task) = self.get_selected_task() {
             task.state = new_state;
-            task.fix_task_attributes(&self.config.tasks_config, &self.get_current_path_to_file())?;
+            task.fix_task_attributes(&self.config.core, &self.get_current_path_to_file())?;
             return Ok(());
         }
         Err(eyre!("No selected task"))
@@ -315,7 +317,7 @@ impl ExplorerTab<'_> {
     #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
     fn edit_selected_task_completion(&mut self, action: &Action) -> Result<()> {
         if let Some(mut task) = self.get_selected_task() {
-            let length = self.config.tasks_config.completion_bar_length as isize;
+            let length = self.config.tui.settings.completion_bar_length as isize;
             let diff = match action {
                 Action::IncreaseCompletion => length,
                 Action::DecreaseCompletion => -length,
@@ -333,7 +335,7 @@ impl ExplorerTab<'_> {
                 None if diff > 0 => Some(diff.unsigned_abs()),
                 None => None,
             };
-            task.fix_task_attributes(&self.config.tasks_config, &self.get_current_path_to_file())?;
+            task.fix_task_attributes(&self.config.core, &self.get_current_path_to_file())?;
             return Ok(());
         }
         Err(eyre!("No selected task"))
@@ -347,18 +349,19 @@ impl Component for ExplorerTab<'_> {
     }
 
     fn register_config_handler(&mut self, config: Config) -> Result<()> {
-        self.task_mgr = TaskManager::load_from_config(&config.tasks_config)?;
+        self.task_mgr = TaskManager::load_from_config(&config.core)?;
         self.config = config;
         self.help_menu_widget = HelpMenu::new(Mode::Explorer, &self.config);
         self.search_bar_widget.input = self.search_bar_widget.input.clone().with_value(
             self.config
-                .tasks_config
+                .tui
+                .settings
                 .explorer_default_search_string
                 .clone(),
         );
         self.task_mgr.current_filter = Some(parse_search_input(
             self.search_bar_widget.input.value(),
-            &self.config.tasks_config,
+            &self.config.core,
         ));
         self.update_entries()?;
         self.state_center_view.selected = Some(0);
@@ -384,7 +387,7 @@ impl Component for ExplorerTab<'_> {
                     self.is_focused = true;
                 }
                 Action::ReloadVault => {
-                    self.task_mgr.reload(&self.config.tasks_config)?;
+                    self.task_mgr.reload(&self.config.core)?;
                     self.update_entries()?;
                 }
                 _ => (),
@@ -412,7 +415,7 @@ impl Component for ExplorerTab<'_> {
                                 .to_str()
                                 .unwrap()
                                 .to_string(),
-                            &self.config.tasks_config,
+                            &self.config.core,
                         ) else {
                             // Don't accept invalid input
                             return Ok(None);
@@ -420,7 +423,7 @@ impl Component for ExplorerTab<'_> {
                         // Write changes
                         parsed_task.line_number = task.line_number;
                         parsed_task.fix_task_attributes(
-                            &self.config.tasks_config,
+                            &self.config.core,
                             &self.get_current_path_to_file(),
                         )?;
                         // Quit editing mode
@@ -454,7 +457,7 @@ impl Component for ExplorerTab<'_> {
                     // Update search input in TaskManager
                     self.task_mgr.current_filter = Some(parse_search_input(
                         self.search_bar_widget.input.value(),
-                        &self.config.tasks_config,
+                        &self.config.core,
                     ));
                     self.update_entries()?;
                 }
@@ -505,7 +508,7 @@ impl Component for ExplorerTab<'_> {
                 Action::Edit => {
                     if let Some(task) = self.get_selected_task() {
                         self.edit_task_bar.input =
-                            Input::new(task.get_fixed_attributes(&self.config.tasks_config, 0));
+                            Input::new(task.get_fixed_attributes(&self.config.core, 0));
                         self.edit_task_bar.is_focused = !self.edit_task_bar.is_focused;
                     } else {
                         info!("Only tasks can be edited");
@@ -535,7 +538,7 @@ impl Component for ExplorerTab<'_> {
                 Action::Help => self.show_help = !self.show_help,
                 Action::Open => self.open_current_file(tui)?,
                 Action::ReloadVault => {
-                    self.task_mgr.reload(&self.config.tasks_config)?;
+                    self.task_mgr.reload(&self.config.core)?;
                     self.update_entries()?;
                 }
                 _ => (),
@@ -565,7 +568,7 @@ impl Component for ExplorerTab<'_> {
 
         let highlighted_style = *self
             .config
-            .config
+            .tui
             .styles
             .get(&crate::app::Mode::Home)
             .unwrap()

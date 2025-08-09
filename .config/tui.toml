@@ -1,3 +1,9 @@
+[settings]
+explorer_default_search_string = "- [ ] "
+filter_default_search_string = ""
+invert_tracker_entries = true
+completion_bar_length = 5
+
 [keybindings.Calendar]
 # App
 "<q>" = "Quit"

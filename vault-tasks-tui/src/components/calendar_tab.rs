@@ -345,7 +345,7 @@ impl CalendarTab<'_> {
 }
 impl Component for CalendarTab<'_> {
     fn register_config_handler(&mut self, config: Config) -> color_eyre::eyre::Result<()> {
-        self.task_mgr = TaskManager::load_from_config(&config.tasks_config)?;
+        self.task_mgr = TaskManager::load_from_config(&config.core)?;
         self.config = config;
 
         self.update_tasks();
@@ -362,7 +362,7 @@ impl Component for CalendarTab<'_> {
         if !self.is_focused {
             match action {
                 Action::ReloadVault => {
-                    self.task_mgr.reload(&self.config.tasks_config)?;
+                    self.task_mgr.reload(&self.config.core)?;
                     self.update_tasks();
                     self.updated_date();
                 }
@@ -389,7 +389,7 @@ impl Component for CalendarTab<'_> {
                     self.updated_date();
                 }
                 Action::ReloadVault => {
-                    self.task_mgr.reload(&self.config.tasks_config)?;
+                    self.task_mgr.reload(&self.config.core)?;
                     self.update_tasks();
                     self.updated_date();
                 }

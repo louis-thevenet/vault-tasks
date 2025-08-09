@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
     match args.command {
         Some(cli::Commands::GenerateConfig { path }) => Config::generate_config(path),
         Some(cli::Commands::Stdout) => {
-            let task_mgr = TaskManager::load_from_config(&config.tasks_config)?;
+            let task_mgr = TaskManager::load_from_config(&config.core)?;
             println!("{}", task_mgr.tasks);
             Ok(())
         }
@@ -41,7 +41,7 @@ async fn main() -> Result<()> {
             tasks,
             filename: filename_opt,
         }) => {
-            let mut task_mgr = TaskManager::load_from_config(&config.tasks_config)?;
+            let mut task_mgr = TaskManager::load_from_config(&config.core)?;
             tasks
                 .iter()
                 .for_each(|task| task_mgr.add_task(task, filename_opt.clone()));
@@ -52,7 +52,7 @@ async fn main() -> Result<()> {
             Ok(())
         }
         Some(cli::Commands::Fix) => {
-            TaskManager::load_from_config(&config.tasks_config)?;
+            TaskManager::load_from_config(&config.core)?;
             Ok(())
         }
         _ => {

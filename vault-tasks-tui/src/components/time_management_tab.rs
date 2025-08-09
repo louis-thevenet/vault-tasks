@@ -123,7 +123,7 @@ impl TimeManagementTab<'_> {
     /// Retrieve a settings value from its key.
     fn find_settings_value(&self, method: MethodsAvailable, key: &str) -> MethodSettingsValue {
         self.config
-            .config
+            .tui
             .time_management_methods_settings
             .get(&method)
             .unwrap()
@@ -206,7 +206,7 @@ impl Component for TimeManagementTab<'_> {
         self.help_menu_widget = HelpMenu::new(Mode::TimeManagement, &self.config);
         if self
             .config
-            .config
+            .tui
             .time_management_methods_settings
             .is_empty()
         {
@@ -241,7 +241,7 @@ impl Component for TimeManagementTab<'_> {
                     );
                     let Some(settings) = self
                         .config
-                        .config
+                        .tui
                         .time_management_methods_settings
                         .get(&selected_method.unwrap())
                     else {
@@ -259,7 +259,7 @@ impl Component for TimeManagementTab<'_> {
                     // Don't accept invalid inputs
                     if let Ok(value) = old_value.update(input) {
                         self.config
-                            .config
+                            .tui
                             .time_management_methods_settings
                             .get_mut(&selected_method.unwrap())
                             .unwrap()[self.method_settings_list_state.selected().unwrap()] = value;
@@ -299,7 +299,7 @@ impl Component for TimeManagementTab<'_> {
                     );
                     let Some(settings) = self
                         .config
-                        .config
+                        .tui
                         .time_management_methods_settings
                         .get(&selected_method.unwrap())
                     else {
@@ -380,7 +380,7 @@ impl TimeManagementTab<'_> {
 
         let highlight_style = *self
             .config
-            .config
+            .tui
             .styles
             .get(&crate::app::Mode::Home)
             .unwrap()
@@ -422,7 +422,7 @@ impl TimeManagementTab<'_> {
             Block::bordered().title("Edit").style(
                 *self
                     .config
-                    .config
+                    .tui
                     .styles
                     .get(&crate::app::Mode::Home)
                     .unwrap()
@@ -451,7 +451,7 @@ impl TimeManagementTab<'_> {
             MethodsAvailable::from_repr(self.methods_list_state.selected().unwrap_or_default());
         let rows = self
             .config
-            .config
+            .tui
             .time_management_methods_settings
             .get(&selected_method.unwrap_or_default())
             .unwrap()
@@ -466,7 +466,7 @@ impl TimeManagementTab<'_> {
 
         let highlight_style = *self
             .config
-            .config
+            .tui
             .styles
             .get(&crate::app::Mode::Home)
             .unwrap()

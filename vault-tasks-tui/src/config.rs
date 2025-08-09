@@ -26,8 +26,22 @@ use tracing::{debug, info};
 const TUI_CONFIG: &str = include_str!("../../.config/tui.toml");
 const CONFIG_FILE_NAME: &str = "tui";
 
+#[derive(Clone, Debug, Deserialize, Default)]
+pub struct Settings {
+    #[serde(default)]
+    pub completion_bar_length: usize,
+    #[serde(default)]
+    pub explorer_default_search_string: String,
+    #[serde(default)]
+    pub filter_default_search_string: String,
+    #[serde(default)]
+    pub invert_tracker_entries: bool,
+}
+
 #[derive(Clone, Debug, Deserialize)]
 pub struct AppConfig {
+    #[serde(default)]
+    pub settings: Settings,
     #[serde(default)]
     pub keybindings: KeyBindings,
     #[serde(default)]
@@ -45,9 +59,9 @@ pub struct AppConfig {
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
-    pub config: AppConfig,
+    pub tui: AppConfig,
     #[serde(default)]
-    pub tasks_config: TasksConfig,
+    pub core: TasksConfig,
 }
 
 lazy_static! {
@@ -162,8 +176,8 @@ impl Config {
         cfg.show_fps = args.show_fps;
 
         Ok(Config {
-            config: cfg,
-            tasks_config,
+            tui: cfg,
+            core: tasks_config,
         })
     }
 

@@ -60,7 +60,7 @@ impl FilterTab<'_> {
     fn update_matching_entries(&mut self) {
         let filter_task = parse_search_input(
             self.input_bar_widget.input.value(),
-            &self.config.tasks_config,
+            &self.config.core,
         );
 
         // Filter tasks
@@ -113,7 +113,7 @@ impl FilterTab<'_> {
 
         let highlight_style = *self
             .config
-            .config
+            .tui
             .styles
             .get(&crate::app::Mode::Home)
             .unwrap()
@@ -146,12 +146,13 @@ impl Component for FilterTab<'_> {
     }
 
     fn register_config_handler(&mut self, config: Config) -> Result<()> {
-        self.task_mgr = TaskManager::load_from_config(&config.tasks_config)?;
+        self.task_mgr = TaskManager::load_from_config(&config.core)?;
         self.config = config;
         self.input_bar_widget.is_focused = true; // Start with search bar focused
         self.input_bar_widget.input = self.input_bar_widget.input.clone().with_value(
             self.config
-                .tasks_config
+                .tui
+                .settings
                 .filter_default_search_string
                 .clone(),
         );
@@ -170,7 +171,7 @@ impl Component for FilterTab<'_> {
         if !self.is_focused {
             match action {
                 Action::ReloadVault => {
-                    self.task_mgr.reload(&self.config.tasks_config)?;
+                    self.task_mgr.reload(&self.config.core)?;
                     self.update_matching_entries();
                 }
                 Action::Focus(Mode::Filter) => self.is_focused = true,
@@ -210,7 +211,7 @@ impl Component for FilterTab<'_> {
                 }
                 Action::Help => self.show_help = !self.show_help,
                 Action::ReloadVault => {
-                    self.task_mgr.reload(&self.config.tasks_config)?;
+                    self.task_mgr.reload(&self.config.core)?;
                     self.update_matching_entries();
                 }
                 Action::ViewUp => self.task_list_widget_state.scroll_up(),
@@ -253,7 +254,7 @@ impl Component for FilterTab<'_> {
             if self.input_bar_widget.is_focused {
                 *self
                     .config
-                    .config
+                    .tui
                     .styles
                     .get(&crate::app::Mode::Home)
                     .unwrap()

@@ -25,13 +25,14 @@ impl TaskList {
             .map(|fc| {
                 TaskListItem::new(
                     fc.clone(),
-                    config.tasks_config.clone(),
+                    config.core.clone(),
+                    config.tui.settings.clone(),
                     max_width,
                     display_filename,
                 )
                 .header_style(
                     *config
-                        .config
+                        .tui
                         .styles
                         .get(&crate::app::Mode::Explorer)
                         .unwrap()
@@ -193,7 +194,7 @@ mod tests {
         let mut config = Config::default();
 
         // We don't want tests to be time dependent
-        config.tasks_config.display.show_relative_due_dates = false;
+        config.core.display.show_relative_due_dates = false;
 
         let max_width = 40;
         let task_list = TaskList::new(&config, &[test_vault], max_width, true);

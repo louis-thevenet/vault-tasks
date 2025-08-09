@@ -8,6 +8,8 @@ use ratskin::RatSkin;
 use tracing::error;
 use vault_tasks_core::{config::TasksConfig, task::Task, tracker::Tracker, vault_data::VaultData};
 
+use crate::config::Settings;
+
 const HEADER_INDENT_RATIO: u16 = 3;
 
 #[derive(Clone)]
@@ -16,6 +18,7 @@ pub struct TaskListItem {
     pub height: u16,
     // TODO: here we use stuff that should be in TUI and not core
     config: TasksConfig,
+    settings: Settings,
     max_width: u16,
     display_filename: bool,
     header_style: Style,
@@ -29,6 +32,7 @@ impl TaskListItem {
     pub fn new(
         item: VaultData,
         config: TasksConfig,
+        settings: Settings,
         max_width: u16,
         display_filename: bool,
     ) -> Self {
@@ -37,6 +41,7 @@ impl TaskListItem {
             item,
             height,
             config,
+            settings,
             max_width,
             display_filename,
             header_style: Style::default(),
@@ -94,7 +99,7 @@ impl TaskListItem {
             }
         }
         if let Some(bar) = task.get_completion_bar(
-            self.config.completion_bar_length,
+            self.settings.completion_bar_length,
             &(
                 self.config.pretty_symbols.progress_bar_false.clone(),
                 self.config.pretty_symbols.progress_bar_true.clone(),
@@ -206,7 +211,7 @@ impl TaskListItem {
                 res
             })
             .collect::<Vec<Row>>();
-        if self.config.invert_tracker_entries {
+        if self.settings.invert_tracker_entries {
             rows.reverse();
         }
         let mut date = tracker.start_date.clone();
@@ -344,6 +349,7 @@ impl Widget for TaskListItem {
                     let sb_widget = Self::new(
                         child.clone(),
                         self.config.clone(),
+                        self.settings.clone(),
                         self.max_width - indent[0].width,
                         self.display_filename,
                     )
@@ -359,6 +365,7 @@ impl Widget for TaskListItem {
                     let sb_widget = Self::new(
                         VaultData::Task(sb.clone()),
                         self.config.clone(),
+                        self.settings.clone(),
                         self.max_width - 2, // surrounding block
                         false,
                     )
@@ -430,11 +437,16 @@ mod tests {
         let mut config = Config::default();
 
         // We don't want tests to be time dependent
-        config.tasks_config.display.show_relative_due_dates = false;
+        config.core.display.show_relative_due_dates = false;
 
         let max_width = 50;
-        let task_list_item =
-            TaskListItem::new(test_task, config.tasks_config.clone(), max_width, false);
+        let task_list_item = TaskListItem::new(
+            test_task,
+            config.core.clone(),
+            config.tui.settings.clone(),
+            max_width,
+            false,
+        );
         let mut terminal = Terminal::new(TestBackend::new(max_width, 40)).unwrap();
         terminal
             .draw(|frame| {

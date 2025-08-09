@@ -183,7 +183,7 @@ impl Tracker {
         let now = chrono::Utc::now();
         let mut target_date = Date::DayTime(NaiveDateTime::new(now.date_naive(), now.time()));
         // increment target_date so we add extra blanks
-        (0..config.tracker_extra_blanks)
+        (0..config.core.tracker_extra_blanks)
             .for_each(|_| target_date = fixed_tracker.frequency.next_date(&target_date));
 
         // Add blanks until we reach the current date
@@ -197,7 +197,7 @@ impl Tracker {
 
         // Now we'll ensure we have enough blanks at the end
         let mut blanks_count = 0;
-        for _i in 0..config.tracker_extra_blanks {
+        for _i in 0..config.core.tracker_extra_blanks {
             if fixed_tracker.categories.iter().all(|cat| {
                 cat.entries
                     .get(cat.entries.len() - 1 - blanks_count)
@@ -214,7 +214,7 @@ impl Tracker {
         }
 
         // Add missing blanks
-        for _i in 0..(config.tracker_extra_blanks - blanks_count) {
+        for _i in 0..(config.core.tracker_extra_blanks - blanks_count) {
             for cat in &mut fixed_tracker.categories {
                 cat.entries.push(TrackerEntry::Blank);
             }

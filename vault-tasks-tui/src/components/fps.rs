@@ -95,7 +95,7 @@ impl Component for FpsCounter {
     }
 
     fn register_config_handler(&mut self, config: crate::config::Config) -> Result<()> {
-        self.enabled = config.config.show_fps;
+        self.enabled = config.tui.show_fps;
         Ok(())
     }
 }
