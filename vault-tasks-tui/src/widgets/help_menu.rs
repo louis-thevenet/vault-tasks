@@ -21,6 +21,7 @@ pub struct HelpMenu<'a> {
 impl HelpMenu<'_> {
     fn get_keys_for_action(config: &Config, app_mode: Mode, action: &Action) -> String {
         config
+            .config
             .keybindings
             .get(&app_mode)
             .unwrap()
@@ -42,7 +43,7 @@ impl HelpMenu<'_> {
     }
     pub fn new(app_mode: Mode, config: &Config) -> Self {
         let mut action_set = HashSet::<Action>::new();
-        for kb in config.keybindings.get(&app_mode).unwrap().values() {
+        for kb in config.config.keybindings.get(&app_mode).unwrap().values() {
             action_set.insert(kb.clone());
         }
         let mut action_vec = action_set.iter().collect::<Vec<&Action>>();
@@ -66,20 +67,20 @@ impl HelpMenu<'_> {
             .collect::<Row>()
         });
 
-        let lenghts = action_set.iter().map(|action| {
+        let lengths = action_set.iter().map(|action| {
             (
                 action.to_string().len() as u16,
                 Self::get_keys_for_action(config, app_mode, action).len() as u16,
             )
         });
 
-        let longuest = (
-            lenghts
+        let longest = (
+            lengths
                 .clone()
                 .max_by(|a, b| a.0.cmp(&b.0))
                 .unwrap_or_default()
                 .0,
-            lenghts.max_by(|a, b| a.1.cmp(&b.1)).unwrap_or_default().1,
+            lengths.max_by(|a, b| a.1.cmp(&b.1)).unwrap_or_default().1,
         );
 
         let block = Block::bordered()
@@ -88,10 +89,7 @@ impl HelpMenu<'_> {
         let column_spacing = 4;
         let table = Table::new(
             rows,
-            [
-                Constraint::Length(longuest.0),
-                Constraint::Length(longuest.1),
-            ],
+            [Constraint::Length(longest.0), Constraint::Length(longest.1)],
         )
         .header(header)
         .column_spacing(column_spacing)
@@ -101,9 +99,9 @@ impl HelpMenu<'_> {
             state: ScrollViewState::new(),
             content: table,
             content_size: Size::new(
-                longuest
+                longest
                     .0
-                    .saturating_add(longuest.1)
+                    .saturating_add(longest.1)
                     .saturating_add(column_spacing)
                     + 2, // +2 for block
                 (action_vec.len() as u16).saturating_add(header_height) + 2, // +2 for block

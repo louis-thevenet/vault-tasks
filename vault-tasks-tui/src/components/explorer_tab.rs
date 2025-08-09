@@ -7,24 +7,24 @@ use ratatui::widgets::{Block, Borders, Paragraph};
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::{debug, error, info};
 
-use vault_tasks_core::task::State;
 use tui_input::Input;
 use tui_input::backend::crossterm::EventHandler;
 use tui_scrollview::ScrollViewState;
 use tui_widget_list::{ListBuilder, ListState, ListView};
+use vault_tasks_core::task::State;
 
 use super::Component;
 
 use crate::app::Mode;
-use vault_tasks_core::TaskManager;
-use vault_tasks_core::filter::parse_search_input;
-use vault_tasks_core::parser::task::parse_task;
-use vault_tasks_core::vault_data::VaultData;
 use crate::tui::Tui;
 use crate::widgets::help_menu::HelpMenu;
 use crate::widgets::input_bar::InputBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
+use vault_tasks_core::TaskManager;
+use vault_tasks_core::filter::parse_search_input;
+use vault_tasks_core::parser::task::parse_task;
+use vault_tasks_core::vault_data::VaultData;
 
 mod entry_list;
 mod utils;
@@ -228,7 +228,7 @@ impl ExplorerTab<'_> {
             if self.search_bar_widget.is_focused {
                 *self
                     .config
-                    .styles
+                    .config.styles
                     .get(&crate::app::Mode::Home)
                     .unwrap()
                     .get("highlighted_bar_style")
@@ -293,7 +293,7 @@ impl ExplorerTab<'_> {
             Block::bordered().title("Edit").style(
                 *self
                     .config
-                    .styles
+                    .config.styles
                     .get(&crate::app::Mode::Home)
                     .unwrap()
                     .get("highlighted_bar_style")
@@ -564,6 +564,7 @@ impl Component for ExplorerTab<'_> {
         frame.render_widget(self.path_to_paragraph(), areas.path);
 
         let highlighted_style = *self
+            .config
             .config
             .styles
             .get(&crate::app::Mode::Home)

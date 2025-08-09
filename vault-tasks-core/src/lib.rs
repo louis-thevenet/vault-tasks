@@ -17,12 +17,16 @@ use crate::config::TasksConfig;
 pub mod config;
 pub mod date;
 pub mod filter;
+pub mod logging;
 pub mod parser;
 pub mod sorter;
 pub mod task;
 pub mod tracker;
 pub mod vault_data;
 mod vault_parser;
+
+// Re-export logging functions for easier access
+pub use logging::init as init_logging;
 
 pub struct TaskManager {
     pub tasks: VaultData,

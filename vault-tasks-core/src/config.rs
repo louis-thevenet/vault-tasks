@@ -10,9 +10,10 @@ use color_eyre::{Result, eyre::bail};
 use directories::ProjectDirs;
 use lazy_static::lazy_static;
 use serde::Deserialize;
-use tracing::info;
+use tracing::{debug, info};
 
 const CONFIG: &str = include_str!("../../.config/core.toml");
+const CONFIG_FILE_NAME: &str = "core";
 
 lazy_static! {
     pub static ref PROJECT_NAME: String = env!("CARGO_CRATE_NAME").to_uppercase();
@@ -48,7 +49,7 @@ impl Default for TaskMarkerConfig {
 }
 
 // TODO: Should be in TUI!!
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Default)]
 pub struct PrettySymbolsConfig {
     #[serde(default)]
     pub task_done: String,
@@ -68,11 +69,6 @@ pub struct PrettySymbolsConfig {
     pub progress_bar_true: String,
     #[serde(default)]
     pub progress_bar_false: String,
-}
-impl Default for PrettySymbolsConfig {
-    fn default() -> Self {
-        TasksConfig::default().pretty_symbols
-    }
 }
 #[derive(Clone, Debug, Deserialize)]
 pub struct TasksConfig {
@@ -117,16 +113,20 @@ impl Default for TasksConfig {
         config
     }
 }
-struct ProtoConfig {
-    vault_path: Option<PathBuf>,
-    config_path: Option<PathBuf>,
+pub struct ProtoConfig {
+    pub vault_path: Option<PathBuf>,
+    pub config_path: Option<PathBuf>,
 }
 impl TasksConfig {
-    pub fn new(params: ProtoConfig) -> Result<Self> {
+    pub fn new(params: &ProtoConfig) -> Result<Self> {
         let default_config: Self = Self::default();
-
         let data_dir = get_data_dir();
         let config_path = params.config_path.clone().unwrap_or_else(get_config_dir);
+        debug!(
+            "Using data directory at {} and config directory at {}",
+            data_dir.display(),
+            config_path.display()
+        );
 
         // A config file was provided
         let builder = if config_path.is_file() {
@@ -139,11 +139,14 @@ impl TasksConfig {
                 .set_default("config_dir", config_path.to_str().unwrap())?;
 
             let config_files = [
-                ("config.json5", config::FileFormat::Json5),
-                ("config.json", config::FileFormat::Json),
-                ("config.yaml", config::FileFormat::Yaml),
-                ("config.toml", config::FileFormat::Toml),
-                ("config.ini", config::FileFormat::Ini),
+                (
+                    format!("{CONFIG_FILE_NAME}.json5"),
+                    config::FileFormat::Json5,
+                ),
+                (format!("{CONFIG_FILE_NAME}.json"), config::FileFormat::Json),
+                (format!("{CONFIG_FILE_NAME}.yaml"), config::FileFormat::Yaml),
+                (format!("{CONFIG_FILE_NAME}.toml"), config::FileFormat::Toml),
+                (format!("{CONFIG_FILE_NAME}.ini"), config::FileFormat::Ini),
             ];
             let mut found_config = false;
             for (file, format) in &config_files {
@@ -286,7 +289,7 @@ impl TasksConfig {
 
     pub fn generate_config(path: Option<PathBuf>) -> Result<()> {
         let config_dir = path.unwrap_or_else(get_config_dir);
-        let dest = config_dir.join("config.toml");
+        let dest = config_dir.join(format!("{CONFIG_FILE_NAME}.toml"));
         if create_dir_all(config_dir).is_err() {
             bail!("Failed to create config directory at {dest:?}".to_owned());
         }

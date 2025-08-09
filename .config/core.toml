@@ -1,4 +1,3 @@
-[tasks_config]
 use_american_format = true
 show_relative_due_dates = true
 indent_length = 2

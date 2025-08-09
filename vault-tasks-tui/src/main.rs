@@ -5,7 +5,8 @@ use clap_complete::generate;
 use cli::Cli;
 use color_eyre::Result;
 use config::Config;
-use vault_tasks_core::TaskManager;
+use tracing::debug;
+use vault_tasks_core::{TaskManager, init_logging};
 
 use crate::app::App;
 
@@ -15,7 +16,6 @@ mod cli;
 mod components;
 mod config;
 mod errors;
-mod logging;
 
 mod time_management;
 mod tui;
@@ -24,11 +24,12 @@ mod widgets;
 #[tokio::main]
 async fn main() -> Result<()> {
     crate::errors::init()?;
-    crate::logging::init()?;
+    init_logging()?;
 
     let args = Cli::parse();
 
     let config = Config::new(&args)?;
+    debug!("Config loaded: {:#?}", config);
     match args.command {
         Some(cli::Commands::GenerateConfig { path }) => Config::generate_config(path),
         Some(cli::Commands::Stdout) => {

@@ -10,7 +10,7 @@ use std::{
 use chrono::NaiveTime;
 use std::{fmt::Display, time::Duration};
 use strum::{EnumIter, FromRepr};
-use vault_tasks_core::config::{PrettySymbolsConfig, TasksConfig};
+use vault_tasks_core::config::{PrettySymbolsConfig, ProtoConfig, TasksConfig};
 
 use crate::widgets::timer::TimerWidget;
 use crate::{action::Action, app::Mode, cli::Cli};
@@ -23,10 +23,17 @@ use ratatui::style::{Color, Modifier, Style};
 use serde::{Deserialize, de::Deserializer};
 use tracing::{debug, info};
 
-const CONFIG: &str = include_str!("../../.config/config.toml");
+const TUI_CONFIG: &str = include_str!("../../.config/tui.toml");
+const CONFIG_FILE_NAME: &str = "tui";
 
-#[derive(Clone, Debug, Deserialize, Default)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct AppConfig {
+    #[serde(default)]
+    pub keybindings: KeyBindings,
+    #[serde(default)]
+    pub time_management_methods_settings: HashMap<MethodsAvailable, Vec<MethodSettingsEntry>>,
+    #[serde(default)]
+    pub styles: Styles,
     #[serde(default)]
     pub config_dir: PathBuf,
     #[serde(default)]
@@ -35,18 +42,12 @@ pub struct AppConfig {
     pub show_fps: bool,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
     pub config: AppConfig,
     #[serde(default)]
-    pub keybindings: KeyBindings,
-    #[serde(default)]
-    pub styles: Styles,
-    #[serde(default)]
     pub tasks_config: TasksConfig,
-    #[serde(default)]
-    pub time_management_methods_settings: HashMap<MethodsAvailable, Vec<MethodSettingsEntry>>,
 }
 
 lazy_static! {
@@ -61,38 +62,40 @@ lazy_static! {
             .map(PathBuf::from);
 }
 
-impl Default for Config {
+impl Default for AppConfig {
     fn default() -> Self {
-        let mut config: Self = toml::from_str(CONFIG).unwrap();
-        if cfg!(test) {
-            config.tasks_config.vault_path = PathBuf::from("./test-vault");
-        }
-        config
+        toml::from_str(TUI_CONFIG).unwrap()
     }
 }
 impl Config {
     pub fn new(args: &Cli) -> Result<Self, config::ConfigError> {
-        let default_config: Self = Self::default();
-
+        let default_config: AppConfig = AppConfig::default();
         let data_dir = get_data_dir();
         let config_path = args.config_path.clone().unwrap_or_else(get_config_dir);
-
+        debug!(
+            "Using data directory at {} and config directory at {}",
+            data_dir.display(),
+            config_path.display()
+        );
         // A config file was provided
         let builder = if config_path.is_file() {
             config::Config::builder()
                 .set_default("data_dir", data_dir.to_str().unwrap())?
-                .add_source(config::File::from(config_path))
+                .add_source(config::File::from(config_path.clone()))
         } else {
             let mut builder = config::Config::builder()
                 .set_default("data_dir", data_dir.to_str().unwrap())?
                 .set_default("config_dir", config_path.to_str().unwrap())?;
 
             let config_files = [
-                ("config.json5", config::FileFormat::Json5),
-                ("config.json", config::FileFormat::Json),
-                ("config.yaml", config::FileFormat::Yaml),
-                ("config.toml", config::FileFormat::Toml),
-                ("config.ini", config::FileFormat::Ini),
+                (
+                    format!("{CONFIG_FILE_NAME}.json5"),
+                    config::FileFormat::Json5,
+                ),
+                (format!("{CONFIG_FILE_NAME}.json"), config::FileFormat::Json),
+                (format!("{CONFIG_FILE_NAME}.yaml"), config::FileFormat::Yaml),
+                (format!("{CONFIG_FILE_NAME}.toml"), config::FileFormat::Toml),
+                (format!("{CONFIG_FILE_NAME}.ini"), config::FileFormat::Ini),
             ];
             let mut found_config = false;
             for (file, format) in &config_files {
@@ -111,8 +114,7 @@ impl Config {
             }
             builder
         };
-
-        let mut cfg: Self = builder.build()?.try_deserialize()?;
+        let mut cfg: AppConfig = builder.build()?.try_deserialize()?;
 
         for (mode, default_bindings) in default_config.keybindings.iter() {
             let user_bindings = cfg.keybindings.entry(*mode).or_default();
@@ -152,15 +154,17 @@ impl Config {
                     .clone(),
             );
         }
-        cfg.tasks_config = Self::merge_tasks_config(cfg.tasks_config, default_config.tasks_config);
+        let tasks_config = TasksConfig::new(&ProtoConfig {
+            vault_path: args.vault_path.clone(),
+            config_path: Some(config_path),
+        })
+        .unwrap(); // TODO: no unwrap
+        cfg.show_fps = args.show_fps;
 
-        if let Some(path) = &args.vault_path {
-            cfg.tasks_config.vault_path.clone_from(path);
-        }
-
-        cfg.config.show_fps = args.show_fps;
-
-        Ok(cfg)
+        Ok(Config {
+            config: cfg,
+            tasks_config,
+        })
     }
 
     fn merge_tasks_config(user_config: TasksConfig, default_config: TasksConfig) -> TasksConfig {
@@ -274,12 +278,12 @@ impl Config {
 
     pub fn generate_config(path: Option<PathBuf>) -> Result<()> {
         let config_dir = path.unwrap_or_else(get_config_dir);
-        let dest = config_dir.join("config.toml");
+        let dest = config_dir.join(format!("{CONFIG_FILE_NAME}.toml"));
         if create_dir_all(config_dir).is_err() {
             bail!("Failed to create config directory at {dest:?}".to_owned());
         }
         if let Ok(mut file) = File::create(dest.clone()) {
-            if file.write_all(CONFIG.as_bytes()).is_err() {
+            if file.write_all(TUI_CONFIG.as_bytes()).is_err() {
                 bail!("Failed to write default config at {dest:?}".to_owned());
             }
         } else {
@@ -776,7 +780,7 @@ mod tests {
 
     #[test]
     fn test_config() {
-        let c = Config::default();
+        let c = AppConfig::default();
         assert_eq!(
             c.keybindings
                 .get(&Mode::Home)

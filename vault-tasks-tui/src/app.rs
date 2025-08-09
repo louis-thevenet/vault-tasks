@@ -147,7 +147,7 @@ impl App {
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<()> {
         let action_tx = self.action_tx.clone();
-        let Some(keymap) = self.config.keybindings.get(&self.mode) else {
+        let Some(keymap) = self.config.config.keybindings.get(&self.mode) else {
             return Ok(());
         };
         if let Some(action) = keymap.get(&vec![key]) {

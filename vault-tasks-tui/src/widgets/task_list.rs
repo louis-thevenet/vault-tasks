@@ -31,6 +31,7 @@ impl TaskList {
                 )
                 .header_style(
                     *config
+                        .config
                         .styles
                         .get(&crate::app::Mode::Explorer)
                         .unwrap()

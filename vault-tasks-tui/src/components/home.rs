@@ -44,6 +44,7 @@ impl Home {
 
         let highlight_style = *self
             .config
+            .config
             .styles
             .get(&crate::app::Mode::Home)
             .unwrap()

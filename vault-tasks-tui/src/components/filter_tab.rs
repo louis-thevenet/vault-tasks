@@ -113,6 +113,7 @@ impl FilterTab<'_> {
 
         let highlight_style = *self
             .config
+            .config
             .styles
             .get(&crate::app::Mode::Home)
             .unwrap()
@@ -251,6 +252,7 @@ impl Component for FilterTab<'_> {
         self.input_bar_widget.block = Some(Block::bordered().style(
             if self.input_bar_widget.is_focused {
                 *self
+                    .config
                     .config
                     .styles
                     .get(&crate::app::Mode::Home)
