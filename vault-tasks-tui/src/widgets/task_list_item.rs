@@ -82,10 +82,9 @@ impl TaskListItem {
         }
 
         if let Some(due_date) = &task.due_date {
-            data_line.push(Span::from(task.due_date_to_string(
-                &self.config.pretty_symbols,
-                self.config.core.use_american_format,
-            )));
+            data_line.push(Span::from(
+                task.due_date_to_string(&self.config.pretty_symbols, &self.config.core),
+            ));
             if self.config.display.show_relative_due_dates {
                 let due_date_relative = due_date.get_relative_str();
                 data_line.push(Span::styled(
@@ -225,7 +224,7 @@ impl TaskListItem {
                         let res = if self.config.display.show_relative_due_dates {
                             format!(
                                 "{} ({})",
-                                date.to_string_format(self.config.core.use_american_format,),
+                                date.to_string_format(self.config.core.use_american_format),
                                 date.get_relative_str()
                             )
                         } else {

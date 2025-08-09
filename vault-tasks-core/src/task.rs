@@ -10,7 +10,7 @@ use std::{
 use tracing::{debug, info};
 
 use crate::TasksConfig;
-use crate::config::PrettySymbolsConfig;
+use crate::config::{CoreConfig, PrettySymbolsConfig};
 
 use super::date::Date;
 
@@ -172,7 +172,7 @@ impl Task {
     pub fn due_date_to_string(
         &self,
         symbols: &PrettySymbolsConfig,
-        american_format: bool,
+        core_config: &CoreConfig,
     ) -> String {
         match &self.due_date {
             None => String::new(),
@@ -181,7 +181,7 @@ impl Task {
                 let due_date_symbol: &str = &symbols.due_date;
                 format!(
                     "{due_date_symbol} {}",
-                    this.to_string_format(american_format)
+                    this.to_string_format(core_config.use_american_format)
                 )
             }
         }

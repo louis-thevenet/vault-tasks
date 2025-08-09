@@ -27,9 +27,9 @@ lazy_static! {
             .map(PathBuf::from);
 }
 
-/// Characters used to mark the state of a task.
+/// Characters used to mark the state of a task in Markdown.
 #[derive(Clone, Debug, Deserialize)]
-pub struct TaskMarkerConfig {
+pub(crate) struct TaskMarkerConfig {
     pub done: char,
     pub todo: char,
     pub incomplete: char,
@@ -48,6 +48,7 @@ impl Default for TaskMarkerConfig {
     }
 }
 
+/// Configuration for pretty symbols in the UI.
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct PrettySymbolsConfig {
     #[serde(default)]
@@ -69,24 +70,25 @@ pub struct PrettySymbolsConfig {
     #[serde(default)]
     pub(crate) progress_bar_false: String,
 }
+/// Configuration for the core features of the application.
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct CoreConfig {
     #[serde(default)]
     pub vault_path: PathBuf,
     #[serde(default)]
-    pub parse_dot_files: bool,
-    #[serde(default)]
-    pub file_tags_propagation: bool,
-    #[serde(default)]
-    pub ignored: Vec<PathBuf>,
-    #[serde(default)]
-    pub indent_length: usize,
-    #[serde(default)]
     pub use_american_format: bool,
     #[serde(default)]
-    pub tasks_drop_file: String,
+    pub(crate) parse_dot_files: bool,
     #[serde(default)]
-    pub tracker_extra_blanks: usize,
+    pub(crate) file_tags_propagation: bool,
+    #[serde(default)]
+    pub(crate) ignored: Vec<PathBuf>,
+    #[serde(default)]
+    pub(crate) indent_length: usize,
+    #[serde(default)]
+    pub(crate) tasks_drop_file: String,
+    #[serde(default)]
+    pub(crate) tracker_extra_blanks: usize,
 }
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct DisplayConfig {
