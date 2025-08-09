@@ -1,0 +1,28 @@
+{
+  "packages": {
+    "vault-tasks-core": {
+      "path": "vault-tasks-core",
+      "release-type": "rust",
+      "component": "core"
+    },
+    "vault-tasks-tui": {
+      "path": "vault-tasks-tui",
+      "release-type": "rust",
+      "component": "tui"
+    }
+  },
+  "plugins": [
+    {
+      "type": "cargo-workspace",
+      "merge": false
+    },
+    {
+      "type": "linked-versions",
+      "groupName": "vault-tasks",
+      "components": [
+        "core",
+        "tui"
+      ]
+    }
+  ]
+}

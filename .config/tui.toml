@@ -1,0 +1,223 @@
+[settings]
+explorer_default_search_string = "- [ ] "
+filter_default_search_string = ""
+invert_tracker_entries = true
+completion_bar_length = 5
+
+[keybindings.Calendar]
+# App
+"<q>" = "Quit"
+"<Ctrl-c>" = "Quit"
+"<Ctrl-z>" = "Suspend"
+"<?>" = "Help"
+# Tabs
+"<Shift-Right>" = "TabRight"
+"<Shift-l>" = "TabRight"
+"<Shift-Left>" = "TabLeft"
+"<shift-h>" = "TabLeft"
+# Scrolling
+"<Ctrl-u>" = "ViewUp"
+"<Ctrl-k>" = "ViewUp"
+"<Ctrl-Up>" = "ViewUp"
+"<PageUp>" = "ViewPageUp"
+"<Ctrl-j>" = "ViewDown"
+"<Ctrl-d>" = "ViewDown"
+"<Ctrl-Down>" = "ViewDown"
+"<PageDown>" = "ViewPageDown"
+# Navigation
+"<r>" = "ReloadVault"
+"<t>" = "GotoToday"
+"<j>" = "Down"
+"<Down>" = "Down"
+"<k>" = "Up"
+"<Up>" = "Up"
+"<h>" = "Left"
+"<Left>" = "Left"
+"<l>" = "Right"
+"<Right>" = "Right"
+"<Shift-j>" = "NextMonth"
+"<Shift-Down>" = "NextMonth"
+"<Shift-k>" = "PreviousMonth"
+"<Shift-Up>" = "PreviousMonth"
+"<n>" = "NextYear"
+"<Shift-n>" = "PreviousYear"
+
+[keybindings.Explorer]
+# App
+"<q>" = "Quit"
+"<Ctrl-c>" = "Quit"
+"<Ctrl-z>" = "Suspend"
+"<?>" = "Help"
+# Tabs
+"<Shift-Right>" = "TabRight"
+"<Shift-l>" = "TabRight"
+"<Shift-Left>" = "TabLeft"
+"<shift-h>" = "TabLeft"
+# Navigation
+"<j>" = "Down"
+"<Down>" = "Down"
+"<Tab>" = "Down"
+"<k>" = "Up"
+"<Up>" = "Up"
+"<BackTab>" = "Up"
+"<h>" = "Left"
+"<Left>" = "Left"
+"<l>" = "Right"
+"<Right>" = "Right"
+"<Enter>" = "Enter"
+"<Backspace>" = "Cancel"
+"<s>" = "Search"
+"<Esc>" = "Escape"
+"<o>" = "Open"
+"<e>" = "Edit"
+"<t>" = "MarkToDo"
+"<d>" = "MarkDone"
+"<c>" = "MarkCancel"
+"<i>" = "MarkIncomplete"
+"<r>" = "ReloadVault"
+"<+>" = "IncreaseCompletion"
+"<->" = "DecreaseCompletion"
+# Scrolling
+"<Ctrl-u>" = "ViewUp"
+"<Ctrl-k>" = "ViewUp"
+"<Ctrl-Up>" = "ViewUp"
+"<PageUp>" = "ViewPageUp"
+"<Ctrl-j>" = "ViewDown"
+"<Ctrl-d>" = "ViewDown"
+"<Ctrl-Down>" = "ViewDown"
+"<PageDown>" = "ViewPageDown"
+"<Ctrl-l>" = "ViewRight"
+"<Ctrl-Right>" = "ViewRight"
+"<Ctrl-h>" = "ViewLeft"
+"<Ctrl-Left>" = "ViewLeft"
+
+[keybindings.Filter]
+# App
+"<q>" = "Quit"
+"<Ctrl-c>" = "Quit"
+"<Ctrl-z>" = "Suspend"
+"<?>" = "Help"
+# Tabs
+"<Shift-Right>" = "TabRight"
+"<Shift-l>" = "TabRight"
+"<Shift-Left>" = "TabLeft"
+"<shift-h>" = "TabLeft"
+# Navigation
+"<Enter>" = "Enter"
+"<s>" = "Search"
+"<Shift-s>" = "SwitchSortingMode"
+"<Esc>" = "Escape"
+"<r>" = "ReloadVault"
+# Scrolling
+"<Ctrl-u>" = "ViewUp"
+"<Ctrl-k>" = "ViewUp"
+"<Ctrl-Up>" = "ViewUp"
+"<PageUp>" = "ViewPageUp"
+"<Ctrl-d>" = "ViewDown"
+"<Ctrl-j>" = "ViewDown"
+"<Ctrl-Down>" = "ViewDown"
+"<PageDown>" = "ViewPageDown"
+"<Ctrl-l>" = "ViewRight"
+"<Ctrl-Right>" = "ViewRight"
+"<Ctrl-h>" = "ViewLeft"
+"<Ctrl-Left>" = "ViewLeft"
+
+[keybindings.Home]
+# App
+"<q>" = "Quit"
+"<Ctrl-d>" = "Quit"
+"<Ctrl-c>" = "Quit"
+"<Ctrl-z>" = "Suspend"
+# Tabs
+"<Shift-Right>" = "TabRight"
+"<Shift-l>" = "TabRight"
+"<Shift-Left>" = "TabLeft"
+"<Shift-h>" = "TabLeft"
+
+[keybindings.TimeManagement]
+# App
+"<q>" = "Quit"
+"<Ctrl-c>" = "Quit"
+"<Ctrl-z>" = "Suspend"
+"<?>" = "Help"
+# Tabs
+"<Shift-Right>" = "TabRight"
+"<Shift-l>" = "TabRight"
+"<Shift-Left>" = "TabLeft"
+"<shift-h>" = "TabLeft"
+# Navigation
+"<e>" = "Edit"
+"<Esc>" = "Escape"
+"<Enter>" = "Enter"
+"<Space>" = "NextSegment"
+"<p>" = "Pause"
+"<Tab>" = "NextMethod"
+"<BackTab>" = "PreviousMethod"
+"<j>" = "Down"
+"<Down>" = "Down"
+"<k>" = "Up"
+"<Up>" = "Up"
+"<h>" = "Left"
+"<Left>" = "Left"
+"<l>" = "Right"
+"<Right>" = "Right"
+
+[styles.Explorer]
+preview_headers = "bold rgb 255 153 000"
+
+[styles.Home]
+highlighted_style = "dark grey on rgb 255 153 000"
+highlighted_bar_style = "rgb 255 153 000"
+
+
+[[time_management_methods_settings.FlowTime]]
+name = "Break Factor"
+hint = "Break time is (focus time) / (break factor)"
+
+[time_management_methods_settings.FlowTime.value]
+Int = 5
+
+[[time_management_methods_settings.FlowTime]]
+name = "Auto Skip"
+hint = "Whether to wait for user input to enter new segments or not"
+
+[time_management_methods_settings.FlowTime.value]
+Bool = false
+
+[[time_management_methods_settings.Pomodoro]]
+name = "Focus Time"
+hint = ""
+
+[time_management_methods_settings.Pomodoro.value.Duration]
+secs = 1500
+nanos = 0
+
+[[time_management_methods_settings.Pomodoro]]
+name = "Short Break Time"
+hint = ""
+
+[time_management_methods_settings.Pomodoro.value.Duration]
+secs = 300
+nanos = 0
+
+[[time_management_methods_settings.Pomodoro]]
+name = "Auto Skip"
+hint = "Whether to wait for user input to enter new segments or not"
+
+[time_management_methods_settings.Pomodoro.value]
+Bool = false
+
+[[time_management_methods_settings.Pomodoro]]
+name = "Long Break Time"
+hint = ""
+
+[time_management_methods_settings.Pomodoro.value.Duration]
+secs = 900
+nanos = 0
+
+[[time_management_methods_settings.Pomodoro]]
+name = "Long Break Interval"
+hint = "Short breaks before a long break"
+
+[time_management_methods_settings.Pomodoro.value]
+Int = 4

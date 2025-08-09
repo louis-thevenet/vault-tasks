@@ -1,0 +1,24 @@
+---
+source: vault-tasks-tui/src/components/home.rs
+expression: terminal.backend()
+---
+"  Explorer     Filter     Calendar     Time Management                          "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                                                                                "
+"                 Change tab: Shift+<hl|◄►> | Quit: q | Help: ?                  "
