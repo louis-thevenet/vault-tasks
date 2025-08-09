@@ -193,7 +193,7 @@ mod tests {
         let mut config = Config::default();
 
         // We don't want tests to be time dependent
-        config.tasks_config.show_relative_due_dates = false;
+        config.tasks_config.display.show_relative_due_dates = false;
 
         let max_width = 40;
         let task_list = TaskList::new(&config, &[test_vault], max_width, true);

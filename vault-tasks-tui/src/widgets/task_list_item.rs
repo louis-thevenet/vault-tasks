@@ -82,10 +82,10 @@ impl TaskListItem {
                 "{} ",
                 due_date.to_display_format(
                     &self.config.pretty_symbols.due_date,
-                    !self.config.use_american_format,
+                    !self.config.core.use_american_format,
                 )
             )));
-            if self.config.show_relative_due_dates {
+            if self.config.display.show_relative_due_dates {
                 let due_date_relative = due_date.get_relative_str();
                 data_line.push(Span::styled(
                     format!("({due_date_relative}) "),
@@ -174,9 +174,9 @@ impl TaskListItem {
                     [
                         vec![Cell::from(
                             Span::raw(
-                                date.to_string_format(!self.config.use_american_format)
+                                date.to_string_format(!self.config.core.use_american_format)
                                     .to_string(),
-                            ) + if self.config.show_relative_due_dates {
+                            ) + if self.config.display.show_relative_due_dates {
                                 Span::raw(format!(" ({})", date.get_relative_str())).dim()
                             } else {
                                 Span::raw("")
@@ -214,14 +214,14 @@ impl TaskListItem {
             vec![
                 (0..tracker.length)
                     .map(|_n| {
-                        let res = if self.config.show_relative_due_dates {
+                        let res = if self.config.display.show_relative_due_dates {
                             format!(
                                 "{} ({})",
-                                date.to_string_format(!self.config.use_american_format,),
+                                date.to_string_format(!self.config.core.use_american_format,),
                                 date.get_relative_str()
                             )
                         } else {
-                            date.to_string_format(!self.config.use_american_format)
+                            date.to_string_format(!self.config.core.use_american_format)
                                 .to_string()
                         }
                         .len() as u16;
@@ -430,7 +430,7 @@ mod tests {
         let mut config = Config::default();
 
         // We don't want tests to be time dependent
-        config.tasks_config.show_relative_due_dates = false;
+        config.tasks_config.display.show_relative_due_dates = false;
 
         let max_width = 50;
         let task_list_item =
