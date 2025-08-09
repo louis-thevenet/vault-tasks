@@ -48,27 +48,26 @@ impl Default for TaskMarkerConfig {
     }
 }
 
-// TODO: Should be in TUI!!
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct PrettySymbolsConfig {
     #[serde(default)]
-    pub task_done: String,
+    pub(crate) task_done: String,
     #[serde(default)]
-    pub task_todo: String,
+    pub(crate) task_todo: String,
     #[serde(default)]
-    pub task_incomplete: String,
+    pub(crate) task_incomplete: String,
     #[serde(default)]
-    pub task_canceled: String,
+    pub(crate) task_canceled: String,
     #[serde(default)]
-    pub due_date: String,
+    pub(crate) due_date: String,
     #[serde(default)]
-    pub priority: String,
+    pub(crate) priority: String,
     #[serde(default)]
-    pub today_tag: String,
+    pub(crate) today_tag: String,
     #[serde(default)]
-    pub progress_bar_true: String,
+    pub(crate) progress_bar_true: String,
     #[serde(default)]
-    pub progress_bar_false: String,
+    pub(crate) progress_bar_false: String,
 }
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct CoreConfig {

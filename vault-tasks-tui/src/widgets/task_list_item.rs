@@ -54,7 +54,7 @@ impl TaskListItem {
 
         let rat_skin = RatSkin::default();
 
-        let state = task.state.display(self.config.pretty_symbols.clone());
+        let state = task.state.display(&self.config.pretty_symbols);
         let title = state.clone() + " " + &task.name;
         let title_parsed = rat_skin.parse(RatSkin::parse_text(&title), self.max_width);
         let binding = Line::raw(state);
@@ -76,19 +76,15 @@ impl TaskListItem {
                 });
 
         if task.is_today {
-            data_line.push(Span::raw(format!(
-                "{} ",
-                self.config.pretty_symbols.today_tag
-            )));
+            data_line.push(Span::raw(
+                task.is_today_to_string(&self.config.pretty_symbols),
+            ));
         }
 
         if let Some(due_date) = &task.due_date {
-            data_line.push(Span::from(format!(
-                "{} ",
-                due_date.to_display_format(
-                    &self.config.pretty_symbols.due_date,
-                    !self.config.core.use_american_format,
-                )
+            data_line.push(Span::from(task.due_date_to_string(
+                &self.config.pretty_symbols,
+                self.config.core.use_american_format,
             )));
             if self.config.display.show_relative_due_dates {
                 let due_date_relative = due_date.get_relative_str();
@@ -98,23 +94,30 @@ impl TaskListItem {
                 ));
             }
         }
-        if let Some(bar) = task.get_completion_bar(
+        if let Some(bar) = task.completion_bar_to_string(
             self.settings.completion_bar_length,
-            &(
-                self.config.pretty_symbols.progress_bar_false.clone(),
-                self.config.pretty_symbols.progress_bar_true.clone(),
-            ),
+            &self.config.pretty_symbols,
         ) {
             data_line.push(Span::raw(bar));
         }
         if task.priority > 0 {
-            data_line.push(Span::raw(format!(
-                "{}{} ",
-                self.config.pretty_symbols.priority, task.priority
-            )));
+            data_line.push(Span::raw(
+                task.priority_to_string(&self.config.pretty_symbols),
+            ));
         }
         if !data_line.is_empty() {
-            lines.push(Line::from(data_line));
+            lines.push(
+                data_line
+                    .iter()
+                    .fold(String::new(), |mut acc, span| {
+                        if !acc.is_empty() {
+                            acc.push(' ');
+                        }
+                        acc.push_str(&span.to_string());
+                        acc
+                    })
+                    .into(),
+            );
         }
         let mut tag_line = String::new();
         if task.tags.is_some() {

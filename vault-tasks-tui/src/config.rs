@@ -181,59 +181,6 @@ impl Config {
         })
     }
 
-    fn merge_pretty_symbols_config(
-        user_config: PrettySymbolsConfig,
-        default_config: PrettySymbolsConfig,
-    ) -> PrettySymbolsConfig {
-        PrettySymbolsConfig {
-            task_done: if user_config.task_done.is_empty() {
-                default_config.task_done
-            } else {
-                user_config.task_done
-            },
-            task_todo: if user_config.task_todo.is_empty() {
-                default_config.task_todo
-            } else {
-                user_config.task_todo
-            },
-            task_incomplete: if user_config.task_incomplete.is_empty() {
-                default_config.task_incomplete
-            } else {
-                user_config.task_incomplete
-            },
-            task_canceled: if user_config.task_canceled.is_empty() {
-                default_config.task_canceled
-            } else {
-                user_config.task_canceled
-            },
-            due_date: if user_config.due_date.is_empty() {
-                default_config.due_date
-            } else {
-                user_config.due_date
-            },
-            priority: if user_config.priority.is_empty() {
-                default_config.priority
-            } else {
-                user_config.priority
-            },
-            today_tag: if user_config.today_tag.is_empty() {
-                default_config.today_tag
-            } else {
-                user_config.today_tag
-            },
-            progress_bar_true: if user_config.progress_bar_true.is_empty() {
-                default_config.progress_bar_true
-            } else {
-                user_config.progress_bar_true
-            },
-            progress_bar_false: if user_config.progress_bar_false.is_empty() {
-                default_config.progress_bar_false
-            } else {
-                user_config.progress_bar_false
-            },
-        }
-    }
-
     pub fn generate_config(path: Option<PathBuf>) -> Result<()> {
         let config_dir = path.unwrap_or_else(get_config_dir);
         let dest = config_dir.join(format!("{CONFIG_FILE_NAME}.toml"));

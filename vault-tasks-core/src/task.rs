@@ -48,19 +48,19 @@ impl PartialOrd for State {
 }
 
 impl State {
-    pub fn display(&self, state_symbols: PrettySymbolsConfig) -> String {
+    pub fn display(&self, state_symbols: &PrettySymbolsConfig) -> String {
         match self {
-            Self::Done => state_symbols.task_done,
-            Self::ToDo => state_symbols.task_todo,
-            Self::Incomplete => state_symbols.task_incomplete,
-            Self::Canceled => state_symbols.task_canceled,
+            Self::Done => state_symbols.task_done.clone(),
+            Self::ToDo => state_symbols.task_todo.clone(),
+            Self::Incomplete => state_symbols.task_incomplete.clone(),
+            Self::Canceled => state_symbols.task_canceled.clone(),
         }
     }
 }
 impl Display for State {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let default_symbols = TasksConfig::default().pretty_symbols.clone();
-        write!(f, "{}", self.display(default_symbols))?;
+        write!(f, "{}", self.display(&default_symbols))?;
         Ok(())
     }
 }
@@ -129,13 +129,7 @@ impl fmt::Display for Task {
         if self.priority > 0 {
             write!(data_line, "{}{} ", default_symbols.priority, self.priority)?;
         }
-        if let Some(bar) = self.get_completion_bar(
-            5,
-            &(
-                default_symbols.progress_bar_false,
-                default_symbols.progress_bar_true,
-            ),
-        ) {
+        if let Some(bar) = self.completion_bar_to_string(5, &default_symbols) {
             data_line.push_str(&bar);
         }
         if !data_line.is_empty() {
@@ -166,20 +160,55 @@ impl fmt::Display for Task {
     }
 }
 impl Task {
-    pub fn get_completion_bar(&self, length: usize, symbols: &(String, String)) -> Option<String> {
-        self.completion?;
-        let percentage = self.completion.unwrap();
+    #[must_use]
+    pub fn priority_to_string(&self, symbols: &PrettySymbolsConfig) -> String {
+        if self.priority > 0 {
+            format!("{}{}", symbols.priority, self.priority)
+        } else {
+            String::new()
+        }
+    }
+    #[must_use]
+    pub fn due_date_to_string(
+        &self,
+        symbols: &PrettySymbolsConfig,
+        american_format: bool,
+    ) -> String {
+        match &self.due_date {
+            None => String::new(),
+            Some(date) => date.to_display_format(&symbols.due_date, american_format),
+        }
+    }
+    #[must_use]
+    pub fn is_today_to_string(&self, symbols: &PrettySymbolsConfig) -> String {
+        if self.is_today {
+            symbols.today_tag.to_string()
+        } else {
+            String::new()
+        }
+    }
+    #[must_use]
+    pub fn state_to_string(&self, symbols: &PrettySymbolsConfig) -> String {
+        self.state.display(symbols)
+    }
+    #[must_use]
+    pub fn completion_bar_to_string(
+        &self,
+        length: usize,
+        symbols: &PrettySymbolsConfig,
+    ) -> Option<String> {
+        let percentage = self.completion?;
         let progress_bar = (1..=length)
             .map(|c| {
                 if c * (100 / length) <= percentage {
-                    symbols.1.clone()
+                    symbols.progress_bar_true.clone()
                 } else {
-                    symbols.0.clone()
+                    symbols.progress_bar_false.clone()
                 }
             })
             .collect::<String>();
 
-        Some(format!("[{progress_bar} {percentage}%] "))
+        Some(format!("[{progress_bar} {percentage}%]"))
     }
     pub fn get_fixed_attributes(&self, config: &TasksConfig, indent_length: usize) -> String {
         let indent = " ".repeat(indent_length);

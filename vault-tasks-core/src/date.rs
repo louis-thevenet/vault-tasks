@@ -28,23 +28,23 @@ impl PartialOrd for Date {
 }
 impl Date {
     #[must_use]
-    pub fn to_display_format(&self, due_date_symbol: &str, not_american_format: bool) -> String {
+    pub fn to_display_format(&self, due_date_symbol: &str, american_format: bool) -> String {
         format!(
             "{due_date_symbol} {}",
-            self.to_string_format(not_american_format)
+            self.to_string_format(american_format)
         )
     }
     #[must_use]
-    pub fn to_string_format(&self, not_american_format: bool) -> String {
-        let format_date = if not_american_format {
-            "%d-%m-%Y"
-        } else {
+    pub fn to_string_format(&self, american_format: bool) -> String {
+        let format_date = if american_format {
             "%Y-%m-%d"
-        };
-        let format_datetime = if not_american_format {
-            "%d-%m-%Y %T"
         } else {
+            "%d-%m-%Y"
+        };
+        let format_datetime = if american_format {
             "%Y-%m-%d %T"
+        } else {
+            "%d-%m-%Y %T"
         };
 
         match self {
