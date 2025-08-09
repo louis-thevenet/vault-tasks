@@ -1,0 +1,42 @@
+[core]
+parse_dot_files = false
+file_tags_propagation = true
+ignored = []
+# vault_path= "./test-vault" # default vault path when none is provided
+use_american_format = true
+indent_length = 2
+tracker_extra_blanks = 3
+
+[display]
+show_relative_due_dates = true
+
+
+[task_state_markers]
+todo = ' '
+done = 'x'
+incomplete = '/'
+canceled = '-'
+
+[pretty_symbols]
+task_done = "✅"
+task_todo = "❌"
+task_incomplete = "⏳"
+task_canceled = "🚫"
+due_date = "📅"
+priority = "❗"
+today_tag = "☀️"
+progress_bar_true = "🟩"
+progress_bar_false = "⬜️"
+
+# Nice if your terminal font doesn't have emojis
+# task_done="[x]"
+# task_todo="[ ]"
+# task_incomplete="[/]"
+# task_canceled="[-]"
+# due_date="@"
+# priority="!"
+# today_tag="+"
+# progress_bar_true="="
+# progress_bar_false=" "
+
+

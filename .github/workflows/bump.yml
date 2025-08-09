@@ -19,4 +19,5 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           skip-github-release: true
-          release-type: rust
+          config-file: .release-please-config.json
+          manifest-file: .release-please-manifest.json
