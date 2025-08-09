@@ -18,8 +18,10 @@ impl VaultParser {
         Self { config }
     }
     pub fn scan_vault(&self) -> Result<VaultData> {
-        let mut tasks =
-            VaultData::Directory(self.config.core.vault_path.to_str().unwrap().to_owned(), vec![]);
+        let mut tasks = VaultData::Directory(
+            self.config.core.vault_path.to_str().unwrap().to_owned(),
+            vec![],
+        );
         info!("Scanning {:?}", self.config.core.vault_path);
         self.scan(&self.config.core.vault_path, &mut tasks)?;
         Ok(tasks)

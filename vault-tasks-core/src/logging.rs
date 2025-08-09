@@ -15,10 +15,10 @@ pub fn init() -> Result<()> {
     std::fs::create_dir_all(directory.clone())?;
     let log_path = directory.join(LOG_FILE.clone());
     let log_file = std::fs::File::create(log_path.clone())?;
-    
+
     // Build the environment filter
     let env_filter = EnvFilter::builder().with_default_directive(tracing::Level::INFO.into());
-    
+
     // Try to get filter from RUST_LOG first, then fallback to custom env var, then use default
     let env_filter = env_filter
         .try_from_env()
@@ -29,7 +29,7 @@ pub fn init() -> Result<()> {
                 .with_default_directive(tracing::Level::INFO.into())
                 .from_env_lossy()
         });
-    
+
     let file_subscriber = fmt::layer()
         .with_file(true)
         .with_line_number(true)
@@ -37,12 +37,12 @@ pub fn init() -> Result<()> {
         .with_target(false)
         .with_ansi(false)
         .with_filter(env_filter);
-    
+
     tracing_subscriber::registry()
         .with(file_subscriber)
         .with(ErrorLayer::default())
         .try_init()?;
-    
+
     // Test that logging is working
     debug!("Logging initialized successfully. Log file: {:?}", log_path);
     Ok(())

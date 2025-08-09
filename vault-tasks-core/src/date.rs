@@ -28,13 +28,6 @@ impl PartialOrd for Date {
 }
 impl Date {
     #[must_use]
-    pub fn to_display_format(&self, due_date_symbol: &str, american_format: bool) -> String {
-        format!(
-            "{due_date_symbol} {}",
-            self.to_string_format(american_format)
-        )
-    }
-    #[must_use]
     pub fn to_string_format(&self, american_format: bool) -> String {
         let format_date = if american_format {
             "%Y-%m-%d"
@@ -58,9 +51,9 @@ impl Date {
         // This truncation prevents errors such as 23:59:59:999... instead of 24 hours
         let now = chrono::Local::now()
             .with_second(0)
-            .unwrap()
+            .unwrap_or_default()
             .with_nanosecond(0)
-            .unwrap();
+            .unwrap_or_default();
 
         let time_delta = match self {
             Date::Day(naive_date) => now.date_naive().signed_duration_since(*naive_date),
@@ -72,10 +65,10 @@ impl Date {
                         naive_date_time
                             .time()
                             .with_second(0)
-                            .unwrap()
+                            .unwrap_or_default()
                             .with_nanosecond(0)
-                            .unwrap(),
-                    )
+                            .unwrap_or_default()
+                        )
             }
         };
         let (prefix, suffix) = match time_delta.num_seconds().cmp(&0) {

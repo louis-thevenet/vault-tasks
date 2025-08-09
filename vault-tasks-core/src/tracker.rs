@@ -114,7 +114,7 @@ impl Tracker {
         for n in 0..self.length {
             b.push_record(
                 [
-                    vec![date.to_string_format(!american_format)],
+                    vec![date.to_string_format(american_format)],
                     self.categories
                         .iter()
                         .map(|c| c.entries.get(n).unwrap().to_string())
@@ -129,7 +129,7 @@ impl Tracker {
             format!(
                 "Tracker: {} ({})\n",
                 self.name,
-                self.start_date.to_string_format(!american_format)
+                self.start_date.to_string_format(american_format)
             ),
             format!("{}", b.build().with(Style::markdown())),
         ]

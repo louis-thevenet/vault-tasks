@@ -176,7 +176,14 @@ impl Task {
     ) -> String {
         match &self.due_date {
             None => String::new(),
-            Some(date) => date.to_display_format(&symbols.due_date, american_format),
+            Some(date) => {
+                let this = &date;
+                let due_date_symbol: &str = &symbols.due_date;
+                format!(
+                    "{due_date_symbol} {}",
+                    this.to_string_format(american_format)
+                )
+            }
         }
     }
     #[must_use]
@@ -232,7 +239,7 @@ impl Task {
         };
 
         let due_date = if let Some(due_date) = &self.due_date {
-            due_date.to_string_format(!config.core.use_american_format)
+            due_date.to_string_format(config.core.use_american_format)
         } else {
             String::new()
         };

@@ -182,7 +182,7 @@ impl TaskListItem {
                     [
                         vec![Cell::from(
                             Span::raw(
-                                date.to_string_format(!self.config.core.use_american_format)
+                                date.to_string_format(self.config.core.use_american_format)
                                     .to_string(),
                             ) + if self.config.display.show_relative_due_dates {
                                 Span::raw(format!(" ({})", date.get_relative_str())).dim()
@@ -225,11 +225,11 @@ impl TaskListItem {
                         let res = if self.config.display.show_relative_due_dates {
                             format!(
                                 "{} ({})",
-                                date.to_string_format(!self.config.core.use_american_format,),
+                                date.to_string_format(self.config.core.use_american_format,),
                                 date.get_relative_str()
                             )
                         } else {
-                            date.to_string_format(!self.config.core.use_american_format)
+                            date.to_string_format(self.config.core.use_american_format)
                                 .to_string()
                         }
                         .len() as u16;

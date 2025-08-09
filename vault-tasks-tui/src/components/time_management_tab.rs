@@ -204,12 +204,7 @@ impl Component for TimeManagementTab<'_> {
         self.config = config;
         self.methods_list_state.select(Some(0));
         self.help_menu_widget = HelpMenu::new(Mode::TimeManagement, &self.config);
-        if self
-            .config
-            .tui
-            .time_management_methods_settings
-            .is_empty()
-        {
+        if self.config.tui.time_management_methods_settings.is_empty() {
             error!("Time management settings are empty");
         } else {
             self.method_settings_list_state.select_column(Some(1)); // Select value column

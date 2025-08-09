@@ -63,11 +63,20 @@ impl TaskManager {
     /// This function will return an error if the vault can't be parsed, or if tasks can't be fixed (relative dates are replaced by fixed dates for example).
     pub fn reload(&mut self, config: &TasksConfig) -> Result<()> {
         self.config = config.clone();
-        if self.config.core.vault_path.to_str().is_some_and(str::is_empty) {
+        if self
+            .config
+            .core
+            .vault_path
+            .to_str()
+            .is_some_and(str::is_empty)
+        {
             bail!( "No vault path provided (use `--vault-path <PATH>`) and no default path set in config file".to_string(), );
         }
         if !self.config.core.vault_path.exists() && !cfg!(test) {
-            bail!("Vault path does not exist: {:?}", self.config.core.vault_path);
+            bail!(
+                "Vault path does not exist: {:?}",
+                self.config.core.vault_path
+            );
         }
 
         let vault_parser = VaultParser::new(config.clone());

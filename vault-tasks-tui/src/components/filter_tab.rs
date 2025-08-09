@@ -58,10 +58,8 @@ impl FilterTab<'_> {
     }
     /// Updates tasks and tags with the current filter string
     fn update_matching_entries(&mut self) {
-        let filter_task = parse_search_input(
-            self.input_bar_widget.input.value(),
-            &self.config.core,
-        );
+        let filter_task =
+            parse_search_input(self.input_bar_widget.input.value(), &self.config.core);
 
         // Filter tasks
         self.matching_tasks = filter_to_vec(&self.task_mgr.tasks, &filter_task);
