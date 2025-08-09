@@ -11,29 +11,32 @@ invert_tracker_entries = true
 completion_bar_length = 5
 tracker_extra_blanks = 3
 
+[task_state_markers]
+todo = ' '
+done = 'x'
+incomplete = '/'
+canceled = '-'
+
+[pretty_symbols]
+task_done = "✅"
+task_todo = "❌"
+task_incomplete = "⏳"
+task_canceled = "🚫"
+due_date = "📅"
+priority = "❗"
+today_tag = "☀️"
+progress_bar_true = "🟩"
+progress_bar_false = "⬜️"
+
 # Nice if your terminal font doesn't have emojis
-# pretty_symbols.task_done="[x]"
-# pretty_symbols.task_todo="[ ]"
-# pretty_symbols.task_incomplete="[/]"
-# pretty_symbols.task_canceled="[-]"
-# pretty_symbols.due_date="@"
-# pretty_symbols.priority="!"
-# pretty_symbols.today_tag="+"
-# pretty_symbols.progress_bar_true="="
-# pretty_symbols.progress_bar_false=" "
+# task_done="[x]"
+# task_todo="[ ]"
+# task_incomplete="[/]"
+# task_canceled="[-]"
+# due_date="@"
+# priority="!"
+# today_tag="+"
+# progress_bar_true="="
+# progress_bar_false=" "
 
-pretty_symbols.task_done = "✅"
-pretty_symbols.task_todo = "❌"
-pretty_symbols.task_incomplete = "⏳"
-pretty_symbols.task_canceled = "🚫"
-pretty_symbols.due_date = "📅"
-pretty_symbols.priority = "❗"
-pretty_symbols.today_tag = "☀️"
-pretty_symbols.progress_bar_true = "🟩"
-pretty_symbols.progress_bar_false = "⬜️"
-
-task_state_markers.todo = ' '
-task_state_markers.done = 'x'
-task_state_markers.incomplete = '/'
-task_state_markers.canceled = '-'
 
