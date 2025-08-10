@@ -169,55 +169,42 @@ preview_headers = "bold rgb 255 153 000"
 highlighted_style = "dark grey on rgb 255 153 000"
 highlighted_bar_style = "rgb 255 153 000"
 
+[time_management_methods_settings]
 
 [[time_management_methods_settings.FlowTime]]
 name = "Break Factor"
 hint = "Break time is (focus time) / (break factor)"
-
-[time_management_methods_settings.FlowTime.value]
-Int = 5
+value.Int = 5
 
 [[time_management_methods_settings.FlowTime]]
 name = "Auto Skip"
 hint = "Whether to wait for user input to enter new segments or not"
-
-[time_management_methods_settings.FlowTime.value]
-Bool = false
+value.Bool = false
 
 [[time_management_methods_settings.Pomodoro]]
 name = "Focus Time"
 hint = ""
-
-[time_management_methods_settings.Pomodoro.value.Duration]
-secs = 1500
-nanos = 0
+value.Duration.secs = 1500
+value.Duration.nanos = 0
 
 [[time_management_methods_settings.Pomodoro]]
 name = "Short Break Time"
 hint = ""
-
-[time_management_methods_settings.Pomodoro.value.Duration]
-secs = 300
-nanos = 0
+value.Duration.secs = 300
+value.Duration.nanos = 0
 
 [[time_management_methods_settings.Pomodoro]]
 name = "Auto Skip"
 hint = "Whether to wait for user input to enter new segments or not"
-
-[time_management_methods_settings.Pomodoro.value]
-Bool = false
+value.Bool = false
 
 [[time_management_methods_settings.Pomodoro]]
 name = "Long Break Time"
 hint = ""
-
-[time_management_methods_settings.Pomodoro.value.Duration]
-secs = 900
-nanos = 0
+value.Duration.secs = 900
+value.Duration.nanos = 0
 
 [[time_management_methods_settings.Pomodoro]]
 name = "Long Break Interval"
 hint = "Short breaks before a long break"
-
-[time_management_methods_settings.Pomodoro.value]
-Int = 4
+value.Int = 4
