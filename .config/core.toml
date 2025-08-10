@@ -10,13 +10,6 @@ tracker_extra_blanks = 3
 [display]
 show_relative_due_dates = true
 
-
-[task_state_markers]
-todo = ' '
-done = 'x'
-incomplete = '/'
-canceled = '-'
-
 [pretty_symbols]
 task_done = "✅"
 task_todo = "❌"
@@ -28,6 +21,12 @@ today_tag = "☀️"
 progress_bar_true = "🟩"
 progress_bar_false = "⬜️"
 
+[task_state_markers]
+todo = ' '
+done = 'x'
+incomplete = '/'
+canceled = '-'
+
 # Nice if your terminal font doesn't have emojis
 # task_done="[x]"
 # task_todo="[ ]"
@@ -38,5 +37,3 @@ progress_bar_false = "⬜️"
 # today_tag="+"
 # progress_bar_true="="
 # progress_bar_false=" "
-
-
