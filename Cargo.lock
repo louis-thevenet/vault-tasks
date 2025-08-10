@@ -4009,6 +4009,45 @@ checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 [[package]]
 name = "vault-tasks-cli"
 version = "0.1.0"
+dependencies = [
+ "better-panic",
+ "chrono",
+ "clap",
+ "clap_complete",
+ "color-eyre",
+ "config",
+ "crossterm",
+ "derive_deref",
+ "directories",
+ "edit",
+ "futures",
+ "human-panic",
+ "lazy_static",
+ "lexical-sort",
+ "libc",
+ "notify-rust",
+ "pretty_assertions",
+ "ratatui",
+ "ratskin",
+ "serde",
+ "signal-hook",
+ "strip-ansi-escapes",
+ "strum 0.27.2",
+ "strum_macros 0.27.2",
+ "tabled",
+ "time",
+ "tokio",
+ "tokio-util",
+ "toml",
+ "tracing",
+ "tracing-error",
+ "tracing-subscriber",
+ "tui-input",
+ "tui-scrollview",
+ "tui-widget-list",
+ "vault-tasks-core",
+ "winnow",
+]
 
 [[package]]
 name = "vault-tasks-core"
