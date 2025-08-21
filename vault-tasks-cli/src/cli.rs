@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{default, path::PathBuf};
 
 use clap::{ArgGroup, Args, Parser, Subcommand, ValueEnum};
 
@@ -6,6 +6,12 @@ use clap::{ArgGroup, Args, Parser, Subcommand, ValueEnum};
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
+    /// Use a custom config file
+    #[arg(short, long, value_name = "PATH")]
+    pub config_path: Option<PathBuf>,
+    /// Override default vault path
+    #[arg(short, long, value_name = "PATH")]
+    pub vault_path: Option<PathBuf>,
 }
 
 /// Manage tasks from your Markdown vault.
