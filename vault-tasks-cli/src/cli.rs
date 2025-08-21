@@ -61,7 +61,6 @@ pub struct TaskFilterArgs {
 #[derive(Args, Debug)]
 #[command(group(
     ArgGroup::new("add")
-        .required(true)
         .args(["path", "fuzzy"]),
 ))]
 pub struct FileSelectorArgs {
