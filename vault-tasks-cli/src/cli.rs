@@ -50,8 +50,8 @@ pub struct TaskFilterArgs {
     /// Tags to exclude separated by comma.
     #[arg(long, alias = "nt", value_delimiter = ',')]
     pub without_tag: Vec<String>,
-    #[arg(long, alias = "ws", value_delimiter = ',', default_value = "todo")]
     /// States to keep separated by comma.
+    #[arg(long, alias = "ws", value_delimiter = ',', default_value = "todo")]
     pub with_state: Vec<CliTaskState>,
     /// States to exclude separated by comma.
     #[arg(long, alias = "ns", value_delimiter = ',')]
