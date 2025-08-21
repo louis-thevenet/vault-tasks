@@ -1,9 +1,9 @@
-use std::{default, path::PathBuf};
+use std::path::PathBuf;
 
 use clap::{ArgGroup, Args, Parser, Subcommand, ValueEnum};
 
 #[derive(Parser, Debug)]
-pub struct Cli {
+pub(crate) struct Cli {
     #[command(subcommand)]
     pub command: Commands,
     /// Use a custom config file
@@ -16,7 +16,7 @@ pub struct Cli {
 
 /// Manage tasks from your Markdown vault.
 #[derive(Subcommand, Debug)]
-pub enum Commands {
+pub(crate) enum Commands {
     /// List tasks
     List {
         #[command(flatten)]
@@ -46,7 +46,7 @@ pub enum Commands {
 
 /// Filter tasks based on different criteria.
 #[derive(Args, Debug)]
-pub struct TaskFilterArgs {
+pub(crate) struct TaskFilterArgs {
     /// Number of elements to return.
     #[arg(short, long, alias = "n")]
     pub limit: Option<usize>,
@@ -69,22 +69,22 @@ pub struct TaskFilterArgs {
     ArgGroup::new("add")
         .args(["path", "fuzzy"]),
 ))]
-pub struct FileSelectorArgs {
+pub(crate) struct FileSelectorArgs {
     /// Select paths with fuzzy finding.
     #[arg(long)]
-    fuzzy: bool,
+    pub fuzzy: bool,
 
     /// Path(s) to act on. Some command will fail if more than one path is provided.
     ///
     /// If no paths are provided, the default path from config file will be used.
     /// If no default path is set, current working directory will be used.
     // #[arg(short, long)]
-    path: Vec<PathBuf>,
+    pub path: Vec<PathBuf>,
 }
 
 /// Possible states for a task.
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
-pub enum CliTaskState {
+pub(crate) enum CliTaskState {
     Done,
     Todo,
     Cancelled,
