@@ -18,12 +18,20 @@ impl VaultParser {
         Self { config }
     }
     pub fn scan_vault(&self) -> Result<VaultData> {
-        let mut tasks = VaultData::Directory(
-            self.config.core.vault_path.to_str().unwrap().to_owned(),
-            vec![],
-        );
-        info!("Scanning {:?}", self.config.core.vault_path);
-        self.scan(&self.config.core.vault_path, &mut tasks)?;
+        let mut vaults = vec![];
+        info!("Scanning {:?}", self.config.core.vault_paths);
+        for path in &self.config.core.vault_paths {
+            let mut value = VaultData::Directory(
+                path.file_name()
+                    .unwrap_or(path.as_os_str())
+                    .to_string_lossy()
+                    .to_string(),
+                vec![],
+            );
+            self.scan(path, &mut value)?;
+            vaults.push(value);
+        }
+        let tasks = VaultData::Directory(String::new(), vaults);
         Ok(tasks)
     }
     pub fn parse_single_task(&self, task: &str, filename: &str) -> Result<Task> {

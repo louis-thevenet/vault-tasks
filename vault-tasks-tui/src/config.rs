@@ -169,7 +169,7 @@ impl Config {
             );
         }
         let tasks_config = TasksConfig::new(&ProtoConfig {
-            vault_path: args.vault_path.clone(),
+            vault_paths: args.vault_path.clone(),
             config_path: Some(config_path),
         })
         .unwrap(); // TODO: no unwrap

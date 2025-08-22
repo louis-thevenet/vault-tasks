@@ -2,7 +2,10 @@
 parse_dot_files = false
 file_tags_propagation = true
 ignored = []
-# vault_path= "./test-vault" # default vault path when none is provided
+# default vault paths when none is provided
+vault_paths = [
+  # "./test-vault",
+]
 use_american_format = true
 indent_length = 2
 tracker_extra_blanks = 3

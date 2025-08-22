@@ -10,7 +10,7 @@ use crate::config::{get_config_dir, get_data_dir};
 pub struct Cli {
     /// Vault to open (can be a single file or a directory)
     #[arg(short, long, value_name = "PATH")]
-    pub vault_path: Option<PathBuf>,
+    pub vault_path: Vec<PathBuf>,
     /// Show frame rate and tick rate
     #[arg(short, long, action = ArgAction::SetTrue)]
     pub show_fps: bool,

@@ -74,7 +74,7 @@ pub struct PrettySymbolsConfig {
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct CoreConfig {
     #[serde(default)]
-    pub vault_path: PathBuf,
+    pub vault_paths: Vec<PathBuf>,
     #[serde(default)]
     pub use_american_format: bool,
     #[serde(default)]
@@ -111,13 +111,13 @@ impl Default for TasksConfig {
     fn default() -> Self {
         let mut config: Self = toml::from_str(CONFIG).unwrap();
         if cfg!(test) {
-            config.core.vault_path = PathBuf::from("./test-vault");
+            config.core.vault_paths = vec![PathBuf::from("./test-vault")];
         }
         config
     }
 }
 pub struct ProtoConfig {
-    pub vault_path: Option<PathBuf>,
+    pub vault_paths: Vec<PathBuf>,
     pub config_path: Option<PathBuf>,
 }
 impl TasksConfig {
@@ -174,9 +174,7 @@ impl TasksConfig {
 
         cfg = Self::merge_tasks_config(cfg, default_config);
 
-        if let Some(path) = &params.vault_path {
-            cfg.core.vault_path.clone_from(path);
-        }
+        cfg.core.vault_paths.append(params.vault_paths);
 
         Ok(cfg)
     }
@@ -198,10 +196,10 @@ impl TasksConfig {
                 },
                 use_american_format: user_config.core.use_american_format,
 
-                vault_path: if user_config.core.vault_path == PathBuf::new() {
-                    default_config.core.vault_path
+                vault_paths: if user_config.core.vault_paths.is_empty() {
+                    default_config.core.vault_paths
                 } else {
-                    user_config.core.vault_path
+                    user_config.core.vault_paths
                 },
                 tasks_drop_file: if user_config.core.tasks_drop_file.is_empty() {
                     default_config.core.tasks_drop_file

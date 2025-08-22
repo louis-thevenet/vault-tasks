@@ -96,20 +96,28 @@ impl ExplorerTab<'_> {
         Ok(())
     }
     pub(super) fn get_current_path_to_file(&self) -> PathBuf {
-        let mut path = self.config.core.core.vault_path.clone();
+        let mut paths = self
+            .config
+            .core
+            .core
+            .vault_paths
+            .clone()
+            .first()
+            .unwrap()
+            .clone(); //TODO: tmp
         for e in &self
             .get_preview_path()
             .unwrap_or_else(|_| self.current_path.clone())
         {
-            if path
+            if paths
                 .extension()
                 .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
             {
                 break;
             }
-            path.push(e);
+            paths.push(e);
         }
-        path
+        paths
     }
     pub(super) fn get_selected_task(&self) -> Option<Task> {
         let path = match self.get_preview_path() {
