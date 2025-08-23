@@ -109,11 +109,7 @@ pub struct TasksConfig {
 
 impl Default for TasksConfig {
     fn default() -> Self {
-        let mut config: Self = toml::from_str(CONFIG).unwrap();
-        if cfg!(test) {
-            config.core.vault_paths = vec![PathBuf::from("./test-vault")];
-        }
-        config
+        toml::from_str(CONFIG).unwrap()
     }
 }
 pub struct ProtoConfig {
@@ -174,7 +170,7 @@ impl TasksConfig {
 
         cfg = Self::merge_tasks_config(cfg, default_config);
 
-        cfg.core.vault_paths.append(params.vault_paths);
+        cfg.core.vault_paths.append(&mut params.vault_paths.clone());
 
         Ok(cfg)
     }
