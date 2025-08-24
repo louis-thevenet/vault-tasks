@@ -130,7 +130,14 @@ fn filter_to_vec_layer(
     res: &mut Vec<Task>,
 ) {
     match vault_data {
-        VaultData::Directory(_, children) | VaultData::Header(_, _, children) => {
+        VaultData::Directory(_, children)
+        | VaultData::Header(_, _, children)
+        | VaultData::Root { vaults: children }
+        | VaultData::Vault {
+            short_name: _,
+            path: _,
+            content: children,
+        } => {
             for c in children {
                 filter_to_vec_layer(&c.clone(), task_filter, explore_children, res);
             }
@@ -168,6 +175,39 @@ pub fn filter_to_vec(vault_data: &VaultData, filter: &Filter) -> Vec<Task> {
 /// Only keeps the `VaultData` entries that match the filter criteria.
 pub fn filter(vault_data: &VaultData, task_filter: &Filter) -> Option<VaultData> {
     match vault_data {
+        VaultData::Root { vaults } => {
+            let res = vaults
+                .iter()
+                .filter_map(|vault| filter(vault, task_filter))
+                .collect::<Vec<VaultData>>();
+            if res.is_empty() {
+                None
+            } else {
+                Some(VaultData::Root { vaults: res })
+            }
+        }
+        VaultData::Vault {
+            short_name,
+            path,
+            content,
+        } => {
+            let mut actual_children = vec![];
+            for child in content {
+                let child_clone = child.clone();
+                if let Some(child) = filter(&child_clone, task_filter) {
+                    actual_children.push(child);
+                }
+            }
+            if actual_children.is_empty() {
+                None
+            } else {
+                Some(VaultData::Vault {
+                    short_name: short_name.to_string(),
+                    path: path.to_path_buf(),
+                    content: actual_children,
+                })
+            }
+        }
         VaultData::Header(level, name, children) => {
             let mut actual_children = vec![];
             for child in children {

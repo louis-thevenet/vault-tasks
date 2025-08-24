@@ -21,17 +21,19 @@ impl VaultParser {
         let mut vaults = vec![];
         info!("Scanning {:?}", self.config.core.vault_paths);
         for path in &self.config.core.vault_paths {
-            let mut value = VaultData::Directory(
-                path.file_name()
+            let mut value = VaultData::Vault {
+                short_name: path
+                    .file_name()
                     .unwrap_or(path.as_os_str())
                     .to_string_lossy()
                     .to_string(),
-                vec![],
-            );
+                path: path.to_path_buf(),
+                content: vec![],
+            };
             self.scan(path, &mut value)?;
             vaults.push(value);
         }
-        let tasks = VaultData::Directory(String::new(), vaults);
+        let tasks = VaultData::Root { vaults };
         Ok(tasks)
     }
     pub fn parse_single_task(&self, task: &str, filename: &str) -> Result<Task> {
@@ -88,8 +90,17 @@ impl VaultParser {
                 continue;
             }
 
-            let VaultData::Directory(_, children) = tasks else {
-                bail!("Error while scanning directories, FileEntry was not a Directory");
+            let children = match tasks {
+                VaultData::Root { vaults } => vaults,
+                VaultData::Vault {
+                    short_name,
+                    path,
+                    content,
+                } => content,
+                VaultData::Directory(_, vault_datas) => vault_datas,
+                VaultData::Header(_, _, _) | VaultData::Task(_) | VaultData::Tracker(_) => {
+                    bail!("Invalid file entry type for scan")
+                }
             };
 
             if entry.file_type()?.is_dir() {

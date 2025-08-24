@@ -89,7 +89,14 @@ impl TaskManager {
     /// Explores the vault and fills a `&mut HashSet<String>` with every tags found.
     pub fn collect_tags(tasks: &VaultData, tags: &mut HashSet<String>) {
         match tasks {
-            VaultData::Directory(_, children) | VaultData::Header(_, _, children) => {
+            VaultData::Directory(_, children)
+            | VaultData::Header(_, _, children)
+            | VaultData::Vault {
+                short_name: _,
+                path: _,
+                content: children,
+            }
+            | VaultData::Root { vaults: children } => {
                 children.iter().for_each(|c| Self::collect_tags(c, tags));
             }
             VaultData::Task(task) => {
@@ -120,8 +127,16 @@ impl TaskManager {
             } else {
                 for entry in file_entry {
                     match entry {
+                        VaultData::Root { vaults } => {
+                            return aux(vaults, selected_header_path, path_index);
+                        }
                         VaultData::Directory(name, children)
-                        | VaultData::Header(_, name, children) => {
+                        | VaultData::Header(_, name, children)
+                        | VaultData::Vault {
+                            short_name: name,
+                            content: children,
+                            path: _,
+                        } => {
                             if name == selected_header_path[path_index] {
                                 return aux(children, selected_header_path, path_index + 1);
                             }
@@ -154,7 +169,7 @@ impl TaskManager {
         };
 
         match filtered_tasks {
-            Some(VaultData::Directory(_, entries)) => aux(entries, selected_header_path, 0),
+            Some(VaultData::Root { vaults }) => aux(vaults, selected_header_path, 0),
             None => bail!("Empty Vault"),
             _ => {
                 error!("First layer of VaultData was not a Directory");
@@ -173,6 +188,17 @@ impl TaskManager {
             .get_explorer_entries(path)? // Get the entries at the path
             .iter() // Discard every children
             .map(|vd| match vd {
+                VaultData::Root { vaults: _ } => VaultData::Root { vaults: vec![] },
+                VaultData::Vault {
+                    short_name,
+                    path,
+                    content: _,
+                } => VaultData::Vault {
+                    short_name: short_name.clone(),
+                    path: path.clone(),
+                    content: vec![],
+                },
+
                 VaultData::Directory(name, _) => VaultData::Directory(name.clone(), vec![]),
                 VaultData::Header(level, name, _) => {
                     VaultData::Header(*level, name.clone(), vec![])
@@ -195,6 +221,21 @@ impl TaskManager {
             file_entry: &VaultData,
         ) -> Result<()> {
             match file_entry {
+                VaultData::Root { vaults } => {
+                    for vault in vaults {
+                        explore_tasks_rec(config, filename, vault)?;
+                    }
+                }
+                VaultData::Vault {
+                    short_name: _,
+                    path,
+                    content,
+                } => {
+                    filename.push(path);
+                    content
+                        .iter()
+                        .try_for_each(|c| explore_tasks_rec(config, filename, c))?;
+                }
                 VaultData::Header(level, name, children) => {
                     let mut filename = filename.clone();
                     if *level == 0 {
@@ -239,7 +280,23 @@ impl TaskManager {
                 Ok(file_entry)
             } else {
                 match &file_entry {
-                    VaultData::Header(_, name, children) | VaultData::Directory(name, children) => {
+                    VaultData::Root { vaults } => {
+                        for vault in vaults {
+                            if let Ok(found) = aux(vault.clone(), selected_header_path, path_index)
+                            {
+                                return Ok(found);
+                            }
+                        }
+                        bail!("Couldn't find corresponding entry");
+                    }
+
+                    VaultData::Header(_, name, children)
+                    | VaultData::Directory(name, children)
+                    | VaultData::Vault {
+                        short_name: name,
+                        path: _,
+                        content: children,
+                    } => {
                         if *name == selected_header_path[path_index] {
                             if path_index + 1 == selected_header_path.len() {
                                 return Ok(file_entry.clone());
@@ -295,7 +352,7 @@ impl TaskManager {
             Some(self.tasks.clone())
         };
         match filtered_tasks {
-            Some(VaultData::Directory(_, entries)) => {
+            Some(VaultData::Directory(_, entries) | VaultData::Root { vaults: entries }) => {
                 for entry in entries {
                     if let Ok(res) = aux(entry, path, 0) {
                         return Ok(res);
@@ -321,7 +378,24 @@ impl TaskManager {
                 true
             } else {
                 match file_entry {
-                    VaultData::Directory(name, children) | VaultData::Header(_, name, children) => {
+                    VaultData::Root { vaults } => {
+                        debug!("Checking if path can be entered in the root vaults");
+                        // If we are at the root, we can enter it
+                        if path_index == 0 {
+                            return true;
+                        }
+                        vaults
+                            .iter()
+                            .any(|v| aux(v.clone(), selected_header_path, path_index))
+                    }
+                    VaultData::Directory(name, children)
+                    | VaultData::Header(_, name, children)
+                    | VaultData::Vault {
+                        short_name: name,
+                        path: _,
+                        content: children,
+                    } => {
+                        debug!("Checking if path can be entered in Directory or Header: {name}");
                         if name == selected_header_path[path_index] {
                             return children
                                 .iter()
@@ -348,11 +422,14 @@ impl TaskManager {
         }
 
         let filtered_tasks = if let Some(task_filter) = &self.current_filter {
+            debug!("filter?");
             filter(&self.tasks, task_filter)
         } else {
+            debug!("No filter");
             return false;
         };
-        let Some(VaultData::Directory(_, entries)) = filtered_tasks else {
+        let Some(VaultData::Root { vaults: entries }) = filtered_tasks else {
+            debug!("Filtered tasks were not a Directory");
             return false;
         };
         entries
@@ -365,7 +442,20 @@ impl TaskManager {
         /// `path_index` is the index of the current path element we are looking for.
         fn aux(file_entry: &mut VaultData, filename: &str, new_task: &Task) -> Result<()> {
             match file_entry {
-                VaultData::Directory(name, children) => {
+                VaultData::Root { vaults } => {
+                    for vault in vaults {
+                        if let Ok(()) = aux(vault, filename, new_task) {
+                            return Ok(());
+                        }
+                    }
+                    bail!("Couldn't find corresponding entry in vaults");
+                }
+                VaultData::Directory(name, children)
+                | VaultData::Vault {
+                    short_name: name,
+                    path: _,
+                    content: children,
+                } => {
                     // Look for the child that matches the path
                     for child in children {
                         if let Ok(()) = aux(child, filename, new_task) {

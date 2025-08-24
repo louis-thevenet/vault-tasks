@@ -253,7 +253,15 @@ impl ExplorerTab<'_> {
                 );
             }
             // Else render a ListView widget
-            Some(VaultData::Directory(_, _)) => Self::build_list(
+            Some(
+                VaultData::Root { vaults: _ }
+                | VaultData::Vault {
+                    short_name: _,
+                    path: _,
+                    content: _,
+                }
+                | VaultData::Directory(_, _),
+            ) => Self::build_list(
                 Self::apply_prefixes(&Self::vault_data_to_entry_list(
                     &self
                         .task_mgr

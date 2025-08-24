@@ -260,7 +260,13 @@ impl TaskListItem {
     fn compute_height(item: &VaultData, max_width: u16) -> u16 {
         let rat_skin = RatSkin::default();
         match &item {
-            VaultData::Directory(_, _) => 1,
+            VaultData::Root { vaults: _ } // TODO: not sure about that
+            | VaultData::Vault {
+                short_name: _,
+                path: _,
+                content: _,
+            }
+            | VaultData::Directory(_, _) => 1,
             VaultData::Header(_, _, children) => {
                 children
                     .iter()
@@ -314,6 +320,12 @@ impl Widget for TaskListItem {
     {
         let rat_skin = RatSkin::default();
         match &self.item {
+            VaultData::Root { vaults: _ } => error!("TaskList widget received a root item"),
+            VaultData::Vault {
+                short_name,
+                path: _,
+                content: _,
+            } => error!("TaskList widget received a vault item: {short_name}"),
             VaultData::Directory(name, _) => error!("TaskList widget received a directory: {name}"),
             VaultData::Header(_level, name, children) => {
                 let surrounding_block = Block::default().borders(Borders::TOP).title(

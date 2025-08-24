@@ -1,9 +1,16 @@
-use std::fmt::Display;
+use std::{fmt::Display, path::PathBuf};
 
 use super::{task::Task, tracker::Tracker};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VaultData {
+    /// Virtual root, containing all vaults
+    Root { vaults: Vec<VaultData> },
+    Vault {
+        short_name: String,
+        path: PathBuf,
+        content: Vec<VaultData>,
+    },
     /// Name, Content
     Directory(String, Vec<VaultData>),
     /// Name, Content
@@ -46,7 +53,12 @@ impl Display for VaultData {
                         fmt_aux(entry, f, depth + 1)?;
                     }
                 }
-                VaultData::Directory(name, entries) => {
+                VaultData::Vault {
+                    short_name: name,
+                    content: entries,
+                    path: _,
+                }
+                | VaultData::Directory(name, entries) => {
                     write_underline_with_indent(&name.to_string(), depth, f)?;
                     for entry in entries {
                         fmt_aux(entry, f, depth + 1)?;
@@ -69,6 +81,11 @@ impl Display for VaultData {
                     for line in tracker.to_string().split('\n') {
                         write_indent(depth, f)?;
                         writeln!(f, "{line}")?;
+                    }
+                }
+                VaultData::Root { vaults } => {
+                    for vault in vaults {
+                        fmt_aux(vault, f, depth + 1)?;
                     }
                 }
             }

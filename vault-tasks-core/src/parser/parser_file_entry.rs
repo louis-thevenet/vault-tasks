@@ -201,6 +201,14 @@ impl ParserFileEntry<'_> {
                 VaultData::Tracker(_tracker) => {
                     bail!("Failed to insert task: tried to insert into a tracker")
                 }
+                VaultData::Root { vaults: _ } => {
+                    bail!("Failed to insert task: tried to insert task into Root")
+                }
+                VaultData::Vault {
+                    short_name,
+                    path: _,
+                    content: _,
+                } => bail!("Failed to insert task: tried to insert task into Vault {short_name}"),
             }
         }
         append_task_aux(file_entry, task, 0, header_depth, 0, indent_length)
@@ -254,6 +262,15 @@ impl ParserFileEntry<'_> {
                     bail!("Failed to insert task: tried to insert into a directory")
                 }
                 VaultData::Tracker(_tracker) => bail!("Tried to insert a Tracker in a tracker"),
+                VaultData::Root { vaults: _ } => {
+                    bail!("Failed to insert task: tried to insert task into Root")
+                }
+
+                VaultData::Vault {
+                    short_name,
+                    path: _,
+                    content: _,
+                } => bail!("Failed to insert task: tried to insert task into Vault {short_name}"),
             }
         }
         append_tracker_aux(file_entry, tracker, 0, header_depth)
@@ -327,6 +344,16 @@ impl ParserFileEntry<'_> {
                     "Error: tried to insert a header into a tracker: {}",
                     tracker.name
                 ),
+                VaultData::Root { vaults: _ } => {
+                    error!("Error: tried to insert a header into a Root");
+                }
+                VaultData::Vault {
+                    short_name,
+                    path: _,
+                    content: _,
+                } => {
+                    error!("Error: tried to insert a header into a Vault {short_name}");
+                }
             }
         }
         insert_at_aux(
@@ -435,6 +462,16 @@ impl ParserFileEntry<'_> {
                 }
                 VaultData::Tracker(_tracker) => {
                     bail!("Failed to insert description: tried to insert into a tracker")
+                }
+                VaultData::Root { vaults: _ } => {
+                    bail!("Error: tried to insert a header into a Root");
+                }
+                VaultData::Vault {
+                    short_name,
+                    path: _,
+                    content: _,
+                } => {
+                    bail!("Error: tried to insert a header into a Vault {short_name}");
                 }
             }
         }
@@ -701,7 +738,27 @@ impl ParserFileEntry<'_> {
     /// Removes any empty headers from a `FileEntry`
     fn clean_file_entry(&self, file_entry: &mut VaultData) -> Option<VaultData> {
         match file_entry {
-            VaultData::Header(_, name, children) | VaultData::Directory(name, children) => {
+            VaultData::Root { vaults } => {
+                // Clean all vaults
+                let mut actual_vaults = vec![];
+                for vault in vaults.iter_mut() {
+                    let mut vault_clone = vault.clone();
+                    if self.clean_file_entry(&mut vault_clone).is_some() {
+                        actual_vaults.push(vault_clone);
+                    }
+                }
+                *vaults = actual_vaults;
+                if vaults.is_empty() {
+                    return None;
+                }
+            }
+            VaultData::Header(_, name, children)
+            | VaultData::Directory(name, children)
+            | VaultData::Vault {
+                short_name: name,
+                path: _,
+                content: children,
+            } => {
                 let mut actual_children = vec![];
                 for child in children.iter_mut() {
                     let mut child_clone = child.clone();
@@ -746,7 +803,14 @@ impl ParserFileEntry<'_> {
 fn add_global_tag(file_entry: &mut VaultData, tag: &String) {
     fn add_tag_aux(file_entry: &mut VaultData, tag: &String) {
         match file_entry {
-            VaultData::Header(_, _, children) | VaultData::Directory(_, children) => {
+            VaultData::Root { vaults: children }
+            | VaultData::Vault {
+                short_name: _,
+                path: _,
+                content: children,
+            }
+            | VaultData::Header(_, _, children)
+            | VaultData::Directory(_, children) => {
                 for child in children.iter_mut().rev() {
                     add_tag_aux(child, tag);
                 }
