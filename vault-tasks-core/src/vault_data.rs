@@ -1,24 +1,37 @@
 use std::{fmt::Display, path::PathBuf};
 
 use super::{task::Task, tracker::Tracker};
-
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum VaultData {
-    /// Virtual root, containing all vaults
-    Root { vaults: Vec<VaultData> },
+enum Node {
     Vault {
-        short_name: String,
+        name: String,
         path: PathBuf,
-        content: Vec<VaultData>,
+        content: Vec<Node>,
     },
-    /// Name, Content
-    Directory(String, Vec<VaultData>),
-    /// Name, Content
-    Header(usize, String, Vec<VaultData>),
-    /// Task, Subtasks
+    Directory {
+        name: String,
+        path: PathBuf,
+        content: Vec<Node>,
+    },
+    File {
+        name: String,
+        path: PathBuf,
+        content: Vec<FileEntry>,
+    },
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FileEntry {
+    Header {
+        name: String,
+        heading_level: usize,
+        content: Vec<FileEntry>,
+    },
     Task(Task),
-    /// Tracker
     Tracker(Tracker),
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VaultData {
+    root: Vec<Node>,
 }
 
 impl Display for VaultData {
