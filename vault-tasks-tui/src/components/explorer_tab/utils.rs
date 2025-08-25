@@ -102,15 +102,17 @@ impl ExplorerTab<'_> {
         Ok(())
     }
     pub(super) fn get_current_path_to_file(&self) -> PathBuf {
+        let Some(vault_name) = self.current_path.first() else {
+            error!("Current path is empty, cannot determine vault name");
+            return PathBuf::new();
+        };
         let mut paths = self
             .config
             .core
             .core
             .vault_paths
-            .clone()
-            .first()
-            .unwrap()
-            .clone(); //TODO: tmp
+            .iter()
+            .find(|v| v == vault_name); // TODO: find path by name
         for e in &self
             .get_preview_path()
             .unwrap_or_else(|_| self.current_path.clone())

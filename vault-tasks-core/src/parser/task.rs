@@ -76,7 +76,7 @@ pub fn parse_task(input: &mut &str, filename: String, config: &TasksConfig) -> R
 
     let mut task = Task {
         state: task_state,
-        filename,
+        filename_deprec: filename,
         ..Default::default()
     };
 
@@ -170,7 +170,7 @@ mod test {
             priority: 0,
             state: State::ToDo,
             line_number: Some(1),
-            filename: String::new(),
+            filename_deprec: String::new(),
             is_today: false,
             completion: None,
         };

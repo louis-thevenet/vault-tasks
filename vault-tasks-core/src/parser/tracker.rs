@@ -490,7 +490,7 @@ mod tests {
                     })],
                 },
             ],
-            filename: String::new(),
+            filename_deprec: String::new(),
             line_number: 0,
         };
 
@@ -538,7 +538,7 @@ mod tests {
                     entries: vec![TrackerEntry::Score(ScoreEntry { score: 1 })],
                 },
             ],
-            filename: String::new(),
+            filename_deprec: String::new(),
             line_number: 0,
         };
 
@@ -564,7 +564,7 @@ mod tests {
     fn test_parse_entries_first_time_type_inference() {
         // Tracker with no existing entries - should infer types
         let tracker = Tracker {
-            filename: String::new(),
+            filename_deprec: String::new(),
             line_number: 0,
             name: "New Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
@@ -612,7 +612,7 @@ mod tests {
     #[test]
     fn test_parse_entries_with_datetime() {
         let tracker = Tracker {
-            filename: String::new(),
+            filename_deprec: String::new(),
             line_number: 0,
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
@@ -641,7 +641,7 @@ mod tests {
     #[test]
     fn test_parse_entries_empty_first_entry_becomes_blank() {
         let tracker = Tracker {
-            filename: String::new(),
+            filename_deprec: String::new(),
             line_number: 0,
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
@@ -669,7 +669,7 @@ mod tests {
     #[test]
     fn test_parse_entries_note_with_special_characters() {
         let tracker = Tracker {
-            filename: String::new(),
+            filename_deprec: String::new(),
             line_number: 0,
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
@@ -699,7 +699,7 @@ mod tests {
     #[test]
     fn test_parse_entries_score_type_mismatch_error() {
         let tracker = Tracker {
-            filename: String::new(),
+            filename_deprec: String::new(),
             line_number: 0,
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
@@ -722,7 +722,7 @@ mod tests {
     #[test]
     fn test_parse_entries_trimming_whitespace() {
         let tracker = Tracker {
-            filename: String::new(),
+            filename_deprec: String::new(),
             line_number: 0,
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),

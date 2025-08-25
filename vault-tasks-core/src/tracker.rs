@@ -3,6 +3,7 @@ use color_eyre::{Result, eyre::bail};
 use frequency::Frequency;
 use std::fs::read_to_string;
 use std::io::Write;
+use std::path::PathBuf;
 use std::{fmt::Display, fs::File, path};
 use tabled::{builder::Builder, settings::Style};
 use tracker_category::{NoteEntry, TrackerCategory, TrackerEntry};
@@ -51,7 +52,8 @@ impl NewTracker {
             categories: tracker_categories,
             start_date: frequency.fix_date(&self.start_date),
             length: 0,
-            filename,
+            filename_deprec: filename,
+            path: PathBuf::new(), // TODO: FIX THIS UPPER
             line_number,
         }
     }
@@ -61,7 +63,8 @@ pub struct Tracker {
     /// Name of the tracker
     pub name: String,
     /// Filename
-    pub filename: String,
+    pub filename_deprec: String,
+    pub path: PathBuf,
     /// Line number in the file where the tracker is defined
     pub line_number: usize,
     /// Date of the first occurrence
@@ -137,20 +140,19 @@ impl Tracker {
     }
 
     /// Replaces the input tracker with the parsed and fixed version.
-    pub(crate) fn fix_tracker_attributes(
-        &self,
-        config: &TasksConfig,
-        path: &path::Path,
-    ) -> Result<()> {
-        if !path.is_file() {
-            bail!("Tried to fix tasks attributes but {path:?} is not a file");
+    pub(crate) fn fix_tracker_attributes(&self, config: &TasksConfig) -> Result<()> {
+        if !self.path.is_file() {
+            bail!(
+                "Tried to fix tasks attributes but {0:?} is not a file",
+                self.path
+            );
         }
         let new_lines = self
             .fmt(config.core.use_american_format)
             .split('\n')
             .map(str::to_owned)
             .collect::<Vec<String>>();
-        let content = read_to_string(path)?;
+        let content = read_to_string(self.path.clone())?;
         let mut lines = content
             .split('\n')
             .map(str::to_owned)
@@ -163,7 +165,7 @@ impl Tracker {
             }
         }
 
-        let mut file = File::create(path)?;
+        let mut file = File::create(self.path.clone())?;
         file.write_all(lines.join("\n").as_bytes())?;
         Ok(())
     }
@@ -263,7 +265,7 @@ mod tests {
     fn create_test_tracker() -> Tracker {
         Tracker {
             name: "Test Tracker".to_string(),
-            filename: "test.md".to_string(),
+            filename_deprec: "test.md".to_string(),
             line_number: 1,
             start_date: Date::Day(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()),
             length: 0,
@@ -419,7 +421,7 @@ mod tests {
     fn test_add_event_weekly_frequency_skip_dates() {
         let mut tracker = Tracker {
             name: "Weekly Tracker".to_string(),
-            filename: "test.md".to_string(),
+            filename_deprec: "test.md".to_string(),
             line_number: 1,
             start_date: Date::Day(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()), // Monday
             length: 0,
@@ -466,7 +468,7 @@ mod tests {
     fn test_add_event_skip_dates_with_multiple_categories() {
         let mut tracker = Tracker {
             name: "Multi Category Tracker".to_string(),
-            filename: "test.md".to_string(),
+            filename_deprec: "test.md".to_string(),
             line_number: 1,
             start_date: Date::Day(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()),
             length: 0,

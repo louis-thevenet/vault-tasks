@@ -5,7 +5,11 @@ use std::{
 };
 use tracing::{debug, info};
 
-use crate::{TasksConfig, parser::parser_file_entry::ParserFileEntry};
+use crate::{
+    TasksConfig,
+    parser::parser_file_entry::ParserFileEntry,
+    vault_data::{FileEntry, Node},
+};
 
 use super::{task::Task, vault_data::VaultData};
 
@@ -21,20 +25,20 @@ impl VaultParser {
         let mut vaults = vec![];
         info!("Scanning {:?}", self.config.core.vault_paths);
         for path in &self.config.core.vault_paths {
-            let mut value = VaultData::Vault {
-                short_name: path
+            let mut content = vec![];
+            self.scan_dir(path, &mut content)?;
+            let value = Node::Vault {
+                name: path
                     .file_name()
                     .unwrap_or(path.as_os_str())
                     .to_string_lossy()
                     .to_string(),
                 path: path.to_path_buf(),
-                content: vec![],
+                content,
             };
-            self.scan(path, &mut value)?;
             vaults.push(value);
         }
-        let tasks = VaultData::Root { vaults };
-        Ok(tasks)
+        Ok(VaultData::new(vaults))
     }
     pub fn parse_single_task(&self, task: &str, filename: &str) -> Result<Task> {
         let mut parser = ParserFileEntry {
@@ -69,8 +73,10 @@ impl VaultParser {
             _ => bail!("Task is malformed: `{task}`"),
         }
     }
-
-    fn scan(&self, path: &Path, tasks: &mut VaultData) -> Result<()> {
+    fn scan_file(&self, path: &Path, children: &mut Vec<FileEntry>) -> Result<()> {
+        Ok(())
+    }
+    fn scan_dir(&self, path: &Path, children: &mut Vec<Node>) -> Result<()> {
         if self.config.core.ignored.contains(&path.to_path_buf()) {
             debug!("Ignoring {path:?} (ignored list)");
             return Ok(());
@@ -90,26 +96,16 @@ impl VaultParser {
                 continue;
             }
 
-            let children = match tasks {
-                VaultData::Root { vaults } => vaults,
-                VaultData::Vault {
-                    short_name,
-                    path,
-                    content,
-                } => content,
-                VaultData::Directory(_, vault_datas) => vault_datas,
-                VaultData::Header(_, _, _) | VaultData::Task(_) | VaultData::Tracker(_) => {
-                    bail!("Invalid file entry type for scan")
-                }
-            };
-
             if entry.file_type()?.is_dir() {
-                let mut new_child = VaultData::Directory(name.to_string(), vec![]);
-                self.scan(&entry_path, &mut new_child)?;
+                let mut content = vec![];
+                self.scan_dir(&entry_path, &mut content)?;
 
-                if let VaultData::Directory(_, c) = &new_child
-                    && !c.is_empty()
-                {
+                if !content.is_empty() {
+                    let new_child = Node::Directory {
+                        name: name.to_string(),
+                        path: path.to_path_buf(),
+                        content,
+                    };
                     children.push(new_child);
                 }
             } else {
@@ -118,15 +114,19 @@ impl VaultParser {
                     debug!("Ignoring {name:?} (not a .md file)");
                     continue;
                 }
-                if let Some(file_tasks) = self.parse_file(&entry) {
-                    children.push(file_tasks);
+                if let Some(file_entry) = self.parse_file(&entry) {
+                    children.push(Node::File {
+                        name: name.to_string(),
+                        path: path.to_path_buf(),
+                        content: file_entry,
+                    });
                 }
             }
         }
         Ok(())
     }
 
-    fn parse_file(&self, entry: &DirEntry) -> Option<VaultData> {
+    fn parse_file(&self, entry: &DirEntry) -> Option<Vec<FileEntry>> {
         debug!("Parsing {:?}", entry.file_name());
         let content = fs::read_to_string(entry.path()).unwrap_or_default();
         let mut parser = ParserFileEntry {

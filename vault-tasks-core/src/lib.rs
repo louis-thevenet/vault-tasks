@@ -4,9 +4,9 @@ use task::Task;
 use std::{
     collections::HashSet,
     fmt::Display,
-    path::{Path, PathBuf},
+    path::{self, Path, PathBuf},
 };
-use vault_data::VaultData;
+use vault_data::{FileEntry, Node, VaultData};
 
 use filter::{Filter, filter};
 use tracing::{debug, error};
@@ -37,7 +37,7 @@ pub struct TaskManager {
 impl Default for TaskManager {
     fn default() -> Self {
         Self {
-            tasks: VaultData::Directory("Empty Vault".to_owned(), vec![]),
+            tasks: VaultData::empty(),
             tags: HashSet::new(),
             current_filter: None,
             config: TasksConfig::default(),
@@ -66,6 +66,8 @@ impl TaskManager {
         if self.config.core.vault_paths.is_empty() {
             bail!( "No vault path provided (use `--vault-path <PATH>`) and no default path set in config file".to_string(), );
         }
+
+        // Check if vault paths exist
         for path in &self.config.core.vault_paths {
             if !Path::new(path).exists() {
                 bail!("Vault path does not exist: {path:#?}");
@@ -79,7 +81,10 @@ impl TaskManager {
             .unwrap_or_else(|e| error!("Failed to fix tasks: {e}"));
 
         let mut tags = HashSet::new();
-        Self::collect_tags(&tasks, &mut tags);
+        tasks
+            .root
+            .iter()
+            .for_each(|node| Self::collect_tags(node, &mut tags));
 
         self.tasks = tasks;
         self.tags = tags;
@@ -87,27 +92,47 @@ impl TaskManager {
     }
 
     /// Explores the vault and fills a `&mut HashSet<String>` with every tags found.
-    pub fn collect_tags(tasks: &VaultData, tags: &mut HashSet<String>) {
-        match tasks {
-            VaultData::Directory(_, children)
-            | VaultData::Header(_, _, children)
-            | VaultData::Vault {
-                short_name: _,
+    pub fn collect_tags(node: &Node, tags: &mut HashSet<String>) {
+        fn collect_tags_aux(entry: &FileEntry, tags: &mut HashSet<String>) {
+            match entry {
+                FileEntry::Task(task) => {
+                    task.tags.clone().unwrap_or_default().iter().for_each(|t| {
+                        tags.insert(t.clone());
+                    });
+                    task.subtasks
+                        .iter()
+                        .for_each(|task| collect_tags_aux(&FileEntry::Task(task.clone()), tags));
+                }
+                FileEntry::Tracker(_tracker) => (),
+                FileEntry::Header {
+                    name: _,
+                    heading_level: _,
+                    content,
+                } => content
+                    .iter()
+                    .for_each(|entry| collect_tags_aux(entry, tags)),
+            }
+        }
+        match node {
+            Node::Directory {
+                name: _,
                 path: _,
                 content: children,
             }
-            | VaultData::Root { vaults: children } => {
+            | Node::Vault {
+                name: _,
+                path: _,
+                content: children,
+            } => {
                 children.iter().for_each(|c| Self::collect_tags(c, tags));
             }
-            VaultData::Task(task) => {
-                task.tags.clone().unwrap_or_default().iter().for_each(|t| {
-                    tags.insert(t.clone());
-                });
-                task.subtasks
-                    .iter()
-                    .for_each(|task| Self::collect_tags(&VaultData::Task(task.clone()), tags));
-            }
-            VaultData::Tracker(_tracker) => (),
+            Node::File {
+                name: _,
+                path: _,
+                content,
+            } => content
+                .iter()
+                .for_each(|entry| collect_tags_aux(entry, tags)),
         }
     }
 
@@ -215,54 +240,63 @@ impl TaskManager {
 
     /// Recursively calls `Task.fix_task_attributes` on every task from the vault.
     fn rewrite_vault_tasks(config: &TasksConfig, tasks: &VaultData) -> Result<()> {
-        fn explore_tasks_rec(
-            config: &TasksConfig,
-            filename: &mut PathBuf,
-            file_entry: &VaultData,
-        ) -> Result<()> {
+        fn explore_file_entry_rec(config: &TasksConfig, file_entry: &FileEntry) -> Result<()> {
             match file_entry {
-                VaultData::Root { vaults } => {
-                    for vault in vaults {
-                        explore_tasks_rec(config, filename, vault)?;
-                    }
-                }
-                VaultData::Vault {
-                    short_name: _,
-                    path,
-                    content,
+                FileEntry::Header {
+                    heading_level: _,
+                    name: _,
+                    content: children,
                 } => {
-                    filename.push(path);
-                    content
-                        .iter()
-                        .try_for_each(|c| explore_tasks_rec(config, filename, c))?;
-                }
-                VaultData::Header(level, name, children) => {
-                    let mut filename = filename.clone();
-                    if *level == 0 {
-                        filename.push(name);
-                    }
                     children
                         .iter()
-                        .try_for_each(|c| explore_tasks_rec(config, &mut filename, c))?;
+                        .try_for_each(|c| explore_file_entry_rec(config, c))?;
                 }
-                VaultData::Task(task) => {
-                    task.fix_task_attributes(config, filename)?;
+                FileEntry::Task(task) => {
+                    task.fix_task_attributes(config)?;
                     task.subtasks
                         .iter()
-                        .try_for_each(|t| t.fix_task_attributes(config, filename))?;
+                        .try_for_each(|t| t.fix_task_attributes(config))?;
                 }
-                VaultData::Directory(dir_name, children) => {
-                    let mut filename = filename.clone();
-                    filename.push(dir_name);
-                    children
-                        .iter()
-                        .try_for_each(|c| explore_tasks_rec(config, &mut filename.clone(), c))?;
-                }
-                VaultData::Tracker(tracker) => tracker.fix_tracker_attributes(config, filename)?,
+                FileEntry::Tracker(tracker) => tracker.fix_tracker_attributes(config)?,
             }
             Ok(())
         }
-        explore_tasks_rec(config, &mut PathBuf::new(), tasks)
+        fn explore_tasks_rec(config: &TasksConfig, node: &Node) -> Result<()> {
+            match node {
+                Node::Vault {
+                    name: _,
+                    path,
+                    content,
+                } => {
+                    content
+                        .iter()
+                        .try_for_each(|c| explore_tasks_rec(config, c))?;
+                }
+                Node::Directory {
+                    name: dir_name,
+                    path: _,
+                    content: children,
+                } => {
+                    children
+                        .iter()
+                        .try_for_each(|c| explore_tasks_rec(config, c))?;
+                }
+                Node::File {
+                    name: _,
+                    path: _,
+                    content,
+                } => {
+                    for file_entry in content {
+                        explore_file_entry_rec(config, file_entry)?;
+                    }
+                }
+            }
+            Ok(())
+        }
+        for node in tasks.root.iter() {
+            explore_tasks_rec(config, node)?
+        }
+        Ok(())
     }
     /// Retrieves the `VaultData` at the given `path`, and returns the entries to display.
     ///

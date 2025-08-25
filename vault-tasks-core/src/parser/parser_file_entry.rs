@@ -14,7 +14,7 @@ use crate::{
     parser::tracker::{parse_entries, parse_header, parse_separator},
     task::Task,
     tracker::{NewTracker, Tracker},
-    vault_data::VaultData,
+    vault_data::{FileEntry, VaultData},
 };
 
 use super::{task::parse_task, tracker::parse_tracker_definition};
@@ -114,13 +114,13 @@ impl ParserFileEntry<'_> {
         Ok(FileToken::EndOfCodeBlock)
     }
     fn insert_task_at(
-        file_entry: &mut VaultData,
+        file_entry: &mut FileEntry,
         task: Task,
         header_depth: usize,
         indent_length: usize,
     ) -> color_eyre::Result<()> {
         fn append_task_aux(
-            file_entry: &mut VaultData,
+            file_entry: &mut FileEntry,
             task_to_insert: Task,
             current_header_depth: usize,
             target_header_depth: usize,
@@ -128,7 +128,11 @@ impl ParserFileEntry<'_> {
             target_task_depth: usize,
         ) -> color_eyre::Result<()> {
             match file_entry {
-                VaultData::Header(_, _, header_children) => {
+                FileEntry::Header {
+                    name: _,
+                    heading_level: _,
+                    content,
+                } => {
                     match current_header_depth.cmp(&target_header_depth) {
                         std::cmp::Ordering::Greater => panic!(
                             "Target header level was greater than current level which is impossible"
@@ -136,11 +140,11 @@ impl ParserFileEntry<'_> {
                         std::cmp::Ordering::Equal => {
                             // Found correct header level
                             if current_task_depth == target_task_depth {
-                                header_children.push(VaultData::Task(task_to_insert));
+                                content.push(FileEntry::Task(task_to_insert));
                                 Ok(())
                             } else {
-                                for child in header_children.iter_mut().rev() {
-                                    if let VaultData::Task(_task) = child {
+                                for child in content.iter_mut().rev() {
+                                    if let FileEntry::Task(_task) = child {
                                         return append_task_aux(
                                             child,
                                             task_to_insert,
@@ -159,8 +163,13 @@ impl ParserFileEntry<'_> {
                         }
                         std::cmp::Ordering::Less => {
                             // Going deeper in header levels
-                            for child in header_children.iter_mut().rev() {
-                                if let VaultData::Header(_, _, _) = child {
+                            for child in content.iter_mut().rev() {
+                                if let FileEntry::Header {
+                                    name: _,
+                                    heading_level: _,
+                                    content: _,
+                                } = child
+                                {
                                     return append_task_aux(
                                         child,
                                         task_to_insert,
@@ -178,7 +187,7 @@ impl ParserFileEntry<'_> {
                         }
                     }
                 }
-                VaultData::Task(task) => {
+                FileEntry::Task(task) => {
                     let mut current_task_depth = current_task_depth;
                     let mut last_task = task;
                     while current_task_depth < target_task_depth {
@@ -195,51 +204,49 @@ impl ParserFileEntry<'_> {
                     last_task.subtasks.push(task_to_insert);
                     Ok(())
                 }
-                VaultData::Directory(_, _) => {
-                    bail!("Failed to insert task: tried to insert into a directory")
-                }
-                VaultData::Tracker(_tracker) => {
+                FileEntry::Tracker(_tracker) => {
                     bail!("Failed to insert task: tried to insert into a tracker")
                 }
-                VaultData::Root { vaults: _ } => {
-                    bail!("Failed to insert task: tried to insert task into Root")
-                }
-                VaultData::Vault {
-                    short_name,
-                    path: _,
-                    content: _,
-                } => bail!("Failed to insert task: tried to insert task into Vault {short_name}"),
             }
         }
         append_task_aux(file_entry, task, 0, header_depth, 0, indent_length)
     }
     fn insert_tracker_at(
-        file_entry: &mut VaultData,
+        file_entry: &mut FileEntry,
         tracker: Tracker,
         header_depth: usize,
     ) -> color_eyre::Result<()> {
         fn append_tracker_aux(
-            file_entry: &mut VaultData,
+            file_entry: &mut FileEntry,
             tracker_to_insert: Tracker,
             current_header_depth: usize,
             target_header_depth: usize,
         ) -> color_eyre::Result<()> {
             match file_entry {
-                VaultData::Header(_, _, header_children) => {
+                FileEntry::Header {
+                    name: _,
+                    heading_level: _,
+                    content,
+                } => {
                     match current_header_depth.cmp(&target_header_depth) {
                         std::cmp::Ordering::Greater => panic!(
                             "Target header level was greater than current level which is impossible"
                         ), // shouldn't happen
                         std::cmp::Ordering::Equal => {
                             // Found correct header level
-                            header_children.push(VaultData::Tracker(tracker_to_insert));
+                            content.push(FileEntry::Tracker(tracker_to_insert));
                             Ok(())
                         }
 
                         std::cmp::Ordering::Less => {
                             // Going deeper in header levels
-                            for child in header_children.iter_mut().rev() {
-                                if let VaultData::Header(_, _, _) = child {
+                            for child in content.iter_mut().rev() {
+                                if let FileEntry::Header {
+                                    name: _,
+                                    heading_level: _,
+                                    content: _,
+                                } = child
+                                {
                                     return append_tracker_aux(
                                         child,
                                         tracker_to_insert,
@@ -255,54 +262,46 @@ impl ParserFileEntry<'_> {
                         }
                     }
                 }
-                VaultData::Task(_task) => {
+                FileEntry::Task(_task) => {
                     bail!("Tried to insert a Tracker in a task")
                 }
-                VaultData::Directory(_, _) => {
-                    bail!("Failed to insert task: tried to insert into a directory")
-                }
-                VaultData::Tracker(_tracker) => bail!("Tried to insert a Tracker in a tracker"),
-                VaultData::Root { vaults: _ } => {
-                    bail!("Failed to insert task: tried to insert task into Root")
-                }
-
-                VaultData::Vault {
-                    short_name,
-                    path: _,
-                    content: _,
-                } => bail!("Failed to insert task: tried to insert task into Vault {short_name}"),
+                FileEntry::Tracker(_tracker) => bail!("Tried to insert a Tracker in a tracker"),
             }
         }
         append_tracker_aux(file_entry, tracker, 0, header_depth)
     }
     /// Inserts a `FileEntry` at the specific header `depth` in `file_entry`.
     fn insert_header_at(
-        file_entry: &mut VaultData,
-        object: VaultData,
+        file_entry: &mut FileEntry,
+        object: FileEntry,
         target_header_depth: usize,
         target_task_depth: usize,
     ) {
         fn insert_at_aux(
-            file_entry: &mut VaultData,
-            object: VaultData,
+            file_entry: &mut FileEntry,
+            object: FileEntry,
             current_header_depth: usize,
             target_header_depth: usize,
             current_task_depth: usize,
             target_task_depth: usize,
         ) {
             match file_entry {
-                VaultData::Header(_, _, header_children) => {
+                FileEntry::Header {
+                    name: _,
+                    heading_level: _,
+                    content,
+                } => {
                     match (current_header_depth).cmp(&target_header_depth) {
                         std::cmp::Ordering::Greater => error!(
-                            "bad call to `insert_at`, file_entry:{file_entry}\nobject:{object}"
+                            "bad call to `insert_at`, file_entry:{file_entry:#?}\nobject:{object:#?}"
                         ), // shouldn't happen
                         std::cmp::Ordering::Equal => {
                             // Found correct header level
                             if current_task_depth == target_task_depth {
-                                header_children.push(object);
+                                content.push(object);
                             } else {
-                                for child in header_children.iter_mut().rev() {
-                                    if let VaultData::Task(_) = child {
+                                for child in content.iter_mut().rev() {
+                                    if let FileEntry::Task(_) = child {
                                         return insert_at_aux(
                                             child,
                                             object,
@@ -317,8 +316,13 @@ impl ParserFileEntry<'_> {
                         }
                         std::cmp::Ordering::Less => {
                             // Still haven't found correct header level, going deeper
-                            for child in header_children.iter_mut().rev() {
-                                if let VaultData::Header(_, _, _) = child {
+                            for child in content.iter_mut().rev() {
+                                if let FileEntry::Header {
+                                    name: _,
+                                    heading_level: _,
+                                    content: _,
+                                } = child
+                                {
                                     insert_at_aux(
                                         child,
                                         object,
@@ -330,30 +334,17 @@ impl ParserFileEntry<'_> {
                                     return;
                                 }
                             }
-                            header_children.push(object);
+                            content.push(object);
                         }
                     }
                 }
-                VaultData::Task(_) => {
+                FileEntry::Task(_) => {
                     error!("Error: tried to insert a header into a task");
                 }
-                VaultData::Directory(name, _) => {
-                    error!("Error: tried to insert a header into a directory : {name}");
-                }
-                VaultData::Tracker(tracker) => error!(
+                FileEntry::Tracker(tracker) => error!(
                     "Error: tried to insert a header into a tracker: {}",
                     tracker.name
                 ),
-                VaultData::Root { vaults: _ } => {
-                    error!("Error: tried to insert a header into a Root");
-                }
-                VaultData::Vault {
-                    short_name,
-                    path: _,
-                    content: _,
-                } => {
-                    error!("Error: tried to insert a header into a Vault {short_name}");
-                }
             }
         }
         insert_at_aux(
@@ -368,13 +359,13 @@ impl ParserFileEntry<'_> {
 
     /// Appends `desc` to the description of an existing `Task` in the `FileEntry`.
     fn append_description(
-        file_entry: &mut VaultData,
+        file_entry: &mut FileEntry,
         desc: String,
         target_header_depth: usize,
         target_task_depth: usize,
     ) -> color_eyre::Result<()> {
         fn append_description_aux(
-            file_entry: &mut VaultData,
+            file_entry: &mut FileEntry,
             desc: String,
             current_header_depth: usize,
             target_header_depth: usize,
@@ -382,13 +373,17 @@ impl ParserFileEntry<'_> {
             target_task_depth: usize,
         ) -> color_eyre::Result<()> {
             match file_entry {
-                VaultData::Header(_, _, header_children) => {
+                FileEntry::Header {
+                    name: _,
+                    heading_level: _,
+                    content,
+                } => {
                     match current_header_depth.cmp(&target_header_depth) {
                         std::cmp::Ordering::Greater => panic!("bad call for desc"), // shouldn't happen
                         std::cmp::Ordering::Equal => {
                             // Found correct header level
-                            for child in header_children.iter_mut().rev() {
-                                if let VaultData::Task(mut task) = child.clone() {
+                            for child in content.iter_mut().rev() {
+                                if let FileEntry::Task(mut task) = child.clone() {
                                     if current_task_depth == target_task_depth {
                                         match &mut task.description {
                                             Some(d) => {
@@ -397,7 +392,7 @@ impl ParserFileEntry<'_> {
                                             }
                                             None => task.description = Some(desc.clone()),
                                         }
-                                        *child = VaultData::Task(task);
+                                        *child = FileEntry::Task(task);
                                     } else {
                                         return append_description_aux(
                                             child,
@@ -414,8 +409,13 @@ impl ParserFileEntry<'_> {
                         }
                         std::cmp::Ordering::Less => {
                             // Going deeper in header levels
-                            for child in header_children.iter_mut().rev() {
-                                if let VaultData::Header(_, _, _) = child {
+                            for child in content.iter_mut().rev() {
+                                if let FileEntry::Header {
+                                    name: _,
+                                    heading_level: _,
+                                    content: _,
+                                } = child
+                                {
                                     return append_description_aux(
                                         child,
                                         desc,
@@ -430,7 +430,7 @@ impl ParserFileEntry<'_> {
                         }
                     }
                 }
-                VaultData::Task(task) => {
+                FileEntry::Task(task) => {
                     fn insert_desc_task(
                         description: String,
                         task: &mut Task,
@@ -457,21 +457,8 @@ impl ParserFileEntry<'_> {
                     }
                     insert_desc_task(desc, task, current_task_depth, target_task_depth)
                 }
-                VaultData::Directory(_, _) => {
-                    bail!("Failed to insert description: tried to insert into a directory")
-                }
-                VaultData::Tracker(_tracker) => {
+                FileEntry::Tracker(_tracker) => {
                     bail!("Failed to insert description: tried to insert into a tracker")
-                }
-                VaultData::Root { vaults: _ } => {
-                    bail!("Error: tried to insert a header into a Root");
-                }
-                VaultData::Vault {
-                    short_name,
-                    path: _,
-                    content: _,
-                } => {
-                    bail!("Error: tried to insert a header into a Vault {short_name}");
                 }
             }
         }
@@ -490,7 +477,7 @@ impl ParserFileEntry<'_> {
     fn parse_file_aux<'a, I>(
         &self,
         mut input: Peekable<I>,
-        file_entry: &mut VaultData,
+        file_entry: &mut FileEntry,
         file_tags: &mut Vec<String>,
         header_depth: usize,
         comment_depth: usize,
@@ -498,6 +485,7 @@ impl ParserFileEntry<'_> {
     ) where
         I: Iterator<Item = (usize, &'a str)>,
     {
+        // Parser definition
         let mut parser = alt((
             Self::parse_full_comment,
             Self::parse_start_of_comment,
@@ -599,7 +587,11 @@ impl ParserFileEntry<'_> {
                 Ok(FileToken::Header((header, new_depth))) => {
                     Self::insert_header_at(
                         file_entry,
-                        VaultData::Header(new_depth, header, vec![]),
+                        FileEntry::Header {
+                            heading_level: new_depth,
+                            name: header,
+                            content: vec![],
+                        },
                         new_depth - 1,
                         0,
                     );
@@ -645,6 +637,7 @@ impl ParserFileEntry<'_> {
                         if let Ok(mut tracker) = parse_header(
                             &tracker_def,
                             self.filename.clone(),
+
                             line_number,
                             &mut next_line,
                         ) {
@@ -777,10 +770,15 @@ impl ParserFileEntry<'_> {
         Some(file_entry.to_owned())
     }
 
-    pub fn parse_file(&mut self, filename: &str, input: &&str) -> Option<VaultData> {
+    pub fn parse_file(&mut self, filename: &str, input: &&str) -> Option<Vec<FileEntry>> {
         let lines = input.split('\n');
 
-        let mut res = VaultData::Header(0, filename.to_owned(), vec![]);
+        let mut res = FileEntry::Header {
+            // TODO: PAS BIEN CA
+            heading_level: 0,
+            name: filename.to_owned(),
+            content: vec![],
+        };
         let mut file_tags = vec![];
         self.filename = filename.to_string();
         self.parse_file_aux(

@@ -70,7 +70,7 @@ impl TaskListItem {
             Block::default()
                 .borders(Borders::ALL)
                 .title_bottom(if self.display_filename {
-                    Line::from(task.filename.clone()).right_aligned()
+                    Line::from(task.filename_deprec.clone()).right_aligned()
                 } else {
                     Line::from("")
                 });

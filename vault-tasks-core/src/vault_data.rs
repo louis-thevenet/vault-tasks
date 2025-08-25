@@ -2,7 +2,7 @@ use std::{fmt::Display, path::PathBuf};
 
 use super::{task::Task, tracker::Tracker};
 #[derive(Debug, Clone, PartialEq, Eq)]
-enum Node {
+pub enum Node {
     Vault {
         name: String,
         path: PathBuf,
@@ -31,7 +31,16 @@ pub enum FileEntry {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VaultData {
-    root: Vec<Node>,
+    pub root: Vec<Node>,
+}
+
+impl VaultData {
+    pub fn new(root: Vec<Node>) -> Self {
+        Self { root }
+    }
+    pub fn empty() -> Self {
+        Self { root: vec![] }
+    }
 }
 
 impl Display for VaultData {
