@@ -16,7 +16,7 @@ clap = {version = "4.5.45", features = [
   "string",
   "unstable-styles"
 ]}
-config = "0.15.14"
+config = "0.15.15"
 crossterm = {version = "0.28.1", features = ["serde", "event-stream"]}
 derive_deref = "1.1.1"
 directories = "6.0.0"
