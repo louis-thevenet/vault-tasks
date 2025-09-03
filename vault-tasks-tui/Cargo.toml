@@ -30,7 +30,7 @@ strip-ansi-escapes = "0.2.1"
 tokio = {version = "1.47.1", features = ["full"]}
 tokio-util = "0.7.16"
 tracing-error = "0.2.1"
-tracing-subscriber = {version = "0.3.20", features = ["env-filter", "serde"]}
+tracing-subscriber = {version = "0.3.19", features = ["env-filter", "serde"]}
 chrono = {version="0.4.41"}
 tui-widget-list = "0.13.2"
 tui-input = "0.14.0"
@@ -61,7 +61,7 @@ description = "TUI Markdown Task Manager"
 build = "build.rs"
 categories = ["command-line-utilities", "visualization"]
 keywords = ["markdown", "task-manager", "productivity", "tui", "obsidian"]
-version = "0.13.0"
+version = "1.0.0"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
