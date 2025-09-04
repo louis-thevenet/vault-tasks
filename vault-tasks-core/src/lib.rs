@@ -265,7 +265,7 @@ impl TaskManager {
             match node {
                 Node::Vault {
                     name: _,
-                    path,
+                    path: _,
                     content,
                 } => {
                     content
@@ -273,7 +273,7 @@ impl TaskManager {
                         .try_for_each(|c| explore_tasks_rec(config, c))?;
                 }
                 Node::Directory {
-                    name: dir_name,
+                    name: _,
                     path: _,
                     content: children,
                 } => {
@@ -298,36 +298,58 @@ impl TaskManager {
         }
         Ok(())
     }
-    /// Retrieves the `VaultData` at the given `path`, and returns the entries to display.
-    ///
-    /// If the path ends with a task, the `task_preview_offset` parameter determines whether the function should return the task itself or its content (subtasks) as with directories and headers.
-    pub fn get_vault_data_from_path(&self, path: &[String]) -> Result<VaultData> {
+    pub fn resolve_path_file_entry(
+        file_entry: FileEntry,
+        path: &[String],
+        path_index: usize,
+    ) -> Result<FileEntry> {
+    }
+    /// Retrieves the `Node` at the given `path`.
+    pub fn resolve_path_node(&self, path: &[String]) -> Result<Node> {
         /// Recursively searches for the entry in the vault.
         /// `path_index` is the index of the current path element we are looking for.
         fn aux(
-            file_entry: VaultData,
+            file_entry: Node,
             selected_header_path: &[String],
             path_index: usize,
-        ) -> Result<VaultData> {
+        ) -> Result<Node> {
             // Remaining path is empty?
             if path_index == selected_header_path.len() {
                 Ok(file_entry)
             } else {
                 match &file_entry {
-                    VaultData::Root { vaults } => {
-                        for vault in vaults {
-                            if let Ok(found) = aux(vault.clone(), selected_header_path, path_index)
-                            {
-                                return Ok(found);
-                            }
+                    // VaultData::Root { vaults } => {
+                    //     for vault in vaults {
+                    //         if let Ok(found) = aux(vault.clone(), selected_header_path, path_index)
+                    //         {
+                    //             return Ok(found);
+                    //         }
+                    //     }
+                    //     bail!("Couldn't find corresponding entry");
+                    // }
+                    // Node::Header {
+                    //     heading_level: _,
+                    //     name,
+                    //     content: children,
+                    // }
+                    // |
+                    Node::File {
+                        name,
+                        path: _,
+                        content: _,
+                    } => {
+                        if *name == selected_header_path[path_index] {
+                            error!("Path is too long: {selected_header_path:?}");
                         }
-                        bail!("Couldn't find corresponding entry");
+                        Ok(file_entry.clone())
                     }
-
-                    VaultData::Header(_, name, children)
-                    | VaultData::Directory(name, children)
-                    | VaultData::Vault {
-                        short_name: name,
+                    Node::Directory {
+                        name,
+                        path: _,
+                        content: children,
+                    }
+                    | Node::Vault {
+                        name,
                         path: _,
                         content: children,
                     } => {
@@ -347,35 +369,34 @@ impl TaskManager {
                         }
                         // Either it's the first layer and the path is wrong or we recursively called on the wrong entry which is impossible
                         bail!("Couldn't find corresponding entry");
-                    }
-                    VaultData::Task(task) => {
-                        if task.name == selected_header_path[path_index] {
-                            // If we are at the end of the path, we return the task itself
-                            // This depends on the `task_preview_offset` parameter
-                            if path_index + 1 == selected_header_path.len() {
-                                return Ok(file_entry.clone());
-                            }
-                            for child in &task.subtasks {
-                                if let Ok(found) = aux(
-                                    VaultData::Task(child.clone()),
-                                    selected_header_path,
-                                    path_index + 1,
-                                ) {
-                                    return Ok(found);
-                                }
-                            }
-                        }
-                        bail!("Couldn't find corresponding entry");
-                    }
-                    VaultData::Tracker(tracker) => {
-                        if tracker.name == selected_header_path[path_index] {
-                            if path_index + 1 == selected_header_path.len() {
-                                return Ok(file_entry.clone());
-                            }
-                            bail!("Path was too long while we went down on a tracker")
-                        }
-                        bail!("Tracker name not matching")
-                    }
+                    } // VaultData::Task(task) => {
+                      //     if task.name == selected_header_path[path_index] {
+                      //         // If we are at the end of the path, we return the task itself
+                      //         // This depends on the `task_preview_offset` parameter
+                      //         if path_index + 1 == selected_header_path.len() {
+                      //             return Ok(file_entry.clone());
+                      //         }
+                      //         for child in &task.subtasks {
+                      //             if let Ok(found) = aux(
+                      //                 VaultData::Task(child.clone()),
+                      //                 selected_header_path,
+                      //                 path_index + 1,
+                      //             ) {
+                      //                 return Ok(found);
+                      //             }
+                      //         }
+                      //     }
+                      //     bail!("Couldn't find corresponding entry");
+                      // }
+                      // VaultData::Tracker(tracker) => {
+                      //     if tracker.name == selected_header_path[path_index] {
+                      //         if path_index + 1 == selected_header_path.len() {
+                      //             return Ok(file_entry.clone());
+                      //         }
+                      //         bail!("Path was too long while we went down on a tracker")
+                      //     }
+                      //     bail!("Tracker name not matching")
+                      // }
                 }
             }
         }
@@ -640,11 +661,11 @@ mod tests {
         };
 
         let path = vec![String::from("Test"), String::from("1"), String::from("2")];
-        let res = task_mgr.get_vault_data_from_path(&path).unwrap();
+        let res = task_mgr.resolve_path_node(&path).unwrap();
         assert_eq!(expected_header, res);
 
         let path = vec![String::from("Test"), String::from("1.2"), String::from("4")];
-        let res = task_mgr.get_vault_data_from_path(&path).unwrap();
+        let res = task_mgr.resolve_path_node(&path).unwrap();
         let expected_header = VaultData::Header(2, "4".to_string(), expected_tasks.clone());
         assert_eq!(expected_header, res);
     }

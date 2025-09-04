@@ -137,7 +137,7 @@ impl ExplorerTab<'_> {
         };
         debug!("Getting selected task from current path: {:?}", path);
 
-        let Ok(entry) = self.task_mgr.get_vault_data_from_path(&path) else {
+        let Ok(entry) = self.task_mgr.resolve_path_node(&path) else {
             error!("Error while collecting tasks from path");
             return None;
         };
