@@ -53,7 +53,7 @@ tabled = "0.20.0"
 vault-tasks-core = {path = "../vault-tasks-core"}
 
 [dev-dependencies]
-insta = {version = "1.43.1", features = ["yaml"]}
+insta = {version = "1.43.2", features = ["yaml"]}
 
 [package]
 name = "vault-tasks-tui"
