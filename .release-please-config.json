@@ -5,6 +5,11 @@
       "release-type": "rust",
       "component": "core"
     },
+    "vault-tasks-cli": {
+      "path": "vault-tasks-cli",
+      "release-type": "rust",
+      "component": "cli"
+    },
     "vault-tasks-tui": {
       "path": "vault-tasks-tui",
       "release-type": "rust",
@@ -22,6 +27,7 @@
       "components": [
         "core",
         "tui"
+        "cli"
       ]
     }
   ]

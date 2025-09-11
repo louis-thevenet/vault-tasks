@@ -17,7 +17,7 @@ lto = "thin"
 
 [workspace]
 resolver = "2"
-members = [
+members = [ "vault-tasks-cli",
   "vault-tasks-core",
   "vault-tasks-tui"
 ]
