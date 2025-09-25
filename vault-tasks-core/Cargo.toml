@@ -12,7 +12,7 @@ clap = {version = "4.5.47", features = [
   "string",
   "unstable-styles"
 ]}
-config = "0.15.16"
+config = "0.15.15"
 crossterm = {version = "0.28.1", features = ["serde", "event-stream"]}
 derive_deref = "1.1.1"
 directories = "6.0.0"
@@ -32,7 +32,7 @@ tui-widget-list = "0.13.2"
 tui-input = "0.14.0"
 edit = "0.1.5"
 tui-scrollview = "=0.5.1"
-toml = "0.9.7"
+toml = "0.9.5"
 color-eyre = "0.6.5"
 serde = {version = "1.0.223", features = ["derive"]}
 tracing = "0.1.41"
@@ -42,7 +42,7 @@ strum_macros = "0.27.2"
 notify-rust = "4.11.7"
 lexical-sort = "0.3.1"
 winnow = "0.7.13"
-time = "0.3.44"
+time = "0.3.43"
 ratskin = "0.2.0"
 clap_complete = "4.5.58"
 tabled = "0.20.0"
@@ -54,7 +54,7 @@ insta = {version = "1.43.2", features = ["yaml"]}
 name = "vault-tasks-core"
 description = "vault-tasks-core"
 categories = ["parsing"]
-version = "0.13.0"
+version = "1.0.0"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
