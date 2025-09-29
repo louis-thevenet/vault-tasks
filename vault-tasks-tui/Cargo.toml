@@ -3,7 +3,7 @@ name = "vault-tasks-tui"
 path = "src/main.rs"
 
 [build-dependencies]
-anyhow = "1.0.99"
+anyhow = "1.0.100"
 vergen-gix = {version = "1.0.9", features = ["build", "cargo"]}
 
 [dependencies]
