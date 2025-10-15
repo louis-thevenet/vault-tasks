@@ -27,7 +27,10 @@ mod vault_parser;
 
 // Re-export logging functions for easier access
 pub use logging::init as init_logging;
-
+pub enum ExplorerEntries {
+    Node(Node),
+    FileEntry(FileEntry),
+}
 pub struct TaskManager {
     pub tasks: VaultData,
     config: TasksConfig,
@@ -141,44 +144,45 @@ impl TaskManager {
     ///
     /// # Errors
     /// Will return an error if the vault is empty or the first layer is not a `VaultData::Directory`
-    pub fn get_explorer_entries(&self, selected_header_path: &[String]) -> Result<Vec<VaultData>> {
-        fn aux(
-            file_entry: Vec<VaultData>,
+    pub fn get_explorer_entries(
+        &self,
+        selected_header_path: &[String],
+    ) -> Result<Vec<ExplorerEntries>> {
+        fn aux_file(
+            file_entry: Vec<FileEntry>,
             selected_header_path: &[String],
             path_index: usize,
-        ) -> Result<Vec<VaultData>> {
+        ) -> Result<Vec<ExplorerEntries>> {
             if path_index == selected_header_path.len() {
-                Ok(file_entry)
+                Ok(file_entry
+                    .iter()
+                    .map(|f| ExplorerEntries::FileEntry(f.clone()))
+                    .collect())
             } else {
                 for entry in file_entry {
                     match entry {
-                        VaultData::Root { vaults } => {
-                            return aux(vaults, selected_header_path, path_index);
-                        }
-                        VaultData::Directory(name, children)
-                        | VaultData::Header(_, name, children)
-                        | VaultData::Vault {
-                            short_name: name,
-                            content: children,
-                            path: _,
+                        FileEntry::Header {
+                            name,
+                            heading_level: _,
+                            content,
                         } => {
                             if name == selected_header_path[path_index] {
-                                return aux(children, selected_header_path, path_index + 1);
+                                return aux_file(content, selected_header_path, path_index + 1);
                             }
                         }
-                        VaultData::Task(task) => {
+                        FileEntry::Task(task) => {
                             if task.name == selected_header_path[path_index] {
-                                return aux(
+                                return aux_file(
                                     task.subtasks
                                         .iter()
-                                        .map(|t| VaultData::Task(t.clone()))
+                                        .map(|t| FileEntry::Task(t.clone()))
                                         .collect(),
                                     selected_header_path,
                                     path_index + 1,
                                 );
                             }
                         }
-                        VaultData::Tracker(tracker) => {
+                        FileEntry::Tracker(tracker) => {
                             bail!("Tried to list a Tracker's entries: {tracker}")
                         } // We can't enter Trackers so we won't ever have to resolve a path to one
                     }
@@ -186,21 +190,64 @@ impl TaskManager {
                 bail!("Couldn't find corresponding entry");
             }
         }
+        fn aux_node(
+            file_entry: Vec<Node>,
+            selected_header_path: &[String],
+            path_index: usize,
+        ) -> Result<Vec<ExplorerEntries>> {
+            if path_index == selected_header_path.len() {
+                Ok(file_entry
+                    .iter()
+                    .map(|f| ExplorerEntries::Node(f.clone()))
+                    .collect())
+            } else {
+                for entry in file_entry {
+                    match entry {
+                        Node::Directory {
+                            name,
+                            content,
+                            path: _,
+                        }
+                        | Node::Vault {
+                            name,
+                            content,
+                            path: _,
+                        } => {
+                            if name == selected_header_path[path_index] {
+                                return aux_node(content, selected_header_path, path_index + 1);
+                            }
+                        }
 
-        let filtered_tasks = if let Some(task_filter) = &self.current_filter {
-            filter(&self.tasks, task_filter)
-        } else {
-            Some(self.tasks.clone())
-        };
-
-        match filtered_tasks {
-            Some(VaultData::Root { vaults }) => aux(vaults, selected_header_path, 0),
-            None => bail!("Empty Vault"),
-            _ => {
-                error!("First layer of VaultData was not a Directory");
-                bail!("First layer of VaultData was not a Directory")
+                        Node::File {
+                            name,
+                            content,
+                            path: _,
+                        } => {
+                            if name == selected_header_path[path_index] {
+                                return aux_file(content, selected_header_path, path_index + 1);
+                            }
+                        }
+                    }
+                }
+                bail!("Couldn't find corresponding entry");
             }
         }
+        //TODO: add filtering back
+        // let filtered_tasks = if let Some(task_filter) = &self.current_filter {
+        //     filter(&self.tasks, task_filter)
+        // } else {
+        //     Some(self.tasks.clone())
+        // };
+
+        // match filtered_tasks {
+        //     Some(Node::Root { vaults }) => aux(vaults, selected_header_path, 0),
+        //     None => bail!("Empty Vault"),
+        //     _ => {
+        //         error!("First layer of VaultData was not a Directory");
+        //         bail!("First layer of VaultData was not a Directory")
+        //     }
+        // }
+        aux_node(self.tasks.root.clone(), selected_header_path, 0)
     }
 
     /// Same as `get_explorer_entries`, but discards any children of the entries.
@@ -208,21 +255,20 @@ impl TaskManager {
     /// # Errors
     ///
     /// This function will return an error if the path can't be resolved.
-    pub fn get_explorer_entries_without_children(&self, path: &[String]) -> Result<Vec<VaultData>> {
+    pub fn get_explorer_entries_without_children(&self, path: &[String]) -> Result<Vec<ExplorerEntries>> {
         Ok(self
             .get_explorer_entries(path)? // Get the entries at the path
             .iter() // Discard every children
             .map(|vd| match vd {
-                VaultData::Root { vaults: _ } => VaultData::Root { vaults: vec![] },
-                VaultData::Vault {
-                    short_name,
+                ExplorerEntries::Node(Node::Vault {
+                    name:short_name,
                     path,
                     content: _,
-                } => VaultData::Vault {
+                }) => ExplorerEntries::Vault (Node::Vault{
                     short_name: short_name.clone(),
                     path: path.clone(),
                     content: vec![],
-                },
+                }),
 
                 VaultData::Directory(name, _) => VaultData::Directory(name.clone(), vec![]),
                 VaultData::Header(level, name, _) => {
