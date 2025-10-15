@@ -147,11 +147,13 @@ impl Tracker {
         }
         let new_lines = self
             .fmt(config.core.use_american_format)
+            .replace("\r", "")
             .split('\n')
             .map(str::to_owned)
             .collect::<Vec<String>>();
         let content = read_to_string(path)?;
         let mut lines = content
+            .replace("\r", "")
             .split('\n')
             .map(str::to_owned)
             .collect::<Vec<String>>();
