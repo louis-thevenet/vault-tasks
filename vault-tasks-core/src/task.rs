@@ -285,7 +285,7 @@ impl Task {
         }
         let content = read_to_string(path.clone())?;
         let mut lines = content
-            .replace("\r", "")
+            .replace('\r', "")
             .split('\n')
             .map(str::to_owned)
             .collect::<Vec<String>>();

@@ -721,7 +721,7 @@ impl ParserFileEntry<'_> {
     }
 
     pub fn parse_file(&mut self, filename: &str, input: &&str) -> Option<VaultData> {
-        let replaced = input.replace("\r", "");
+        let replaced = input.replace('\r', "");
         let lines = replaced.split('\n');
 
         let mut res = VaultData::Header(0, filename.to_owned(), vec![]);

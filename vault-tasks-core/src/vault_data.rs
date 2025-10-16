@@ -53,7 +53,7 @@ impl Display for VaultData {
                     }
                 }
                 VaultData::Task(task) => {
-                    for line in task.to_string().replace("\r", "").split('\n') {
+                    for line in task.to_string().replace('\r', "").split('\n') {
                         write_indent(depth, f)?;
                         writeln!(f, "{line}")?;
                     }
@@ -61,7 +61,7 @@ impl Display for VaultData {
                     for subtask in &task.subtasks {
                         for line in VaultData::Task(subtask.clone())
                             .to_string()
-                            .replace("\r", "")
+                            .replace('\r', "")
                             .split('\n')
                         {
                             write_indent(depth + 1, f)?;
@@ -70,7 +70,7 @@ impl Display for VaultData {
                     }
                 }
                 VaultData::Tracker(tracker) => {
-                    for line in tracker.to_string().replace("\r", "").split('\n') {
+                    for line in tracker.to_string().replace('\r', "").split('\n') {
                         write_indent(depth, f)?;
                         writeln!(f, "{line}")?;
                     }
