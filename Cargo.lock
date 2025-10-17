@@ -4084,7 +4084,7 @@ checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 
 [[package]]
 name = "vault-tasks-core"
-version = "0.13.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "better-panic",
@@ -4129,7 +4129,7 @@ dependencies = [
 
 [[package]]
 name = "vault-tasks-tui"
-version = "0.13.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "better-panic",
