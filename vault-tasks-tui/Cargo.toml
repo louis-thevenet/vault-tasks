@@ -28,7 +28,7 @@ ratatui = {version = "0.29.0", features = ["serde", "macros", "widget-calendar"]
 signal-hook = "0.3.18"
 strip-ansi-escapes = "0.2.1"
 tokio = {version = "1.48.0", features = ["full"]}
-tokio-util = "0.7.16"
+tokio-util = "0.7.17"
 tracing-error = "0.2.1"
 tracing-subscriber = {version = "0.3.20", features = ["env-filter", "serde"]}
 chrono = {version="0.4.42"}
