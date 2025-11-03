@@ -44,7 +44,7 @@ lexical-sort = "0.3.1"
 winnow = "0.7.13"
 time = "0.3.44"
 ratskin = "0.2.0"
-clap_complete = "4.5.59"
+clap_complete = "4.5.60"
 tabled = "0.20.0"
 
 [dev-dependencies]
