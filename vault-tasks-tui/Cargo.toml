@@ -45,7 +45,7 @@ strum = {version = "0.27.2", features = ["derive"]}
 strum_macros = "0.27.2"
 notify-rust = "4.11.7"
 lexical-sort = "0.3.1"
-winnow = "0.7.14"
+winnow = "0.7.13"
 time = "0.3.44"
 ratskin = "0.2.0"
 clap_complete = "4.5.61"
@@ -61,7 +61,7 @@ description = "TUI Markdown Task Manager"
 build = "build.rs"
 categories = ["command-line-utilities", "visualization"]
 keywords = ["markdown", "task-manager", "productivity", "tui", "obsidian"]
-version = "0.13.0"
+version = "1.0.0"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
