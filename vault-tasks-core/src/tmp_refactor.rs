@@ -34,8 +34,9 @@ impl VaultData {
     /// In the legacy system, files are represented as `Header(0, filename, content)` where
     /// the heading level is 0 and the name is the filename.
     ///
-    /// # Panics
-    /// Panics if a non-file header or task/tracker is encountered at the directory level.
+    /// If non-file headers or tasks/trackers are encountered at the directory level
+    /// (which can happen in test code or malformed vault structures), they are automatically
+    /// wrapped in a file node.
     #[must_use]
     pub fn to_new_node(&self, base_path: &Path) -> NewNode {
         match self {
@@ -64,8 +65,40 @@ impl VaultData {
                     content: file_content,
                 }
             }
-            VaultData::Header(_, _, _) | VaultData::Task(_) | VaultData::Tracker(_) => {
-                panic!("Non-file header or task/tracker encountered at directory level")
+            VaultData::Header(level, name, content) => {
+                // Non-file headers at directory level -> wrap in a file
+                // This can happen in test code or malformed vault structures
+                let file_name = format!("{}.md", name.to_lowercase().replace(' ', "_"));
+                let file_path = base_path.join(&file_name);
+                let header_entry = NewFileEntry::Header {
+                    name: name.clone(),
+                    heading_level: *level,
+                    content: content
+                        .iter()
+                        .filter_map(VaultData::to_new_file_entry)
+                        .collect(),
+                };
+                NewNode::File {
+                    name: file_name,
+                    path: file_path,
+                    content: vec![header_entry],
+                }
+            }
+            VaultData::Task(_) | VaultData::Tracker(_) => {
+                // Tasks/Trackers at directory level -> wrap in a file
+                // This can happen in test code or malformed vault structures
+                let file_name = "untitled.md".to_string();
+                let file_path = base_path.join(&file_name);
+                let content = if let Some(entry) = self.to_new_file_entry() {
+                    vec![entry]
+                } else {
+                    vec![]
+                };
+                NewNode::File {
+                    name: file_name,
+                    path: file_path,
+                    content,
+                }
             }
         }
     }
@@ -303,15 +336,63 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Non-file header or task/tracker encountered at directory level")]
-    fn test_task_at_directory_level_panics() {
-        // This should panic because tasks can't exist at directory level
-        // They must be inside a file (Header level 0)
+    fn test_task_at_directory_level_wrapped() {
+        // Tasks at directory level get wrapped in a file
+        // This can happen in test code or malformed vault structures
         let task = create_test_task();
-        let legacy = VaultData::Task(task);
+        let legacy = VaultData::Task(task.clone());
 
         let base_path = PathBuf::from("/vault");
-        let _result = legacy.to_new_node(&base_path);
+        let result = legacy.to_new_node(&base_path);
+
+        match result {
+            NewNode::File {
+                name,
+                path,
+                content,
+            } => {
+                assert_eq!(name, "untitled.md");
+                assert_eq!(path, base_path.join("untitled.md"));
+                assert_eq!(content.len(), 1);
+                assert!(matches!(content[0], NewFileEntry::Task(_)));
+            }
+            _ => panic!("Expected File variant"),
+        }
+    }
+
+    #[test]
+    fn test_non_file_header_at_directory_level_wrapped() {
+        // Non-file headers at directory level get wrapped in a file
+        let task = create_test_task();
+        let legacy = VaultData::Header(1, "Section Title".to_string(), vec![VaultData::Task(task)]);
+
+        let base_path = PathBuf::from("/vault");
+        let result = legacy.to_new_node(&base_path);
+
+        match result {
+            NewNode::File {
+                name,
+                path,
+                content,
+            } => {
+                assert_eq!(name, "section_title.md");
+                assert_eq!(path, base_path.join("section_title.md"));
+                assert_eq!(content.len(), 1);
+                match &content[0] {
+                    NewFileEntry::Header {
+                        name,
+                        heading_level,
+                        content,
+                    } => {
+                        assert_eq!(name, "Section Title");
+                        assert_eq!(*heading_level, 1);
+                        assert_eq!(content.len(), 1);
+                    }
+                    _ => panic!("Expected Header in file"),
+                }
+            }
+            _ => panic!("Expected File variant"),
+        }
     }
 
     #[test]
@@ -803,5 +884,50 @@ mod tests {
             legacy_data, back_to_legacy,
             "Nested directories should survive round-trip"
         );
+    }
+
+    #[test]
+    fn test_round_trip_malformed_structures() {
+        let task = create_test_task();
+
+        // Test 1: Task at directory level gets wrapped in file
+        let legacy_task = VaultData::Task(task.clone());
+        let base_path = PathBuf::from("/vault");
+        let new_node = legacy_task.to_new_node(&base_path);
+        let back_to_legacy = new_node.to_legacy();
+
+        // After round-trip, task should be wrapped in Header(0, "untitled.md", ...)
+        match back_to_legacy {
+            VaultData::Header(0, name, content) => {
+                assert_eq!(name, "untitled.md");
+                assert_eq!(content.len(), 1);
+                assert!(matches!(content[0], VaultData::Task(_)));
+            }
+            _ => panic!("Expected wrapped task in file"),
+        }
+
+        // Test 2: Non-file header at directory level
+        let legacy_header = VaultData::Header(
+            1,
+            "Test Header".to_string(),
+            vec![VaultData::Task(task.clone())],
+        );
+        let new_node = legacy_header.to_new_node(&base_path);
+        let back_to_legacy = new_node.to_legacy();
+
+        // After round-trip, header should be wrapped in Header(0, filename, ...)
+        match back_to_legacy {
+            VaultData::Header(0, name, content) => {
+                assert_eq!(name, "test_header.md");
+                assert_eq!(content.len(), 1);
+                match &content[0] {
+                    VaultData::Header(1, header_name, _) => {
+                        assert_eq!(header_name, "Test Header");
+                    }
+                    _ => panic!("Expected wrapped header"),
+                }
+            }
+            _ => panic!("Expected wrapped header in file"),
+        }
     }
 }
