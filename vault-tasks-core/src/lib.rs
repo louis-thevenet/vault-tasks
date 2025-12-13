@@ -464,11 +464,11 @@ impl Display for TaskManager {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
+    use std::{collections::HashSet, path::PathBuf};
 
     use super::TaskManager;
 
-    use crate::{task::Task, vault_data::VaultData};
+    use crate::{task::Task, tmp_refactor, vault_data::VaultData};
 
     #[test]
     fn test_get_vault_data() {
@@ -516,8 +516,10 @@ mod tests {
             )],
         );
 
+        let refactored = tmp_refactor::convert_legacy_to_new(vec![input.clone()], &PathBuf::new());
         let task_mgr = TaskManager {
             tasks: input,
+            tasks_refactored: refactored,
             tags: HashSet::new(),
             ..Default::default()
         };
