@@ -25,6 +25,10 @@ pub mod tracker;
 pub mod vault_data;
 mod vault_parser;
 
+/// Temporary module for refactoring `VaultData` to the new structure.
+/// Contains conversion functions and tests. Will be removed after refactoring is complete.
+pub mod tmp_refactor;
+
 // Re-export logging functions for easier access
 pub use logging::init as init_logging;
 
