@@ -82,6 +82,57 @@ pub fn convert_legacy_to_new(legacy_data: Vec<VaultData>, base_path: &Path) -> N
     NewVaultData::new(root)
 }
 
+impl NewFileEntry {
+    /// Converts new `NewFileEntry` back to legacy `VaultData` type
+    #[must_use]
+    pub fn to_legacy(&self) -> VaultData {
+        match self {
+            NewFileEntry::Header {
+                name,
+                heading_level,
+                content,
+            } => {
+                let legacy_content = content.iter().map(NewFileEntry::to_legacy).collect();
+                VaultData::Header(*heading_level, name.clone(), legacy_content)
+            }
+            NewFileEntry::Task(task) => VaultData::Task(task.clone()),
+            NewFileEntry::Tracker(tracker) => VaultData::Tracker(tracker.clone()),
+        }
+    }
+}
+
+impl NewNode {
+    /// Converts new `NewNode` back to legacy `VaultData` type
+    #[must_use]
+    pub fn to_legacy(&self) -> VaultData {
+        match self {
+            NewNode::Vault { name, content, .. } | NewNode::Directory { name, content, .. } => {
+                let legacy_content = content.iter().map(NewNode::to_legacy).collect();
+                VaultData::Directory(name.clone(), legacy_content)
+            }
+            NewNode::File { name, content, .. } => {
+                // Files are represented as Header(0, filename, content) in legacy
+                let legacy_content = content.iter().map(NewFileEntry::to_legacy).collect();
+                VaultData::Header(0, name.clone(), legacy_content)
+            }
+        }
+    }
+}
+
+impl NewVaultData {
+    /// Converts new `NewVaultData` back to legacy `Vec<VaultData>` type
+    #[must_use]
+    pub fn to_legacy(&self) -> Vec<VaultData> {
+        self.root.iter().map(NewNode::to_legacy).collect()
+    }
+}
+
+/// Helper function to convert `NewVaultData` to legacy `Vec<VaultData>`
+#[must_use]
+pub fn convert_new_to_legacy(new_data: &NewVaultData) -> Vec<VaultData> {
+    new_data.to_legacy()
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
@@ -596,6 +647,161 @@ mod tests {
         assert_eq!(
             legacy_combined, new_output,
             "String outputs should match exactly"
+        );
+    }
+
+    #[test]
+    fn test_round_trip_file_entry() {
+        let task = create_test_task();
+        let tracker = create_test_tracker();
+
+        // Test 1: Task round-trip
+        let legacy_task = VaultData::Task(task.clone());
+        let new_task = legacy_task.to_new_file_entry().unwrap();
+        let back_to_legacy = new_task.to_legacy();
+        assert_eq!(
+            legacy_task, back_to_legacy,
+            "Task should survive round-trip"
+        );
+
+        // Test 2: Tracker round-trip
+        let legacy_tracker = VaultData::Tracker(tracker.clone());
+        let new_tracker = legacy_tracker.to_new_file_entry().unwrap();
+        let back_to_legacy = new_tracker.to_legacy();
+        assert_eq!(
+            legacy_tracker, back_to_legacy,
+            "Tracker should survive round-trip"
+        );
+
+        // Test 3: Header with content round-trip
+        let legacy_header = VaultData::Header(
+            1,
+            "Test Header".to_string(),
+            vec![VaultData::Task(task.clone()), VaultData::Tracker(tracker)],
+        );
+        let new_header = legacy_header.to_new_file_entry().unwrap();
+        let back_to_legacy = new_header.to_legacy();
+        assert_eq!(
+            legacy_header, back_to_legacy,
+            "Header should survive round-trip"
+        );
+    }
+
+    #[test]
+    fn test_round_trip_node() {
+        let task = create_test_task();
+        let tracker = create_test_tracker();
+
+        // Test: File (Header level 0) round-trip
+        let legacy_file = VaultData::Header(
+            0,
+            "test.md".to_string(),
+            vec![
+                VaultData::Header(
+                    1,
+                    "Section".to_string(),
+                    vec![VaultData::Task(task.clone())],
+                ),
+                VaultData::Tracker(tracker),
+            ],
+        );
+
+        let base_path = PathBuf::from("/vault");
+        let new_node = legacy_file.to_new_node(&base_path);
+        let back_to_legacy = new_node.to_legacy();
+
+        assert_eq!(
+            legacy_file, back_to_legacy,
+            "File should survive round-trip"
+        );
+    }
+
+    #[test]
+    fn test_round_trip_directory() {
+        let task1 = create_test_task();
+        let mut task2 = create_test_task();
+        task2.name = "Task 2".to_string();
+
+        // Create a directory with files
+        let file1 = VaultData::Header(0, "file1.md".to_string(), vec![VaultData::Task(task1)]);
+        let file2 = VaultData::Header(
+            0,
+            "file2.md".to_string(),
+            vec![VaultData::Header(
+                1,
+                "Header".to_string(),
+                vec![VaultData::Task(task2)],
+            )],
+        );
+
+        let legacy_dir = VaultData::Directory("test_dir".to_string(), vec![file1, file2]);
+
+        let base_path = PathBuf::from("/vault");
+        let new_node = legacy_dir.to_new_node(&base_path);
+        let back_to_legacy = new_node.to_legacy();
+
+        assert_eq!(
+            legacy_dir, back_to_legacy,
+            "Directory should survive round-trip"
+        );
+    }
+
+    #[test]
+    fn test_round_trip_full_vault() {
+        let task = create_test_task();
+        let tracker = create_test_tracker();
+
+        // Create a complex vault structure
+        let project_file = VaultData::Header(
+            0,
+            "project.md".to_string(),
+            vec![VaultData::Header(
+                1,
+                "Project".to_string(),
+                vec![VaultData::Task(task.clone())],
+            )],
+        );
+
+        let habits_file = VaultData::Header(
+            0,
+            "habits.md".to_string(),
+            vec![VaultData::Tracker(tracker)],
+        );
+
+        let work_dir = VaultData::Directory("Work".to_string(), vec![project_file]);
+        let personal_dir = VaultData::Directory("Personal".to_string(), vec![habits_file]);
+
+        let legacy_data = vec![work_dir, personal_dir];
+
+        let base_path = PathBuf::from("/vault");
+        let new_vault = convert_legacy_to_new(legacy_data.clone(), &base_path);
+        let back_to_legacy = convert_new_to_legacy(&new_vault);
+
+        assert_eq!(
+            legacy_data, back_to_legacy,
+            "Full vault should survive round-trip"
+        );
+    }
+
+    #[test]
+    fn test_round_trip_nested_directories() {
+        let task = create_test_task();
+
+        // Create nested directories
+        let file = VaultData::Header(0, "test.md".to_string(), vec![VaultData::Task(task)]);
+        let inner_dir = VaultData::Directory("inner".to_string(), vec![file]);
+        let middle_dir = VaultData::Directory("middle".to_string(), vec![inner_dir]);
+        let outer_dir = VaultData::Directory("outer".to_string(), vec![middle_dir]);
+
+        let legacy_data = vec![outer_dir];
+
+        let base_path = PathBuf::from("/vault");
+        let new_vault = convert_legacy_to_new(legacy_data.clone(), &base_path);
+        let back_to_legacy = convert_new_to_legacy(&new_vault);
+
+        assert_eq!(
+            legacy_data, back_to_legacy,
+            "Nested directories should survive round-trip"
         );
     }
 }
