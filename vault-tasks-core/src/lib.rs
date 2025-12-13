@@ -6,7 +6,7 @@ use std::{
     fmt::Display,
     path::{Path, PathBuf},
 };
-use vault_data::VaultData;
+use vault_data::{NewVaultData, VaultData};
 
 use filter::{Filter, filter};
 use tracing::{debug, error};
@@ -30,6 +30,7 @@ pub use logging::init as init_logging;
 
 pub struct TaskManager {
     pub tasks: VaultData,
+    pub tasks_refactored: NewVaultData,
     config: TasksConfig,
     pub tags: HashSet<String>,
     pub current_filter: Option<Filter>,
@@ -38,6 +39,7 @@ impl Default for TaskManager {
     fn default() -> Self {
         Self {
             tasks: VaultData::Directory("Empty Vault".to_owned(), vec![]),
+            tasks_refactored: NewVaultData { root: vec![] }, // TODO: will replace tasks eventually
             tags: HashSet::new(),
             current_filter: None,
             config: TasksConfig::default(),
