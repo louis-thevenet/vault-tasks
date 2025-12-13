@@ -1,4 +1,7 @@
-use crate::TasksConfig;
+use crate::{
+    TasksConfig,
+    vault_data::{NewFileEntry, NewNode, NewVaultData},
+};
 
 use super::{
     date::Date,
@@ -12,7 +15,7 @@ pub struct Filter {
     pub task: Task,
     inverted: bool,
     /// Separate state in case we're not filtering by state
-    /// Since tasks require a state to be valid, we'll add a default one but use this one
+    /// Since tasks reuire a state to be valid, we'll add a default one but use this one
     state: Option<State>,
 }
 
@@ -121,51 +124,57 @@ fn names_match(name: &str, filter_name: &str) -> bool {
     }
 }
 
-/// Collects all tasks matching the provided `Filter` from the `VaultData` in a `Vec<Task>`.
-/// If `explore_children` is true, it will also explore subtasks of tasks.
-fn filter_to_vec_layer(
-    vault_data: &VaultData,
-    task_filter: &Filter,
-    explore_children: bool,
-    res: &mut Vec<Task>,
-) {
-    match vault_data {
-        VaultData::Directory(_, children) | VaultData::Header(_, _, children) => {
-            for c in children {
-                filter_to_vec_layer(&c.clone(), task_filter, explore_children, res);
+/// Will return a `Vec<Task>` matching the given `Filter` from the `VaultData`. Includes subtasks.
+#[must_use]
+pub fn filter_tasks_to_vec(vault_data: &NewVaultData, filter: &Filter) -> Vec<Task> {
+    fn filter_tasks_from_file_entry(
+        file_entry: NewFileEntry,
+        filter: &Filter,
+        res: &mut Vec<Task>,
+    ) {
+        match file_entry {
+            NewFileEntry::Header { content, .. } => {
+                for c in content {
+                    filter_tasks_from_file_entry(c, filter, res);
+                }
             }
-        }
-        VaultData::Task(task) => {
-            if explore_children {
+            NewFileEntry::Task(task) => {
+                if filter_task(&task, filter) {
+                    res.push(task.clone());
+                }
                 task.subtasks.iter().for_each(|t| {
-                    filter_to_vec_layer(
-                        &VaultData::Task(t.clone()),
-                        task_filter,
-                        explore_children,
-                        res,
-                    );
+                    filter_tasks_from_file_entry(NewFileEntry::Task(t.clone()), filter, res);
                 });
             }
-
-            if filter_task(task, task_filter) {
-                res.push(task.clone());
+            NewFileEntry::Tracker(_tracker) => {} // Don't collect trackers in the result
+                                                  // It's only used by the Filter and Calendar
+                                                  // tabs and we don't want to display trackers there
+        }
+    }
+    fn filter_tasks_from_node(node: &NewNode, filter: &Filter, res: &mut Vec<Task>) {
+        match node {
+            NewNode::Vault { content, .. } | NewNode::Directory { content, .. } => {
+                for entry in content {
+                    filter_tasks_from_node(entry, filter, res);
+                }
+            }
+            NewNode::File { content, .. } => {
+                for entry in content.clone() {
+                    filter_tasks_from_file_entry(entry, filter, res);
+                }
             }
         }
-        VaultData::Tracker(_tracker) => (), // Don't collect trackers in the result
-                                            // It's only used by the Filter and Calendar
-                                            // tabs and we don't want to display trackers there
     }
-}
-
-/// Will return a `Vec<Task>` matching the given `Filter` from the `VaultData`
-pub fn filter_to_vec(vault_data: &VaultData, filter: &Filter) -> Vec<Task> {
     let res = &mut vec![];
-    filter_to_vec_layer(vault_data, filter, true, res);
+    vault_data.root.iter().for_each(|node| {
+        filter_tasks_from_node(node, filter, res);
+    });
     res.clone()
 }
 
 /// Filters a `VaultData` structure based on the provided `Filter`.
 /// Only keeps the `VaultData` entries that match the filter criteria.
+#[must_use]
 pub fn filter(vault_data: &VaultData, task_filter: &Filter) -> Option<VaultData> {
     match vault_data {
         VaultData::Header(level, name, children) => {
@@ -233,6 +242,8 @@ pub fn filter(vault_data: &VaultData, task_filter: &Filter) -> Option<VaultData>
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use chrono::NaiveDate;
 
     use crate::{
@@ -240,10 +251,11 @@ mod tests {
         date::Date,
         filter::{Filter, filter},
         task::{State, Task},
+        tmp_refactor,
         vault_data::VaultData,
     };
 
-    use super::{filter_to_vec, parse_search_input};
+    use super::{filter_tasks_to_vec, parse_search_input};
 
     #[test]
     fn parse_search_input_test() {
@@ -393,7 +405,8 @@ mod tests {
                 ..Default::default()
             },
         ];
-        let res = filter_to_vec(
+        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
+        let res = filter_tasks_to_vec(
             &input,
             &Filter {
                 task: Task {
@@ -466,7 +479,8 @@ mod tests {
             description: Some("test\ndesc".to_string()),
             ..Default::default()
         }];
-        let res = filter_to_vec(
+        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
+        let res = filter_tasks_to_vec(
             &input,
             &Filter {
                 task: Task {
@@ -549,7 +563,8 @@ mod tests {
                 ..Default::default()
             },
         ];
-        let res = filter_to_vec(
+        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
+        let res = filter_tasks_to_vec(
             &input,
             &Filter {
                 task: Task {
@@ -621,7 +636,8 @@ mod tests {
             description: Some("test\ndesc".to_string()),
             ..Default::default()
         }];
-        let res = filter_to_vec(
+        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
+        let res = filter_tasks_to_vec(
             &input,
             &Filter {
                 task: Task {
@@ -697,7 +713,8 @@ mod tests {
             description: Some("test\ndesc".to_string()),
             ..Default::default()
         }];
-        let res = filter_to_vec(
+        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
+        let res = filter_tasks_to_vec(
             &input,
             &Filter {
                 task: Task {
@@ -782,7 +799,8 @@ mod tests {
                 ..Default::default()
             },
         ];
-        let res = filter_to_vec(
+        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
+        let res = filter_tasks_to_vec(
             &input,
             &Filter {
                 task: Task {
@@ -860,7 +878,8 @@ mod tests {
             description: Some("test\ndesc".to_string()),
             ..Default::default()
         }];
-        let res = filter_to_vec(
+        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
+        let res = filter_tasks_to_vec(
             &input,
             &Filter {
                 task: Task {
@@ -948,7 +967,8 @@ mod tests {
                 ..Default::default()
             },
         ];
-        let res = filter_to_vec(
+        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
+        let res = filter_tasks_to_vec(
             &input,
             &Filter {
                 task: Task {
@@ -1088,7 +1108,8 @@ mod tests {
             priority: 5,
             ..Default::default()
         }];
-        let res = filter_to_vec(
+        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
+        let res = filter_tasks_to_vec(
             &input,
             &Filter {
                 task: Task {
@@ -1136,7 +1157,8 @@ mod tests {
                 ..Default::default()
             },
         ];
-        let res = filter_to_vec(
+        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
+        let res = filter_tasks_to_vec(
             &input,
             &Filter {
                 task: Task {
@@ -1184,7 +1206,8 @@ mod tests {
                 ..Default::default()
             },
         ];
-        let res = filter_to_vec(
+        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
+        let res = filter_tasks_to_vec(
             &input,
             &Filter {
                 task: Task {
@@ -1225,7 +1248,8 @@ mod tests {
             state: State::Done,
             ..Default::default()
         }];
-        let res = filter_to_vec(
+        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
+        let res = filter_tasks_to_vec(
             &input,
             &Filter {
                 task: Task {
@@ -1266,7 +1290,8 @@ mod tests {
             is_today: true,
             ..Default::default()
         }];
-        let res = filter_to_vec(
+        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
+        let res = filter_tasks_to_vec(
             &input,
             &Filter {
                 task: Task {
@@ -1314,7 +1339,8 @@ mod tests {
                 ..Default::default()
             },
         ];
-        let res = filter_to_vec(
+        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
+        let res = filter_tasks_to_vec(
             &input,
             &Filter {
                 task: Task {

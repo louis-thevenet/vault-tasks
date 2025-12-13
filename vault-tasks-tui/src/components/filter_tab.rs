@@ -19,7 +19,7 @@ use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
 use tui_input::backend::crossterm::EventHandler;
 use vault_tasks_core::TaskManager;
-use vault_tasks_core::filter::{self, filter_to_vec, parse_search_input};
+use vault_tasks_core::filter::{self, filter_tasks_to_vec, parse_search_input};
 use vault_tasks_core::sorter::SortingMode;
 use vault_tasks_core::task::Task;
 use vault_tasks_core::vault_data::VaultData;
@@ -62,7 +62,7 @@ impl FilterTab<'_> {
             parse_search_input(self.input_bar_widget.input.value(), &self.config.core);
 
         // Filter tasks
-        self.matching_tasks = filter_to_vec(&self.task_mgr.tasks, &filter_task);
+        self.matching_tasks = filter_tasks_to_vec(&self.task_mgr.tasks_refactored, &filter_task);
         SortingMode::sort(&mut self.matching_tasks, self.sorting_mode);
 
         // Reset ScrollViewState

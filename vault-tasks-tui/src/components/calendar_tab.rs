@@ -22,7 +22,7 @@ use crate::{
 use vault_tasks_core::{
     TaskManager,
     date::Date,
-    filter::{Filter, filter_to_vec},
+    filter::{Filter, filter_tasks_to_vec},
     sorter::SortingMode,
     task::{State, Task},
     vault_data::VaultData,
@@ -133,7 +133,7 @@ impl CalendarTab<'_> {
     }
     fn update_tasks(&mut self) {
         // Gather tasks to vector
-        self.tasks = filter_to_vec(&self.task_mgr.tasks, &Filter::default());
+        self.tasks = filter_tasks_to_vec(&self.task_mgr.tasks_refactored, &Filter::default());
         self.tasks.sort_by(SortingMode::cmp_due_date);
     }
     fn updated_date(&mut self) {
