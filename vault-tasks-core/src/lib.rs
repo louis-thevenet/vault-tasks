@@ -96,6 +96,13 @@ impl TaskManager {
 
         self.tasks = tasks;
         self.tags = tags;
+
+        // TODO: until parsing is refactored
+        self.tasks_refactored = tmp_refactor::convert_legacy_to_new(
+            vec![self.tasks.clone()],
+            &self.config.core.vault_path,
+        );
+
         Ok(())
     }
 
