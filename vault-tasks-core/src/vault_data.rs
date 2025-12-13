@@ -101,10 +101,8 @@ impl Display for NewNode {
                 NewNode::File { name, content, .. } => {
                     write_underline_with_indent(&name.to_string(), depth, f)?;
                     for entry in content {
-                        for line in entry.to_string().split('\n') {
-                            write_indent(depth + 1, f)?;
-                            writeln!(f, "{line}")?;
-                        }
+                        // Use NewFileEntry's fmt_with_depth to format with proper indentation
+                        entry.fmt_with_depth(f, depth + 1)?;
                     }
                 }
             }
@@ -125,50 +123,53 @@ pub enum NewFileEntry {
     Task(Task),
     Tracker(Tracker),
 }
-impl Display for NewFileEntry {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        fn fmt_file_entry_rec(
-            file_entry: &NewFileEntry,
-            f: &mut std::fmt::Formatter,
-            depth: usize,
-        ) -> std::fmt::Result {
-            match file_entry {
-                NewFileEntry::Header {
-                    name,
-                    heading_level: _,
-                    content,
-                } => {
-                    write_underline_with_indent(name, depth, f)?;
-                    for entry in content {
-                        fmt_file_entry_rec(entry, f, depth + 1)?;
-                    }
+
+impl NewFileEntry {
+    pub(crate) fn fmt_with_depth(
+        &self,
+        f: &mut std::fmt::Formatter,
+        depth: usize,
+    ) -> std::fmt::Result {
+        match self {
+            NewFileEntry::Header {
+                name,
+                heading_level: _,
+                content,
+            } => {
+                write_underline_with_indent(name, depth, f)?;
+                for entry in content {
+                    entry.fmt_with_depth(f, depth + 1)?;
                 }
-                NewFileEntry::Task(task) => {
-                    for line in task.to_string().replace('\r', "").split('\n') {
-                        write_indent(depth, f)?;
-                        writeln!(f, "{line}")?;
-                    }
-                    for subtask in &task.subtasks {
-                        for line in (NewFileEntry::Task(subtask.clone()))
-                            .to_string()
-                            .replace('\r', "") // redundant
-                            .split('\n')
-                        {
-                            write_indent(depth + 1, f)?;
-                            writeln!(f, "{line}")?;
-                        }
-                    }
+            }
+            NewFileEntry::Task(task) => {
+                for line in task.to_string().replace('\r', "").split('\n') {
+                    write_indent(depth, f)?;
+                    writeln!(f, "{line}")?;
                 }
-                NewFileEntry::Tracker(tracker) => {
-                    for line in tracker.to_string().replace('\r', "").split('\n') {
-                        write_indent(depth, f)?;
+                for subtask in &task.subtasks {
+                    for line in (NewFileEntry::Task(subtask.clone()))
+                        .to_string()
+                        .split('\n')
+                    {
+                        write_indent(depth + 1, f)?;
                         writeln!(f, "{line}")?;
                     }
                 }
             }
-            Ok(())
+            NewFileEntry::Tracker(tracker) => {
+                for line in tracker.to_string().replace('\r', "").split('\n') {
+                    write_indent(depth, f)?;
+                    writeln!(f, "{line}")?;
+                }
+            }
         }
-        fmt_file_entry_rec(self, f, 0)
+        Ok(())
+    }
+}
+
+impl Display for NewFileEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_with_depth(f, 0)
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
