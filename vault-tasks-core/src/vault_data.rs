@@ -2,6 +2,7 @@ use std::{fmt::Display, path::PathBuf};
 
 use super::{task::Task, tracker::Tracker};
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// A node in the vault data structure, representing either a vault, directory, or file.
 pub enum Node {
     Vault {
         name: String,
@@ -20,6 +21,7 @@ pub enum Node {
     },
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// An entry in a file, representing either a header, task, or tracker.
 pub enum FileEntry {
     Header {
         name: String,
