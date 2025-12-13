@@ -74,7 +74,7 @@ impl FilterTab<'_> {
 
             let mut tags = HashSet::new();
             TaskManager::collect_tags(
-                &filter::filter(&self.task_mgr.tasks, &filter_task)
+                &filter::filter(&self.task_mgr.tasks_refactored, &Some(filter_task))
                     .expect("Entry list was not empty but vault was."),
                 &mut tags,
             );

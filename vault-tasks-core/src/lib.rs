@@ -167,12 +167,7 @@ impl TaskManager {
             }
         }
 
-        let filtered_tasks = if let Some(task_filter) = &self.current_filter {
-            filter(&self.tasks, task_filter)
-        } else {
-            Some(self.tasks.clone())
-        };
-
+        let filtered_tasks = filter(&self.tasks_refactored, &self.current_filter);
         match filtered_tasks {
             Some(VaultData::Directory(_, entries)) => aux(entries, selected_header_path, 0),
             None => bail!("Empty Vault"),
@@ -309,11 +304,7 @@ impl TaskManager {
             }
         }
 
-        let filtered_tasks = if let Some(task_filter) = &self.current_filter {
-            filter(&self.tasks, task_filter)
-        } else {
-            Some(self.tasks.clone())
-        };
+        let filtered_tasks = filter(&self.tasks_refactored, &self.current_filter);
         match filtered_tasks {
             Some(VaultData::Directory(_, entries)) => {
                 for entry in entries {
@@ -367,11 +358,7 @@ impl TaskManager {
             }
         }
 
-        let filtered_tasks = if let Some(task_filter) = &self.current_filter {
-            filter(&self.tasks, task_filter)
-        } else {
-            return false;
-        };
+        let filtered_tasks = filter(&self.tasks_refactored, &self.current_filter);
         let Some(VaultData::Directory(_, entries)) = filtered_tasks else {
             return false;
         };

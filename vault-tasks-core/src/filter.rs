@@ -1,5 +1,5 @@
 use crate::{
-    TasksConfig,
+    TasksConfig, tmp_refactor,
     vault_data::{NewFileEntry, NewNode, NewVaultData},
 };
 
@@ -175,68 +175,150 @@ pub fn filter_tasks_to_vec(vault_data: &NewVaultData, filter: &Filter) -> Vec<Ta
 /// Filters a `VaultData` structure based on the provided `Filter`.
 /// Only keeps the `VaultData` entries that match the filter criteria.
 #[must_use]
-pub fn filter(vault_data: &VaultData, task_filter: &Filter) -> Option<VaultData> {
-    match vault_data {
-        VaultData::Header(level, name, children) => {
-            let mut actual_children = vec![];
-            for child in children {
-                let child_clone = child.clone();
-                if let Some(child) = filter(&child_clone, task_filter) {
-                    actual_children.push(child);
+pub fn filter(vault_data: &NewVaultData, task_filter: &Option<Filter>) -> Option<VaultData> {
+    fn filter_file_entry(file_entry: &NewFileEntry, task_filter: &Filter) -> Option<NewFileEntry> {
+        match &file_entry {
+            NewFileEntry::Header {
+                content,
+                heading_level,
+                name,
+            } => {
+                let mut actual_content = vec![];
+                for child in content {
+                    let child_clone = child.clone();
+                    if let Some(child) = filter_file_entry(&child_clone, task_filter) {
+                        actual_content.push(child);
+                    }
+                }
+                if actual_content.is_empty() {
+                    None
+                } else {
+                    Some(NewFileEntry::Header {
+                        heading_level: *heading_level,
+                        name: name.clone(),
+                        content: actual_content,
+                    })
                 }
             }
-            if actual_children.is_empty() {
-                None
-            } else {
-                Some(VaultData::Header(*level, name.to_string(), actual_children))
-            }
-        }
-        VaultData::Directory(name, children) => {
-            let mut actual_children = vec![];
-            for child in children {
-                let child_clone = child.clone();
-                if let Some(child) = filter(&child_clone, task_filter) {
-                    actual_children.push(child);
+            NewFileEntry::Task(task) => {
+                if filter_task(task, task_filter) {
+                    Some(file_entry.clone())
+                } else {
+                    let mut actual_children = vec![];
+                    for child in &task.subtasks {
+                        if let Some(NewFileEntry::Task(child)) =
+                            filter_file_entry(&NewFileEntry::Task(child.clone()), task_filter)
+                        {
+                            actual_children.push(child);
+                        }
+                    }
+                    if actual_children.is_empty() {
+                        return None;
+                    }
+                    Some(NewFileEntry::Task(Task {
+                        subtasks: actual_children,
+                        ..task.clone()
+                    }))
                 }
             }
-            if actual_children.is_empty() {
-                None
-            } else {
-                Some(VaultData::Directory(name.to_string(), actual_children))
+            NewFileEntry::Tracker(tracker) => {
+                // We keep the tracker if its name matches the filter task's name
+                // But we don't look at the task's state
+                // I might want to refactor the Filter to allow parsing a Tracker from
+                // the input string later.
+                if names_match(&tracker.name, &task_filter.task.name) {
+                    Some(NewFileEntry::Tracker(tracker.clone()))
+                } else {
+                    None
+                }
             }
         }
-        VaultData::Task(task) => {
-            if filter_task(task, task_filter) {
-                Some(vault_data.clone())
-            } else {
+    }
+    fn filter_node(node: &NewNode, filter: &Filter) -> Option<NewNode> {
+        match node {
+            NewNode::Vault {
+                content,
+                name,
+                path,
+            } => {
                 let mut actual_children = vec![];
-                for child in &task.subtasks {
-                    if let Some(VaultData::Task(child)) =
-                        filter(&VaultData::Task(child.clone()), task_filter)
-                    {
+                for child in content {
+                    let child_clone = child.clone();
+                    if let Some(child) = filter_node(&child_clone, filter) {
                         actual_children.push(child);
                     }
                 }
                 if actual_children.is_empty() {
-                    return None;
+                    None
+                } else {
+                    Some(NewNode::Vault {
+                        name: name.to_string(),
+                        content: actual_children,
+                        path: path.clone(),
+                    })
                 }
-                Some(VaultData::Task(Task {
-                    subtasks: actual_children,
-                    ..task.clone()
-                }))
+            }
+            NewNode::Directory {
+                content,
+                name,
+                path,
+            } => {
+                let mut actual_children = vec![];
+                for child in content {
+                    let child_clone = child.clone();
+                    if let Some(child) = filter_node(&child_clone, filter) {
+                        actual_children.push(child);
+                    }
+                }
+                if actual_children.is_empty() {
+                    None
+                } else {
+                    Some(NewNode::Directory {
+                        name: name.to_string(),
+                        content: actual_children,
+                        path: path.clone(),
+                    })
+                }
+            }
+            NewNode::File {
+                name,
+                path,
+                content,
+            } => {
+                let mut actual_children = vec![];
+                for child in content {
+                    let child_clone = child.clone();
+                    if let Some(child) = filter_file_entry(&child_clone, filter) {
+                        actual_children.push(child);
+                    }
+                }
+                if actual_children.is_empty() {
+                    None
+                } else {
+                    Some(NewNode::File {
+                        name: name.to_string(),
+                        content: actual_children,
+                        path: path.clone(),
+                    })
+                }
             }
         }
-        VaultData::Tracker(tracker) => {
-            // We keep the tracker if its name matches the filter task's name
-            // But we don't look at the task's state
-            // I might want to refactor the Filter to allow parsing a Tracker from
-            // the input string later.
-            if names_match(&tracker.name, &task_filter.task.name) {
-                Some(VaultData::Tracker(tracker.clone()))
-            } else {
-                None
-            }
+    }
+    let Some(task_filter) = task_filter else {
+        let vault_data = tmp_refactor::convert_new_to_legacy(vault_data)[0].clone(); // TODO: refactor
+        return Some(vault_data.clone());
+    };
+    let mut actual_children = vec![];
+    for node in &vault_data.root {
+        let node_clone = node.clone();
+        if let Some(child) = filter_node(&node_clone, task_filter) {
+            actual_children.push(child);
         }
+    }
+    if actual_children.is_empty() {
+        None
+    } else {
+        Some(NewVaultData::new(actual_children).to_legacy()[0].clone())
     }
 }
 
@@ -251,6 +333,7 @@ mod tests {
         date::Date,
         filter::{Filter, filter},
         task::{State, Task},
+        tmp_refactor,
         vault_data::{NewFileEntry, NewNode, NewVaultData, VaultData},
     };
 
@@ -1082,16 +1165,17 @@ mod tests {
                 )],
             )],
         ));
+        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::new()).clone();
         let res = filter(
             &input,
-            &Filter {
+            &Some(Filter {
                 task: Task {
                     name: String::from("subtask"),
                     ..Default::default()
                 },
                 inverted: false,
                 state: None,
-            },
+            }),
         );
         assert_eq!(res, expected);
     }
