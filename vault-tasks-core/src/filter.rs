@@ -251,8 +251,7 @@ mod tests {
         date::Date,
         filter::{Filter, filter},
         task::{State, Task},
-        tmp_refactor,
-        vault_data::VaultData,
+        vault_data::{NewFileEntry, NewNode, NewVaultData, VaultData},
     };
 
     use super::{filter_tasks_to_vec, parse_search_input};
@@ -339,56 +338,59 @@ mod tests {
 
     #[test]
     fn filter_tags_test() {
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
-                                    name: "test 1".to_string(),
+        let input = NewVaultData::new(vec![NewNode::Directory {
+            name: "test".to_owned(),
+            path: PathBuf::from("test"),
+            content: vec![NewNode::File {
+                name: "Test".to_string(),
+                path: PathBuf::from("test/Test"),
+                content: vec![
+                    NewFileEntry::Header {
+                        name: "1".to_string(),
+                        heading_level: 1,
+                        content: vec![NewFileEntry::Header {
+                            name: "2".to_string(),
+                            heading_level: 2,
+                            content: vec![NewFileEntry::Task(Task {
+                                name: "test 1".to_string(),
+                                line_number: Some(8),
+                                description: Some("test\ndesc".to_string()),
+                                ..Default::default()
+                            })],
+                        }],
+                    },
+                    NewFileEntry::Header {
+                        name: "1.2".to_string(),
+                        heading_level: 1,
+                        content: vec![
+                            NewFileEntry::Header {
+                                name: "3".to_string(),
+                                heading_level: 3,
+                                content: vec![],
+                            },
+                            NewFileEntry::Header {
+                                name: "4".to_string(),
+                                heading_level: 2,
+                                content: vec![NewFileEntry::Task(Task {
+                                    name: "test 2".to_string(),
                                     line_number: Some(8),
+                                    tags: Some(vec!["test".to_string()]),
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
-                                        name: "test 2".to_string(),
-                                        line_number: Some(8),
-                                        tags: Some(vec!["test".to_string()]),
-                                        description: Some("test\ndesc".to_string()),
-                                        ..Default::default()
-                                    })],
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                VaultData::Task(Task {
-                    name: "test 3".to_string(),
-                    line_number: Some(8),
-                    tags: Some(vec!["test".to_string()]),
-                    description: Some("test\ndesc".to_string()),
-                    ..Default::default()
-                }),
-            ],
-        );
+                            },
+                        ],
+                    },
+                    NewFileEntry::Task(Task {
+                        name: "test 3".to_string(),
+                        line_number: Some(8),
+                        tags: Some(vec!["test".to_string()]),
+                        description: Some("test\ndesc".to_string()),
+                        ..Default::default()
+                    }),
+                ],
+            }],
+        }]);
         let expected = vec![
             Task {
                 name: "test 2".to_string(),
@@ -405,7 +407,6 @@ mod tests {
                 ..Default::default()
             },
         ];
-        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
         let res = filter_tasks_to_vec(
             &input,
             &Filter {
@@ -423,63 +424,65 @@ mod tests {
 
     #[test]
     fn filter_tags_inverted_test() {
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
-                                    name: "test 1".to_string(),
+        let input = NewVaultData::new(vec![NewNode::Directory {
+            name: "test".to_owned(),
+            path: PathBuf::from("test"),
+            content: vec![NewNode::File {
+                name: "Test".to_string(),
+                path: PathBuf::from("test/Test"),
+                content: vec![
+                    NewFileEntry::Header {
+                        name: "1".to_string(),
+                        heading_level: 1,
+                        content: vec![NewFileEntry::Header {
+                            name: "2".to_string(),
+                            heading_level: 2,
+                            content: vec![NewFileEntry::Task(Task {
+                                name: "test 1".to_string(),
+                                line_number: Some(8),
+                                description: Some("test\ndesc".to_string()),
+                                ..Default::default()
+                            })],
+                        }],
+                    },
+                    NewFileEntry::Header {
+                        name: "1.2".to_string(),
+                        heading_level: 1,
+                        content: vec![
+                            NewFileEntry::Header {
+                                name: "3".to_string(),
+                                heading_level: 3,
+                                content: vec![],
+                            },
+                            NewFileEntry::Header {
+                                name: "4".to_string(),
+                                heading_level: 2,
+                                content: vec![NewFileEntry::Task(Task {
+                                    name: "test 2".to_string(),
                                     line_number: Some(8),
+                                    tags: Some(vec!["test".to_string()]),
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
-                                        name: "test 2".to_string(),
-                                        line_number: Some(8),
-                                        tags: Some(vec!["test".to_string()]),
-                                        description: Some("test\ndesc".to_string()),
-                                        ..Default::default()
-                                    })],
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                VaultData::Task(Task {
-                    name: "test 3".to_string(),
-                    line_number: Some(8),
-                    tags: Some(vec!["test".to_string()]),
-                    description: Some("test\ndesc".to_string()),
-                    ..Default::default()
-                }),
-            ],
-        );
+                            },
+                        ],
+                    },
+                    NewFileEntry::Task(Task {
+                        name: "test 3".to_string(),
+                        line_number: Some(8),
+                        tags: Some(vec!["test".to_string()]),
+                        description: Some("test\ndesc".to_string()),
+                        ..Default::default()
+                    }),
+                ],
+            }],
+        }]);
         let expected = vec![Task {
             name: "test 1".to_string(),
             line_number: Some(8),
             description: Some("test\ndesc".to_string()),
             ..Default::default()
         }];
-        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
         let res = filter_tasks_to_vec(
             &input,
             &Filter {
@@ -497,56 +500,59 @@ mod tests {
 
     #[test]
     fn filter_names_test() {
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
-                                    name: "hfdgqskhjfg1".to_string(),
+        let input = NewVaultData::new(vec![NewNode::Directory {
+            name: "test".to_owned(),
+            path: PathBuf::from("test"),
+            content: vec![NewNode::File {
+                name: "Test".to_string(),
+                path: PathBuf::from("test/Test"),
+                content: vec![
+                    NewFileEntry::Header {
+                        name: "1".to_string(),
+                        heading_level: 1,
+                        content: vec![NewFileEntry::Header {
+                            name: "2".to_string(),
+                            heading_level: 2,
+                            content: vec![NewFileEntry::Task(Task {
+                                name: "hfdgqskhjfg1".to_string(),
+                                line_number: Some(8),
+                                description: Some("test\ndesc".to_string()),
+                                ..Default::default()
+                            })],
+                        }],
+                    },
+                    NewFileEntry::Header {
+                        name: "1.2".to_string(),
+                        heading_level: 1,
+                        content: vec![
+                            NewFileEntry::Header {
+                                name: "3".to_string(),
+                                heading_level: 3,
+                                content: vec![],
+                            },
+                            NewFileEntry::Header {
+                                name: "4".to_string(),
+                                heading_level: 2,
+                                content: vec![NewFileEntry::Task(Task {
+                                    name: "test 2".to_string(),
                                     line_number: Some(8),
+                                    tags: Some(vec!["test".to_string()]),
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
-                                        name: "test 2".to_string(),
-                                        line_number: Some(8),
-                                        tags: Some(vec!["test".to_string()]),
-                                        description: Some("test\ndesc".to_string()),
-                                        ..Default::default()
-                                    })],
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                VaultData::Task(Task {
-                    name: "test 3".to_string(),
-                    line_number: Some(8),
-                    tags: Some(vec!["test".to_string()]),
-                    description: Some("test\ndesc".to_string()),
-                    ..Default::default()
-                }),
-            ],
-        );
+                            },
+                        ],
+                    },
+                    NewFileEntry::Task(Task {
+                        name: "test 3".to_string(),
+                        line_number: Some(8),
+                        tags: Some(vec!["test".to_string()]),
+                        description: Some("test\ndesc".to_string()),
+                        ..Default::default()
+                    }),
+                ],
+            }],
+        }]);
         let expected = vec![
             Task {
                 name: "test 2".to_string(),
@@ -563,7 +569,6 @@ mod tests {
                 ..Default::default()
             },
         ];
-        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
         let res = filter_tasks_to_vec(
             &input,
             &Filter {
@@ -580,63 +585,65 @@ mod tests {
 
     #[test]
     fn filter_names_inverted_test() {
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
-                                    name: "hfdgqskhjfg1".to_string(),
+        let input = NewVaultData::new(vec![NewNode::Directory {
+            name: "test".to_owned(),
+            path: PathBuf::from("test"),
+            content: vec![NewNode::File {
+                name: "Test".to_string(),
+                path: PathBuf::from("test/Test"),
+                content: vec![
+                    NewFileEntry::Header {
+                        name: "1".to_string(),
+                        heading_level: 1,
+                        content: vec![NewFileEntry::Header {
+                            name: "2".to_string(),
+                            heading_level: 2,
+                            content: vec![NewFileEntry::Task(Task {
+                                name: "hfdgqskhjfg1".to_string(),
+                                line_number: Some(8),
+                                description: Some("test\ndesc".to_string()),
+                                ..Default::default()
+                            })],
+                        }],
+                    },
+                    NewFileEntry::Header {
+                        name: "1.2".to_string(),
+                        heading_level: 1,
+                        content: vec![
+                            NewFileEntry::Header {
+                                name: "3".to_string(),
+                                heading_level: 3,
+                                content: vec![],
+                            },
+                            NewFileEntry::Header {
+                                name: "4".to_string(),
+                                heading_level: 2,
+                                content: vec![NewFileEntry::Task(Task {
+                                    name: "test 2".to_string(),
                                     line_number: Some(8),
+                                    tags: Some(vec!["test".to_string()]),
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
-                                        name: "test 2".to_string(),
-                                        line_number: Some(8),
-                                        tags: Some(vec!["test".to_string()]),
-                                        description: Some("test\ndesc".to_string()),
-                                        ..Default::default()
-                                    })],
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                VaultData::Task(Task {
-                    name: "test 3".to_string(),
-                    line_number: Some(8),
-                    tags: Some(vec!["test".to_string()]),
-                    description: Some("test\ndesc".to_string()),
-                    ..Default::default()
-                }),
-            ],
-        );
+                            },
+                        ],
+                    },
+                    NewFileEntry::Task(Task {
+                        name: "test 3".to_string(),
+                        line_number: Some(8),
+                        tags: Some(vec!["test".to_string()]),
+                        description: Some("test\ndesc".to_string()),
+                        ..Default::default()
+                    }),
+                ],
+            }],
+        }]);
         let expected = vec![Task {
             name: "hfdgqskhjfg1".to_string(),
             line_number: Some(8),
             description: Some("test\ndesc".to_string()),
             ..Default::default()
         }];
-        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
         let res = filter_tasks_to_vec(
             &input,
             &Filter {
@@ -653,59 +660,62 @@ mod tests {
 
     #[test]
     fn filter_due_date_test() {
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
-                                    name: "hfdgqskhjfg1".to_string(),
+        let input = NewVaultData::new(vec![NewNode::Directory {
+            name: "test".to_owned(),
+            path: PathBuf::from("test"),
+            content: vec![NewNode::File {
+                name: "Test".to_string(),
+                path: PathBuf::from("test/Test"),
+                content: vec![
+                    NewFileEntry::Header {
+                        name: "1".to_string(),
+                        heading_level: 1,
+                        content: vec![NewFileEntry::Header {
+                            name: "2".to_string(),
+                            heading_level: 2,
+                            content: vec![NewFileEntry::Task(Task {
+                                name: "hfdgqskhjfg1".to_string(),
+                                line_number: Some(8),
+                                due_date: Some(Date::Day(
+                                    NaiveDate::from_ymd_opt(2020, 2, 2).unwrap(),
+                                )),
+                                description: Some("test\ndesc".to_string()),
+                                ..Default::default()
+                            })],
+                        }],
+                    },
+                    NewFileEntry::Header {
+                        name: "1.2".to_string(),
+                        heading_level: 1,
+                        content: vec![
+                            NewFileEntry::Header {
+                                name: "3".to_string(),
+                                heading_level: 3,
+                                content: vec![],
+                            },
+                            NewFileEntry::Header {
+                                name: "4".to_string(),
+                                heading_level: 2,
+                                content: vec![NewFileEntry::Task(Task {
+                                    name: "test 2".to_string(),
                                     line_number: Some(8),
-                                    due_date: Some(Date::Day(
-                                        NaiveDate::from_ymd_opt(2020, 2, 2).unwrap(),
-                                    )),
+                                    tags: Some(vec!["test".to_string()]),
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
-                                        name: "test 2".to_string(),
-                                        line_number: Some(8),
-                                        tags: Some(vec!["test".to_string()]),
-                                        description: Some("test\ndesc".to_string()),
-                                        ..Default::default()
-                                    })],
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                VaultData::Task(Task {
-                    name: "test 3".to_string(),
-                    line_number: Some(8),
-                    tags: Some(vec!["test".to_string()]),
-                    description: Some("test\ndesc".to_string()),
-                    ..Default::default()
-                }),
-            ],
-        );
+                            },
+                        ],
+                    },
+                    NewFileEntry::Task(Task {
+                        name: "test 3".to_string(),
+                        line_number: Some(8),
+                        tags: Some(vec!["test".to_string()]),
+                        description: Some("test\ndesc".to_string()),
+                        ..Default::default()
+                    }),
+                ],
+            }],
+        }]);
         let expected = vec![Task {
             name: "hfdgqskhjfg1".to_string(),
             line_number: Some(8),
@@ -713,7 +723,6 @@ mod tests {
             description: Some("test\ndesc".to_string()),
             ..Default::default()
         }];
-        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
         let res = filter_tasks_to_vec(
             &input,
             &Filter {
@@ -730,59 +739,62 @@ mod tests {
 
     #[test]
     fn filter_due_date_inverted_test() {
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
-                                    name: "hfdgqskhjfg1".to_string(),
+        let input = NewVaultData::new(vec![NewNode::Directory {
+            name: "test".to_owned(),
+            path: PathBuf::from("test"),
+            content: vec![NewNode::File {
+                name: "Test".to_string(),
+                path: PathBuf::from("test/Test"),
+                content: vec![
+                    NewFileEntry::Header {
+                        name: "1".to_string(),
+                        heading_level: 1,
+                        content: vec![NewFileEntry::Header {
+                            name: "2".to_string(),
+                            heading_level: 2,
+                            content: vec![NewFileEntry::Task(Task {
+                                name: "hfdgqskhjfg1".to_string(),
+                                line_number: Some(8),
+                                due_date: Some(Date::Day(
+                                    NaiveDate::from_ymd_opt(2020, 2, 2).unwrap(),
+                                )),
+                                description: Some("test\ndesc".to_string()),
+                                ..Default::default()
+                            })],
+                        }],
+                    },
+                    NewFileEntry::Header {
+                        name: "1.2".to_string(),
+                        heading_level: 1,
+                        content: vec![
+                            NewFileEntry::Header {
+                                name: "3".to_string(),
+                                heading_level: 3,
+                                content: vec![],
+                            },
+                            NewFileEntry::Header {
+                                name: "4".to_string(),
+                                heading_level: 2,
+                                content: vec![NewFileEntry::Task(Task {
+                                    name: "test 2".to_string(),
                                     line_number: Some(8),
-                                    due_date: Some(Date::Day(
-                                        NaiveDate::from_ymd_opt(2020, 2, 2).unwrap(),
-                                    )),
+                                    tags: Some(vec!["test".to_string()]),
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
-                                        name: "test 2".to_string(),
-                                        line_number: Some(8),
-                                        tags: Some(vec!["test".to_string()]),
-                                        description: Some("test\ndesc".to_string()),
-                                        ..Default::default()
-                                    })],
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                VaultData::Task(Task {
-                    name: "test 3".to_string(),
-                    line_number: Some(8),
-                    tags: Some(vec!["test".to_string()]),
-                    description: Some("test\ndesc".to_string()),
-                    ..Default::default()
-                }),
-            ],
-        );
+                            },
+                        ],
+                    },
+                    NewFileEntry::Task(Task {
+                        name: "test 3".to_string(),
+                        line_number: Some(8),
+                        tags: Some(vec!["test".to_string()]),
+                        description: Some("test\ndesc".to_string()),
+                        ..Default::default()
+                    }),
+                ],
+            }],
+        }]);
         let expected = vec![
             Task {
                 name: "test 2".to_string(),
@@ -799,7 +811,6 @@ mod tests {
                 ..Default::default()
             },
         ];
-        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
         let res = filter_tasks_to_vec(
             &input,
             &Filter {
@@ -816,60 +827,63 @@ mod tests {
 
     #[test]
     fn filter_full_test() {
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
-                                    name: "real target".to_string(),
+        let input = NewVaultData::new(vec![NewNode::Directory {
+            name: "test".to_owned(),
+            path: PathBuf::from("test"),
+            content: vec![NewNode::File {
+                name: "Test".to_string(),
+                path: PathBuf::from("test/Test"),
+                content: vec![
+                    NewFileEntry::Header {
+                        name: "1".to_string(),
+                        heading_level: 1,
+                        content: vec![NewFileEntry::Header {
+                            name: "2".to_string(),
+                            heading_level: 2,
+                            content: vec![NewFileEntry::Task(Task {
+                                name: "real target".to_string(),
+                                line_number: Some(8),
+                                tags: Some(vec!["test".to_string()]),
+                                due_date: Some(Date::Day(
+                                    NaiveDate::from_ymd_opt(2020, 2, 2).unwrap(),
+                                )),
+                                description: Some("test\ndesc".to_string()),
+                                ..Default::default()
+                            })],
+                        }],
+                    },
+                    NewFileEntry::Header {
+                        name: "1.2".to_string(),
+                        heading_level: 1,
+                        content: vec![
+                            NewFileEntry::Header {
+                                name: "3".to_string(),
+                                heading_level: 3,
+                                content: vec![],
+                            },
+                            NewFileEntry::Header {
+                                name: "4".to_string(),
+                                heading_level: 2,
+                                content: vec![NewFileEntry::Task(Task {
+                                    name: "false target 2".to_string(),
                                     line_number: Some(8),
                                     tags: Some(vec!["test".to_string()]),
-                                    due_date: Some(Date::Day(
-                                        NaiveDate::from_ymd_opt(2020, 2, 2).unwrap(),
-                                    )),
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
-                                        name: "false target 2".to_string(),
-                                        line_number: Some(8),
-                                        tags: Some(vec!["test".to_string()]),
-                                        description: Some("test\ndesc".to_string()),
-                                        ..Default::default()
-                                    })],
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                VaultData::Task(Task {
-                    name: "test 3".to_string(),
-                    line_number: Some(8),
-                    tags: Some(vec!["test".to_string()]),
-                    description: Some("test\ndesc".to_string()),
-                    ..Default::default()
-                }),
-            ],
-        );
+                            },
+                        ],
+                    },
+                    NewFileEntry::Task(Task {
+                        name: "test 3".to_string(),
+                        line_number: Some(8),
+                        tags: Some(vec!["test".to_string()]),
+                        description: Some("test\ndesc".to_string()),
+                        ..Default::default()
+                    }),
+                ],
+            }],
+        }]);
         let expected = vec![Task {
             name: "real target".to_string(),
             line_number: Some(8),
@@ -878,7 +892,6 @@ mod tests {
             description: Some("test\ndesc".to_string()),
             ..Default::default()
         }];
-        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
         let res = filter_tasks_to_vec(
             &input,
             &Filter {
@@ -897,60 +910,63 @@ mod tests {
 
     #[test]
     fn filter_full_inverted_test() {
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![
-                VaultData::Header(
-                    0,
-                    "Test".to_string(),
-                    vec![
-                        VaultData::Header(
-                            1,
-                            "1".to_string(),
-                            vec![VaultData::Header(
-                                2,
-                                "2".to_string(),
-                                vec![VaultData::Task(Task {
-                                    name: "real target".to_string(),
+        let input = NewVaultData::new(vec![NewNode::Directory {
+            name: "test".to_owned(),
+            path: PathBuf::from("test"),
+            content: vec![NewNode::File {
+                name: "Test".to_string(),
+                path: PathBuf::from("test/Test"),
+                content: vec![
+                    NewFileEntry::Header {
+                        name: "1".to_string(),
+                        heading_level: 1,
+                        content: vec![NewFileEntry::Header {
+                            name: "2".to_string(),
+                            heading_level: 2,
+                            content: vec![NewFileEntry::Task(Task {
+                                name: "real target".to_string(),
+                                line_number: Some(8),
+                                tags: Some(vec!["test".to_string()]),
+                                due_date: Some(Date::Day(
+                                    NaiveDate::from_ymd_opt(2020, 2, 2).unwrap(),
+                                )),
+                                description: Some("test\ndesc".to_string()),
+                                ..Default::default()
+                            })],
+                        }],
+                    },
+                    NewFileEntry::Header {
+                        name: "1.2".to_string(),
+                        heading_level: 1,
+                        content: vec![
+                            NewFileEntry::Header {
+                                name: "3".to_string(),
+                                heading_level: 3,
+                                content: vec![],
+                            },
+                            NewFileEntry::Header {
+                                name: "4".to_string(),
+                                heading_level: 2,
+                                content: vec![NewFileEntry::Task(Task {
+                                    name: "false target 2".to_string(),
                                     line_number: Some(8),
                                     tags: Some(vec!["test".to_string()]),
-                                    due_date: Some(Date::Day(
-                                        NaiveDate::from_ymd_opt(2020, 2, 2).unwrap(),
-                                    )),
                                     description: Some("test\ndesc".to_string()),
                                     ..Default::default()
                                 })],
-                            )],
-                        ),
-                        VaultData::Header(
-                            1,
-                            "1.2".to_string(),
-                            vec![
-                                VaultData::Header(3, "3".to_string(), vec![]),
-                                VaultData::Header(
-                                    2,
-                                    "4".to_string(),
-                                    vec![VaultData::Task(Task {
-                                        name: "false target 2".to_string(),
-                                        line_number: Some(8),
-                                        tags: Some(vec!["test".to_string()]),
-                                        description: Some("test\ndesc".to_string()),
-                                        ..Default::default()
-                                    })],
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                VaultData::Task(Task {
-                    name: "test 3".to_string(),
-                    line_number: Some(8),
-                    tags: Some(vec!["test".to_string()]),
-                    description: Some("test\ndesc".to_string()),
-                    ..Default::default()
-                }),
-            ],
-        );
+                            },
+                        ],
+                    },
+                    NewFileEntry::Task(Task {
+                        name: "test 3".to_string(),
+                        line_number: Some(8),
+                        tags: Some(vec!["test".to_string()]),
+                        description: Some("test\ndesc".to_string()),
+                        ..Default::default()
+                    }),
+                ],
+            }],
+        }]);
         let expected = vec![
             Task {
                 name: "false target 2".to_string(),
@@ -967,7 +983,6 @@ mod tests {
                 ..Default::default()
             },
         ];
-        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
         let res = filter_tasks_to_vec(
             &input,
             &Filter {
@@ -1083,32 +1098,36 @@ mod tests {
 
     #[test]
     fn filter_priority_test() {
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![
-                VaultData::Task(Task {
-                    name: "high priority task".to_string(),
-                    priority: 5,
-                    ..Default::default()
-                }),
-                VaultData::Task(Task {
-                    name: "normal priority task".to_string(),
-                    priority: 0,
-                    ..Default::default()
-                }),
-                VaultData::Task(Task {
-                    name: "medium priority task".to_string(),
-                    priority: 3,
-                    ..Default::default()
-                }),
-            ],
-        );
+        let input = NewVaultData::new(vec![NewNode::Directory {
+            name: "test".to_owned(),
+            path: PathBuf::from("test"),
+            content: vec![NewNode::File {
+                name: "untitled.md".to_string(),
+                path: PathBuf::from("test/untitled.md"),
+                content: vec![
+                    NewFileEntry::Task(Task {
+                        name: "high priority task".to_string(),
+                        priority: 5,
+                        ..Default::default()
+                    }),
+                    NewFileEntry::Task(Task {
+                        name: "normal priority task".to_string(),
+                        priority: 0,
+                        ..Default::default()
+                    }),
+                    NewFileEntry::Task(Task {
+                        name: "medium priority task".to_string(),
+                        priority: 3,
+                        ..Default::default()
+                    }),
+                ],
+            }],
+        }]);
         let expected = vec![Task {
             name: "high priority task".to_string(),
             priority: 5,
             ..Default::default()
         }];
-        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
         let res = filter_tasks_to_vec(
             &input,
             &Filter {
@@ -1125,26 +1144,31 @@ mod tests {
 
     #[test]
     fn filter_priority_inverted_test() {
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![
-                VaultData::Task(Task {
-                    name: "high priority task".to_string(),
-                    priority: 5,
-                    ..Default::default()
-                }),
-                VaultData::Task(Task {
-                    name: "normal priority task".to_string(),
-                    priority: 0,
-                    ..Default::default()
-                }),
-                VaultData::Task(Task {
-                    name: "medium priority task".to_string(),
-                    priority: 3,
-                    ..Default::default()
-                }),
-            ],
-        );
+        let input = NewVaultData::new(vec![NewNode::Directory {
+            name: "test".to_owned(),
+            path: PathBuf::from("test"),
+            content: vec![NewNode::File {
+                name: "untitled.md".to_string(),
+                path: PathBuf::from("test/untitled.md"),
+                content: vec![
+                    NewFileEntry::Task(Task {
+                        name: "high priority task".to_string(),
+                        priority: 5,
+                        ..Default::default()
+                    }),
+                    NewFileEntry::Task(Task {
+                        name: "normal priority task".to_string(),
+                        priority: 0,
+                        ..Default::default()
+                    }),
+                    NewFileEntry::Task(Task {
+                        name: "medium priority task".to_string(),
+                        priority: 3,
+                        ..Default::default()
+                    }),
+                ],
+            }],
+        }]);
         let expected = vec![
             Task {
                 name: "normal priority task".to_string(),
@@ -1157,7 +1181,6 @@ mod tests {
                 ..Default::default()
             },
         ];
-        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
         let res = filter_tasks_to_vec(
             &input,
             &Filter {
@@ -1174,26 +1197,31 @@ mod tests {
 
     #[test]
     fn filter_state_test() {
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![
-                VaultData::Task(Task {
-                    name: "todo task".to_string(),
-                    state: State::ToDo,
-                    ..Default::default()
-                }),
-                VaultData::Task(Task {
-                    name: "done task".to_string(),
-                    state: State::Done,
-                    ..Default::default()
-                }),
-                VaultData::Task(Task {
-                    name: "incomplete task".to_string(),
-                    state: State::Incomplete,
-                    ..Default::default()
-                }),
-            ],
-        );
+        let input = NewVaultData::new(vec![NewNode::Directory {
+            name: "test".to_owned(),
+            path: PathBuf::from("test"),
+            content: vec![NewNode::File {
+                name: "untitled.md".to_string(),
+                path: PathBuf::from("test/untitled.md"),
+                content: vec![
+                    NewFileEntry::Task(Task {
+                        name: "todo task".to_string(),
+                        state: State::ToDo,
+                        ..Default::default()
+                    }),
+                    NewFileEntry::Task(Task {
+                        name: "done task".to_string(),
+                        state: State::Done,
+                        ..Default::default()
+                    }),
+                    NewFileEntry::Task(Task {
+                        name: "incomplete task".to_string(),
+                        state: State::Incomplete,
+                        ..Default::default()
+                    }),
+                ],
+            }],
+        }]);
         let expected = vec![
             Task {
                 name: "todo task".to_string(),
@@ -1206,7 +1234,6 @@ mod tests {
                 ..Default::default()
             },
         ];
-        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
         let res = filter_tasks_to_vec(
             &input,
             &Filter {
@@ -1223,32 +1250,36 @@ mod tests {
 
     #[test]
     fn filter_state_inverted_test() {
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![
-                VaultData::Task(Task {
-                    name: "todo task".to_string(),
-                    state: State::ToDo,
-                    ..Default::default()
-                }),
-                VaultData::Task(Task {
-                    name: "done task".to_string(),
-                    state: State::Done,
-                    ..Default::default()
-                }),
-                VaultData::Task(Task {
-                    name: "incomplete task".to_string(),
-                    state: State::Incomplete,
-                    ..Default::default()
-                }),
-            ],
-        );
+        let input = NewVaultData::new(vec![NewNode::Directory {
+            name: "test".to_owned(),
+            path: PathBuf::from("test"),
+            content: vec![NewNode::File {
+                name: "untitled.md".to_string(),
+                path: PathBuf::from("test/untitled.md"),
+                content: vec![
+                    NewFileEntry::Task(Task {
+                        name: "todo task".to_string(),
+                        state: State::ToDo,
+                        ..Default::default()
+                    }),
+                    NewFileEntry::Task(Task {
+                        name: "done task".to_string(),
+                        state: State::Done,
+                        ..Default::default()
+                    }),
+                    NewFileEntry::Task(Task {
+                        name: "incomplete task".to_string(),
+                        state: State::Incomplete,
+                        ..Default::default()
+                    }),
+                ],
+            }],
+        }]);
         let expected = vec![Task {
             name: "done task".to_string(),
             state: State::Done,
             ..Default::default()
         }];
-        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
         let res = filter_tasks_to_vec(
             &input,
             &Filter {
@@ -1265,32 +1296,36 @@ mod tests {
 
     #[test]
     fn filter_today_flag_test() {
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![
-                VaultData::Task(Task {
-                    name: "today task".to_string(),
-                    is_today: true,
-                    ..Default::default()
-                }),
-                VaultData::Task(Task {
-                    name: "normal task".to_string(),
-                    is_today: false,
-                    ..Default::default()
-                }),
-                VaultData::Task(Task {
-                    name: "another normal task".to_string(),
-                    is_today: false,
-                    ..Default::default()
-                }),
-            ],
-        );
+        let input = NewVaultData::new(vec![NewNode::Directory {
+            name: "test".to_owned(),
+            path: PathBuf::from("test"),
+            content: vec![NewNode::File {
+                name: "untitled.md".to_string(),
+                path: PathBuf::from("test/untitled.md"),
+                content: vec![
+                    NewFileEntry::Task(Task {
+                        name: "today task".to_string(),
+                        is_today: true,
+                        ..Default::default()
+                    }),
+                    NewFileEntry::Task(Task {
+                        name: "normal task".to_string(),
+                        is_today: false,
+                        ..Default::default()
+                    }),
+                    NewFileEntry::Task(Task {
+                        name: "another normal task".to_string(),
+                        is_today: false,
+                        ..Default::default()
+                    }),
+                ],
+            }],
+        }]);
         let expected = vec![Task {
             name: "today task".to_string(),
             is_today: true,
             ..Default::default()
         }];
-        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
         let res = filter_tasks_to_vec(
             &input,
             &Filter {
@@ -1307,26 +1342,31 @@ mod tests {
 
     #[test]
     fn filter_today_flag_inverted_test() {
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![
-                VaultData::Task(Task {
-                    name: "today task".to_string(),
-                    is_today: true,
-                    ..Default::default()
-                }),
-                VaultData::Task(Task {
-                    name: "normal task".to_string(),
-                    is_today: false,
-                    ..Default::default()
-                }),
-                VaultData::Task(Task {
-                    name: "another normal task".to_string(),
-                    is_today: false,
-                    ..Default::default()
-                }),
-            ],
-        );
+        let input = NewVaultData::new(vec![NewNode::Directory {
+            name: "test".to_owned(),
+            path: PathBuf::from("test"),
+            content: vec![NewNode::File {
+                name: "untitled.md".to_string(),
+                path: PathBuf::from("test/untitled.md"),
+                content: vec![
+                    NewFileEntry::Task(Task {
+                        name: "today task".to_string(),
+                        is_today: true,
+                        ..Default::default()
+                    }),
+                    NewFileEntry::Task(Task {
+                        name: "normal task".to_string(),
+                        is_today: false,
+                        ..Default::default()
+                    }),
+                    NewFileEntry::Task(Task {
+                        name: "another normal task".to_string(),
+                        is_today: false,
+                        ..Default::default()
+                    }),
+                ],
+            }],
+        }]);
         let expected = vec![
             Task {
                 name: "normal task".to_string(),
@@ -1339,7 +1379,6 @@ mod tests {
                 ..Default::default()
             },
         ];
-        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::default());
         let res = filter_tasks_to_vec(
             &input,
             &Filter {
