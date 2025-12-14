@@ -1,7 +1,7 @@
 use color_eyre::{Result, eyre::bail};
 
 use std::{collections::HashSet, fmt::Display};
-use vault_data::{NewVaultData, VaultData};
+use vault_data::NewVaultData;
 
 use filter::Filter;
 use tracing::error;
@@ -31,7 +31,6 @@ pub mod tmp_refactor;
 pub use logging::init as init_logging;
 
 pub struct TaskManager {
-    pub tasks: VaultData,
     pub tasks_refactored: NewVaultData,
     config: TasksConfig,
     pub tags: HashSet<String>,
@@ -40,7 +39,6 @@ pub struct TaskManager {
 impl Default for TaskManager {
     fn default() -> Self {
         Self {
-            tasks: VaultData::Directory("Empty Vault".to_owned(), vec![]),
             tasks_refactored: NewVaultData { root: vec![] }, // TODO: will replace tasks eventually
             tags: HashSet::new(),
             current_filter: None,
@@ -93,9 +91,7 @@ impl TaskManager {
         let vault_parser = VaultParser::new(config.clone());
         let tasks = vault_parser.scan_vault()?;
 
-        self.tasks = tasks;
-        // TODO: until parsing is refactored
-        self.tasks_refactored = tmp_refactor::convert_legacy_to_new(vec![self.tasks.clone()]);
+        self.tasks_refactored = tmp_refactor::convert_legacy_to_new(vec![tasks]);
 
         Self::rewrite_vault_tasks(config, &self.tasks_refactored)
             .unwrap_or_else(|e| error!("Failed to fix tasks: {e}"));
@@ -409,7 +405,7 @@ impl TaskManager {
 }
 impl Display for TaskManager {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.tasks)?;
+        write!(f, "{}", self.tasks_refactored)?;
         Ok(())
     }
 }
@@ -423,7 +419,7 @@ mod tests {
     use crate::{
         Found,
         task::Task,
-        vault_data::{NewFileEntry, NewNode, NewVaultData, VaultData},
+        vault_data::{NewFileEntry, NewNode, NewVaultData},
     };
 
     #[test]
@@ -499,7 +495,6 @@ mod tests {
         };
 
         let task_mgr = TaskManager {
-            tasks: VaultData::Directory("Empty Vault".to_owned(), vec![]),
             tasks_refactored: vault_data,
             tags: HashSet::new(),
             ..Default::default()

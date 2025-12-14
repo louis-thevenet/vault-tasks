@@ -392,7 +392,7 @@ impl Widget for TaskListItem {
                 }
             }
             NewFileEntry::Tracker(tracker) => {
-                Widget::render(self.tracker_to_table(tracker), area, buf)
+                Widget::render(self.tracker_to_table(tracker), area, buf);
             }
         }
     }
