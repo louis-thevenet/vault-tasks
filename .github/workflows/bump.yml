@@ -15,7 +15,7 @@ jobs:
     outputs:
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: release-please-oss/release-please-action@v5.0.0
+      - uses: release-please-oss/release-please-action@v5.3.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           skip-github-release: true
