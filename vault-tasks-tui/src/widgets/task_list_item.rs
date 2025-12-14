@@ -50,7 +50,7 @@ impl TaskListItem {
         }
     }
     #[allow(clippy::too_many_lines)]
-    fn task_to_paragraph(&self, area: Rect, task: &Task) -> (Rc<[Rect]>, Paragraph<'_>) {
+    fn task_to_paragraph<'a>(&self, area: Rect, task: &'a Task) -> (Rc<[Rect]>, Paragraph<'a>) {
         let mut lines = vec![];
         let mut data_line = vec![];
 
@@ -72,7 +72,15 @@ impl TaskListItem {
             Block::default()
                 .borders(Borders::ALL)
                 .title_bottom(if self.display_filename {
-                    Line::from(task.filename.clone()).right_aligned()
+                    Line::from(
+                        task.path
+                            .file_name()
+                            .unwrap_or_default()
+                            .to_str()
+                            .unwrap_or_default()
+                            .clone(),
+                    )
+                    .right_aligned()
                 } else {
                     Line::from("")
                 });

@@ -1,7 +1,7 @@
 use color_eyre::{Result, eyre::bail};
 use std::{
     fs::{self, DirEntry},
-    path::Path,
+    path::{Path, PathBuf},
 };
 use tracing::{debug, info};
 
@@ -26,13 +26,13 @@ impl VaultParser {
         self.scan(&self.config.core.vault_path, &mut tasks)?;
         Ok(tasks)
     }
-    pub fn parse_single_task(&self, task: &str, filename: &str) -> Result<Task> {
+    pub fn parse_single_task(&self, task: &str, path: &Path) -> Result<Task> {
         let mut parser = ParserFileEntry {
             config: &self.config,
-            filename: filename.to_string(),
+            path: path.to_path_buf(),
         };
         debug!("{task}");
-        match parser.parse_file(filename, &task) {
+        match parser.parse_file(&task) {
             Some(VaultData::Task(_)) => {
                 bail!(
                     "Got a Task from {task}, should have been a Header then the Task, but this should never happen"
@@ -112,9 +112,9 @@ impl VaultParser {
         let content = fs::read_to_string(entry.path()).unwrap_or_default();
         let mut parser = ParserFileEntry {
             config: &self.config,
-            filename: String::new(),
+            path: entry.path(),
         };
 
-        parser.parse_file(entry.file_name().to_str().unwrap(), &content.as_str())
+        parser.parse_file(&content.as_str())
     }
 }

@@ -120,7 +120,7 @@ impl ExplorerTab<'_> {
         Ok(())
     }
     pub(super) fn get_current_path_to_file(&self) -> PathBuf {
-        let mut path = self.config.core.core.vault_path.clone();
+        let mut path = PathBuf::new();
         for e in &self
             .get_preview_path()
             .unwrap_or_else(|_| self.current_path.clone())

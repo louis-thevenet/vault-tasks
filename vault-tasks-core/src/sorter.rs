@@ -82,6 +82,8 @@ impl SortingMode {
 #[cfg(test)]
 mod tests {
 
+    use std::path::PathBuf;
+
     use insta::{assert_debug_snapshot, with_settings};
 
     use super::SortingMode;
@@ -107,7 +109,7 @@ mod tests {
         };
         let mut tasks: Vec<Task> = source
             .iter_mut()
-            .map(|input| parse_task(input, String::new(), &config).unwrap())
+            .map(|input| parse_task(input, &PathBuf::new(), &config).unwrap())
             .collect();
 
         let sorting_mode = SortingMode::ByName;
@@ -146,7 +148,7 @@ mod tests {
         };
         let mut tasks: Vec<Task> = source
             .iter_mut()
-            .map(|input| parse_task(input, String::new(), &config).unwrap())
+            .map(|input| parse_task(input, &PathBuf::new(), &config).unwrap())
             .collect();
 
         let sorting_mode = SortingMode::ByDueDate;
@@ -172,7 +174,7 @@ mod tests {
         };
         let mut tasks: Vec<Task> = source
             .iter_mut()
-            .map(|input| parse_task(input, String::new(), &config).unwrap())
+            .map(|input| parse_task(input, &PathBuf::new(), &config).unwrap())
             .collect();
 
         let sorting_mode = SortingMode::ByDueDate;

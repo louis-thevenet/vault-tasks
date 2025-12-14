@@ -1,4 +1,7 @@
-use std::iter::Peekable;
+use std::{
+    iter::Peekable,
+    path::{Path, PathBuf},
+};
 
 use color_eyre::eyre::bail;
 use tracing::{debug, error, info};
@@ -45,7 +48,7 @@ enum FileToken {
 #[allow(clippy::module_name_repetitions)]
 pub struct ParserFileEntry<'a> {
     pub config: &'a TasksConfig,
-    pub filename: String,
+    pub path: PathBuf,
 }
 
 impl ParserFileEntry<'_> {
@@ -56,8 +59,7 @@ impl ParserFileEntry<'_> {
     fn parse_task(&self, input: &mut &str) -> Result<FileToken> {
         let indent_length = Self::parse_indent(input).unwrap_or(0);
 
-        let mut task_parser =
-            |input: &mut &str| parse_task(input, self.filename.clone(), self.config);
+        let mut task_parser = |input: &mut &str| parse_task(input, &self.path, self.config);
         let task_res = task_parser.parse_next(input)?;
         Ok(FileToken::Task(task_res, indent_length))
     }
@@ -605,12 +607,9 @@ impl ParserFileEntry<'_> {
 
                     if let Some((_next_line_number, mut next_line)) = input.peek().copied() {
                         // Parse header line
-                        if let Ok(mut tracker) = parse_header(
-                            &tracker_def,
-                            self.filename.clone(),
-                            line_number,
-                            &mut next_line,
-                        ) {
+                        if let Ok(mut tracker) =
+                            parse_header(&tracker_def, &self.path, line_number, &mut next_line)
+                        {
                             input.next();
                             // Parse separator |---|---|
                             if input.peek().copied().is_some_and(|(_, mut next_line)| {
@@ -720,13 +719,16 @@ impl ParserFileEntry<'_> {
         Some(file_entry.to_owned())
     }
 
-    pub fn parse_file(&mut self, filename: &str, input: &&str) -> Option<VaultData> {
+    pub fn parse_file(&mut self, input: &&str) -> Option<VaultData> {
         let replaced = input.replace('\r', "");
         let lines = replaced.split('\n');
 
-        let mut res = VaultData::Header(0, filename.to_owned(), vec![]);
+        let mut res = VaultData::Header(
+            0,
+            self.path.file_name().unwrap().to_str().unwrap().to_owned(),
+            vec![],
+        );
         let mut file_tags = vec![];
-        self.filename = filename.to_string();
         self.parse_file_aux(
             lines.enumerate().peekable(),
             &mut res,
@@ -779,6 +781,8 @@ fn add_global_tag(file_entry: &mut VaultData, tag: &String) {
 #[cfg(test)]
 mod tests {
 
+    use std::path::PathBuf;
+
     use insta::assert_snapshot;
 
     use super::ParserFileEntry;
@@ -809,7 +813,7 @@ mod tests {
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
         let parser = ParserFileEntry {
             config: &config,
-            filename: String::new(),
+            path: PathBuf::new(),
         };
         let expected = VaultData::Header(
             0,
@@ -891,7 +895,7 @@ mod tests {
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
         let parser = ParserFileEntry {
             config: &config,
-            filename: String::new(),
+            path: PathBuf::new(),
         };
         let expected = VaultData::Header(
             0,
@@ -965,7 +969,7 @@ mod tests {
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
         let parser = ParserFileEntry {
             config: &config,
-            filename: String::new(),
+            path: PathBuf::new(),
         };
         parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
         add_global_tag(&mut res, &String::from("test"));
@@ -990,7 +994,7 @@ mod tests {
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
         let parser = ParserFileEntry {
             config: &config,
-            filename: String::new(),
+            path: PathBuf::new(),
         };
         let expected = VaultData::Header(
             0,
@@ -1029,7 +1033,7 @@ mod tests {
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
         let parser = ParserFileEntry {
             config: &config,
-            filename: String::new(),
+            path: PathBuf::new(),
         };
         let expected = VaultData::Header(
             0,
@@ -1093,7 +1097,7 @@ mod tests {
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
         let parser = ParserFileEntry {
             config: &config,
-            filename: String::new(),
+            path: PathBuf::new(),
         };
         parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
         assert_snapshot!(res);
@@ -1118,7 +1122,7 @@ mod tests {
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
         let parser = ParserFileEntry {
             config: &config,
-            filename: String::new(),
+            path: PathBuf::new(),
         };
         parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
         assert_snapshot!(res);
@@ -1141,7 +1145,7 @@ mod tests {
         let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
         let parser = ParserFileEntry {
             config: &config,
-            filename: String::new(),
+            path: PathBuf::new(),
         };
         parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
         assert_snapshot!(res);

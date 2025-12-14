@@ -335,7 +335,7 @@ impl ExplorerTab<'_> {
     fn edit_selected_task_state(&mut self, new_state: State) -> Result<()> {
         if let Some(mut task) = self.get_selected_task() {
             task.state = new_state;
-            task.fix_task_attributes(&self.config.core, &self.get_current_path_to_file())?;
+            task.fix_task_attributes(&self.config.core)?;
             return Ok(());
         }
         Err(eyre!("No selected task"))
@@ -362,7 +362,7 @@ impl ExplorerTab<'_> {
                 None if diff > 0 => Some(diff.unsigned_abs()),
                 None => None,
             };
-            task.fix_task_attributes(&self.config.core, &self.get_current_path_to_file())?;
+            task.fix_task_attributes(&self.config.core)?;
             return Ok(());
         }
         Err(eyre!("No selected task"))
@@ -434,23 +434,15 @@ impl Component for ExplorerTab<'_> {
                         // Get input
                         let mut input = self.edit_task_bar.input.value();
                         // Parse it
-                        let Ok(mut parsed_task) = parse_task(
-                            &mut input,
-                            self.get_current_path_to_file()
-                                .to_str()
-                                .unwrap()
-                                .to_string(),
-                            &self.config.core,
-                        ) else {
+                        let Ok(mut parsed_task) =
+                            parse_task(&mut input, &task.path, &self.config.core)
+                        else {
                             // Don't accept invalid input
                             return Ok(None);
                         };
                         // Write changes
                         parsed_task.line_number = task.line_number;
-                        parsed_task.fix_task_attributes(
-                            &self.config.core,
-                            &self.get_current_path_to_file(),
-                        )?;
+                        parsed_task.fix_task_attributes(&self.config.core)?;
                         // Quit editing mode
                         self.edit_task_bar.is_focused = !self.edit_task_bar.is_focused;
                         // Reload vault

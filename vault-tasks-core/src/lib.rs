@@ -1,6 +1,10 @@
 use color_eyre::{Result, eyre::bail};
 
-use std::{collections::HashSet, fmt::Display, path::PathBuf};
+use std::{
+    collections::HashSet,
+    fmt::Display,
+    path::{Path, PathBuf},
+};
 use vault_data::{NewVaultData, VaultData};
 
 use filter::Filter;
@@ -284,17 +288,11 @@ impl TaskManager {
 
     /// Recursively calls `Task.fix_task_attributes` on every task from the vault.
     fn rewrite_vault_tasks(config: &TasksConfig, tasks: &NewVaultData) -> Result<()> {
-        fn explore_node(
-            node: &NewNode,
-            filename: &mut PathBuf,
-            config: &TasksConfig,
-        ) -> Result<()> {
+        fn explore_node(node: &NewNode, config: &TasksConfig) -> Result<()> {
             match node {
-                NewNode::Vault { name, content, .. } | NewNode::Directory { name, content, .. } => {
-                    let mut filename = filename.clone();
-                    filename.push(name);
+                NewNode::Vault { content, .. } | NewNode::Directory { content, .. } => {
                     for c in content {
-                        explore_node(c, &mut filename.clone(), config)?;
+                        explore_node(c, config)?;
                     }
                 }
                 NewNode::File {
@@ -304,11 +302,11 @@ impl TaskManager {
                         match file_entry {
                             NewFileEntry::Header { content, .. } => {
                                 for c in content {
-                                    explore_file_entry(c, filename, config)?;
+                                    explore_file_entry(c, config)?;
                                 }
                             }
                             _ => {
-                                explore_file_entry(file_entry, filename, config)?;
+                                explore_file_entry(file_entry, config)?;
                             }
                         }
                     }
@@ -316,25 +314,21 @@ impl TaskManager {
             }
             Ok(())
         }
-        fn explore_file_entry(
-            file_entry: &NewFileEntry,
-            filename: &mut PathBuf,
-            config: &TasksConfig,
-        ) -> Result<()> {
+        fn explore_file_entry(file_entry: &NewFileEntry, config: &TasksConfig) -> Result<()> {
             match file_entry {
                 NewFileEntry::Header { content, .. } => {
                     for c in content {
-                        explore_file_entry(c, filename, config)?;
+                        explore_file_entry(c, config)?;
                     }
                 }
                 NewFileEntry::Task(task) => {
-                    task.fix_task_attributes(config, filename)?;
+                    task.fix_task_attributes(config)?;
                     for t in &task.subtasks {
-                        t.fix_task_attributes(config, filename)?;
+                        t.fix_task_attributes(config)?;
                     }
                 }
                 NewFileEntry::Tracker(tracker) => {
-                    tracker.fix_tracker_attributes(config, filename)?;
+                    tracker.fix_tracker_attributes(config)?;
                 }
             }
             Ok(())
@@ -343,7 +337,7 @@ impl TaskManager {
         tasks
             .root
             .iter()
-            .try_for_each(|node| explore_node(node, &mut PathBuf::new(), config))?;
+            .try_for_each(|node| explore_node(node, config))?;
         Ok(())
     }
 
@@ -531,7 +525,7 @@ mod tests {
         };
         match found {
             Found::FileEntry(entry) => assert_eq!(expected_header, entry),
-            _ => panic!("Expected FileEntry, got {:?}", found),
+            _ => panic!("Expected FileEntry, got {found:?}"),
         }
 
         // Test path to header "4" with tasks
@@ -553,7 +547,7 @@ mod tests {
         };
         match found {
             Found::FileEntry(entry) => assert_eq!(expected_header_with_tasks, entry),
-            _ => panic!("Expected FileEntry, got {:?}", found),
+            _ => panic!("Expected FileEntry, got {found:?}"),
         }
     }
 }

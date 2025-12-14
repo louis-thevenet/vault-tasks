@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::{
     TasksConfig, tmp_refactor,
     vault_data::{NewFileEntry, NewNode, NewVaultData},
@@ -31,7 +33,7 @@ pub fn parse_search_input(input: &str, config: &TasksConfig) -> Filter {
     let input_value = format!("{}{}", if has_state { "" } else { "- [ ]" }, input);
 
     // Parse the input
-    let task = match parse_task(&mut input_value.as_str(), String::new(), config) {
+    let task = match parse_task(&mut input_value.as_str(), &PathBuf::new(), config) {
         Ok(t) => t,
         Err(_e) => Task {
             name: String::from("Incomplete search prompt"),

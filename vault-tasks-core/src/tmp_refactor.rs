@@ -204,7 +204,7 @@ mod tests {
             tags: None,
             due_date: None,
             priority: 0,
-            filename: "test.md".to_string(),
+            path: PathBuf::from("/vault/test.md"),
             line_number: Some(1),
             name: "Test".to_string(),
             completion: None,
@@ -221,7 +221,7 @@ mod tests {
             start_date: Date::Day(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()),
             categories: vec![],
             length: 0,
-            filename: "test.md".to_string(),
+            path: PathBuf::from("test.md"),
             line_number: 1,
         }
     }
