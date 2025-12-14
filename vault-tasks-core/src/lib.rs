@@ -357,7 +357,6 @@ impl TaskManager {
                                 .iter()
                                 .any(|c| aux_node(c, selected_header_path, path_index + 1));
                         }
-                        true
                     }
                     NewNode::File { name, content, .. } => {
                         if *name == selected_header_path[path_index] {
@@ -365,9 +364,9 @@ impl TaskManager {
                                 .iter()
                                 .any(|c| aux_file_entry(c, selected_header_path, path_index + 1));
                         }
-                        true
                     }
                 }
+                false
             }
         }
 
