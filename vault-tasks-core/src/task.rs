@@ -72,7 +72,7 @@ pub struct Task {
     pub description: Option<String>,
     /// None means the task has no associated due date
     pub due_date: Option<Date>,
-    pub filename: String,
+    pub path: PathBuf,
     /// Line number in the file, if None then the task was not
     /// parsed from the file but added from CLI, it should be
     /// appended at the end.
@@ -96,7 +96,7 @@ impl Default for Task {
             description: None,
             line_number: Some(1),
             subtasks: vec![],
-            filename: String::new(),
+            path: PathBuf::new(),
             is_today: false,
             completion: None,
         }
@@ -279,11 +279,14 @@ impl Task {
         res.trim_end().to_string()
     }
 
-    pub fn fix_task_attributes(&self, config: &TasksConfig, path: &PathBuf) -> Result<()> {
-        if !path.is_file() {
-            bail!("Tried to fix tasks attributes but {path:?} is not a file");
+    pub fn fix_task_attributes(&self, config: &TasksConfig) -> Result<()> {
+        if !self.path.is_file() {
+            bail!(
+                "Tried to fix tasks attributes but {:?} is not a file",
+                self.path
+            );
         }
-        let content = read_to_string(path.clone())?;
+        let content = read_to_string(self.path.clone())?;
         let mut lines = content
             .replace('\r', "")
             .split('\n')
@@ -294,7 +297,7 @@ impl Task {
                 bail!(
                     "Task's line number {} was greater than length of file {:?}",
                     line_number,
-                    path
+                    self.path
                 );
             }
 
@@ -313,15 +316,15 @@ impl Task {
                 );
                 lines[line_number - 1] = fixed_line;
 
-                info!("Wrote to {path:?} at line {}", line_number);
+                info!("Wrote to {1:?} at line {}", line_number, self.path);
             }
         } else {
-            debug!("Creating a new task at end of file {}", path.display());
+            debug!("Creating a new task at end of file {}", self.path.display());
             let fixed_line = self.get_fixed_attributes(config, 0);
             lines.push(fixed_line);
             lines.push(String::new()); // Empty line
         }
-        let mut file = File::create(path)?;
+        let mut file = File::create(self.path.clone())?;
         std::io::Write::write_all(&mut file, lines.join("\n").as_bytes())?;
 
         Ok(())

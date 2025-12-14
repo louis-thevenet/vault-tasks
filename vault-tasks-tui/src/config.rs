@@ -216,15 +216,12 @@ pub fn get_data_dir() -> PathBuf {
 }
 
 pub fn get_config_dir() -> PathBuf {
-    CONFIG_FOLDER.clone().map_or_else(
-        || {
-            project_directory().map_or_else(
-                || PathBuf::from(".").join(".config"),
-                |proj_dirs| proj_dirs.config_local_dir().to_path_buf(),
-            )
-        },
-        |s| s,
-    )
+    CONFIG_FOLDER.clone().unwrap_or_else(|| {
+        project_directory().map_or_else(
+            || PathBuf::from(".").join(".config"),
+            |proj_dirs| proj_dirs.config_local_dir().to_path_buf(),
+        )
+    })
 }
 
 fn project_directory() -> Option<ProjectDirs> {
@@ -412,7 +409,7 @@ pub fn parse_key_sequence(raw: &str) -> Result<Vec<KeyEvent>, String> {
     raw.split("><")
         .map(|seq| {
             seq.strip_prefix('<')
-                .map_or_else(|| seq.strip_suffix('>').map_or(seq, |s| s), |s| s)
+                .unwrap_or_else(|| seq.strip_suffix('>').map_or(seq, |s| s))
         })
         .map(parse_key_event)
         .collect()

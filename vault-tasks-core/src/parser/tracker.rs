@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use chrono::NaiveDateTime;
 use tracing::error;
 use winnow::{
@@ -46,7 +48,7 @@ fn parse_date(config: &TasksConfig, input: &mut &str) -> Result<Date, winnow::er
 }
 pub fn parse_header(
     new_tracker: &NewTracker,
-    filename: String,
+    path: &Path,
     line_number: usize,
     input: &mut &str,
 ) -> Result<Tracker> {
@@ -69,7 +71,7 @@ pub fn parse_header(
         ),
     )
     .parse_next(input)?;
-    Ok(new_tracker.to_tracker(filename, line_number, frequency, categories))
+    Ok(new_tracker.to_tracker(path, line_number, frequency, categories))
 }
 pub fn parse_separator(input: &mut &str) -> Result<()> {
     '|'.parse_next(input)?;
@@ -189,6 +191,8 @@ pub fn parse_entries(
 }
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use super::*;
     use crate::{
         TasksConfig,
@@ -321,7 +325,7 @@ mod tests {
         );
         let mut input = "| every day | blogs | books | news | notes |";
 
-        let result = parse_header(&new_tracker, String::new(), 0, &mut input).unwrap();
+        let result = parse_header(&new_tracker, &PathBuf::new(), 0, &mut input).unwrap();
 
         assert_eq!(result.name, "Test Tracker");
         assert_eq!(result.categories.len(), 4);
@@ -339,7 +343,7 @@ mod tests {
         );
         let mut input = "|  every week  |  exercise  |  diet  |  sleep  |";
 
-        let result = parse_header(&new_tracker, String::new(), 0, &mut input).unwrap();
+        let result = parse_header(&new_tracker, &PathBuf::new(), 0, &mut input).unwrap();
 
         assert_eq!(result.categories.len(), 3);
         assert_eq!(result.categories[0].name, "exercise");
@@ -355,7 +359,7 @@ mod tests {
         );
         let mut input = "| every day | reading |";
 
-        let result = parse_header(&new_tracker, String::new(), 0, &mut input).unwrap();
+        let result = parse_header(&new_tracker, &PathBuf::new(), 0, &mut input).unwrap();
 
         assert_eq!(result.categories.len(), 1);
         assert_eq!(result.categories[0].name, "reading");
@@ -490,7 +494,7 @@ mod tests {
                     })],
                 },
             ],
-            filename: String::new(),
+            path: PathBuf::new(),
             line_number: 0,
         };
 
@@ -538,7 +542,7 @@ mod tests {
                     entries: vec![TrackerEntry::Score(ScoreEntry { score: 1 })],
                 },
             ],
-            filename: String::new(),
+            path: PathBuf::new(),
             line_number: 0,
         };
 
@@ -564,7 +568,7 @@ mod tests {
     fn test_parse_entries_first_time_type_inference() {
         // Tracker with no existing entries - should infer types
         let tracker = Tracker {
-            filename: String::new(),
+            path: PathBuf::new(),
             line_number: 0,
             name: "New Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
@@ -612,7 +616,7 @@ mod tests {
     #[test]
     fn test_parse_entries_with_datetime() {
         let tracker = Tracker {
-            filename: String::new(),
+            path: PathBuf::new(),
             line_number: 0,
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
@@ -641,7 +645,7 @@ mod tests {
     #[test]
     fn test_parse_entries_empty_first_entry_becomes_blank() {
         let tracker = Tracker {
-            filename: String::new(),
+            path: PathBuf::new(),
             line_number: 0,
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
@@ -669,7 +673,7 @@ mod tests {
     #[test]
     fn test_parse_entries_note_with_special_characters() {
         let tracker = Tracker {
-            filename: String::new(),
+            path: PathBuf::new(),
             line_number: 0,
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
@@ -699,7 +703,7 @@ mod tests {
     #[test]
     fn test_parse_entries_score_type_mismatch_error() {
         let tracker = Tracker {
-            filename: String::new(),
+            path: PathBuf::new(),
             line_number: 0,
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
@@ -722,7 +726,7 @@ mod tests {
     #[test]
     fn test_parse_entries_trimming_whitespace() {
         let tracker = Tracker {
-            filename: String::new(),
+            path: PathBuf::new(),
             line_number: 0,
             name: "Test Tracker".to_string(),
             start_date: Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
@@ -770,7 +774,7 @@ mod tests {
 
         // Parse header
         let mut header_input = "| every day | blogs | books | news | notes |";
-        let tracker = parse_header(&new_tracker, String::new(), 0, &mut header_input).unwrap();
+        let tracker = parse_header(&new_tracker, &PathBuf::new(), 0, &mut header_input).unwrap();
 
         // Parse separator (just verify it works)
         let mut sep_input = "| ---------- | ----- | ----- | ---- | ------------------ |";
@@ -828,6 +832,6 @@ mod tests {
             Date::Day(NaiveDate::from_ymd_opt(2025, 6, 8).unwrap()),
         );
         let mut input4 = "every day blogs books";
-        assert!(parse_header(&new_tracker, String::new(), 0, &mut input4).is_err());
+        assert!(parse_header(&new_tracker, &PathBuf::new(), 0, &mut input4).is_err());
     }
 }

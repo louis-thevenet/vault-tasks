@@ -5,9 +5,11 @@ use std::{
 };
 use tracing::{debug, info};
 
-use crate::{TasksConfig, parser::parser_file_entry::ParserFileEntry};
-
-use super::{task::Task, vault_data::VaultData};
+use crate::{
+    TasksConfig,
+    parser::parser_file_entry::ParserFileEntry,
+    vault_data::{FileEntryNode, VaultNode, Vaults},
+};
 
 pub struct VaultParser {
     config: TasksConfig,
@@ -17,50 +19,27 @@ impl VaultParser {
     pub const fn new(config: TasksConfig) -> Self {
         Self { config }
     }
-    pub fn scan_vault(&self) -> Result<VaultData> {
-        let mut tasks = VaultData::Directory(
-            self.config.core.vault_path.to_str().unwrap().to_owned(),
-            vec![],
-        );
+    pub fn scan_vault(&self) -> Result<Vaults> {
+        // TODO : multiple vaults here
+        let mut tasks = VaultNode::Vault {
+            name: self
+                .config
+                .core
+                .vault_path
+                .clone()
+                .file_name()
+                .and_then(|s| s.to_str())
+                .unwrap_or("Vault")
+                .to_string(),
+            path: self.config.core.vault_path.clone(),
+            content: vec![],
+        };
         info!("Scanning {:?}", self.config.core.vault_path);
         self.scan(&self.config.core.vault_path, &mut tasks)?;
-        Ok(tasks)
-    }
-    pub fn parse_single_task(&self, task: &str, filename: &str) -> Result<Task> {
-        let mut parser = ParserFileEntry {
-            config: &self.config,
-            filename: filename.to_string(),
-        };
-        debug!("{task}");
-        match parser.parse_file(filename, &task) {
-            Some(VaultData::Task(_)) => {
-                bail!(
-                    "Got a Task from {task}, should have been a Header then the Task, but this should never happen"
-                )
-            }
-
-            Some(VaultData::Header(_, _, content)) => {
-                // Files are always parsed as Headers
-                if content.len() != 1 {
-                    bail!("Expected single task in header, got: {content:?}");
-                } else if let Some(VaultData::Task(t)) = content.first() {
-                    let res = Task {
-                        line_number: None, // Explicitly set to None, as it's not from a file
-                        ..t.clone()
-                    };
-                    Ok(res)
-                } else {
-                    bail!("Expected a single Task in Header, got: {content:?}");
-                }
-            }
-            Some(VaultData::Directory(_, _)) => bail!(
-                "Got a Directory from {task}, should have been a Header then the Task, but this should never happen"
-            ),
-            _ => bail!("Task is malformed: `{task}`"),
-        }
+        Ok(Vaults { root: vec![tasks] })
     }
 
-    fn scan(&self, path: &Path, tasks: &mut VaultData) -> Result<()> {
+    fn scan(&self, path: &Path, tasks: &mut VaultNode) -> Result<()> {
         if self.config.core.ignored.contains(&path.to_path_buf()) {
             debug!("Ignoring {path:?} (ignored list)");
             return Ok(());
@@ -80,18 +59,29 @@ impl VaultParser {
                 continue;
             }
 
-            let VaultData::Directory(_, children) = tasks else {
-                bail!("Error while scanning directories, FileEntry was not a Directory");
+            let content = match tasks {
+                VaultNode::Vault { content, .. } | VaultNode::Directory { content, .. } => content,
+                VaultNode::File { .. } => bail!(
+                    "Error while scanning directories, FileEntry was not a Directory or Vault"
+                ),
             };
 
             if entry.file_type()?.is_dir() {
-                let mut new_child = VaultData::Directory(name.to_string(), vec![]);
+                let new_content: Vec<VaultNode> = vec![];
+                let mut new_child = VaultNode::Directory {
+                    name: name.to_string(),
+                    content: new_content,
+                    path: entry_path.clone(),
+                };
                 self.scan(&entry_path, &mut new_child)?;
 
-                if let VaultData::Directory(_, c) = &new_child
-                    && !c.is_empty()
-                {
-                    children.push(new_child);
+                // Check if the directory has content
+                let has_content = match &new_child {
+                    VaultNode::Directory { content, .. } => !content.is_empty(),
+                    _ => false,
+                };
+                if has_content {
+                    content.push(new_child);
                 }
             } else {
                 let ext = entry_path.extension().and_then(|s| s.to_str());
@@ -100,21 +90,25 @@ impl VaultParser {
                     continue;
                 }
                 if let Some(file_tasks) = self.parse_file(&entry) {
-                    children.push(file_tasks);
+                    content.push(VaultNode::File {
+                        name: name.to_string(),
+                        path: entry_path.clone(),
+                        content: vec![file_tasks],
+                    });
                 }
             }
         }
         Ok(())
     }
 
-    fn parse_file(&self, entry: &DirEntry) -> Option<VaultData> {
+    fn parse_file(&self, entry: &DirEntry) -> Option<FileEntryNode> {
         debug!("Parsing {:?}", entry.file_name());
         let content = fs::read_to_string(entry.path()).unwrap_or_default();
         let mut parser = ParserFileEntry {
             config: &self.config,
-            filename: String::new(),
+            path: entry.path(),
         };
 
-        parser.parse_file(entry.file_name().to_str().unwrap(), &content.as_str())
+        parser.parse_file(&content.as_str())
     }
 }

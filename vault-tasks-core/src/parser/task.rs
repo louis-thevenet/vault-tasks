@@ -5,6 +5,8 @@ mod parser_state;
 mod parser_tags;
 mod token;
 
+use std::path::Path;
+
 use chrono::NaiveDateTime;
 use parse_completion::parse_completion;
 use parse_today::parse_today;
@@ -62,7 +64,7 @@ fn parse_token(input: &mut &str, config: &TasksConfig) -> Result<Token> {
 ///
 /// Will return an error if the task can't be parsed.
 #[allow(clippy::module_name_repetitions)]
-pub fn parse_task(input: &mut &str, filename: String, config: &TasksConfig) -> Result<Task> {
+pub fn parse_task(input: &mut &str, path: &Path, config: &TasksConfig) -> Result<Task> {
     let task_state = match parse_task_state(input, &config.task_state_markers)? {
         Token::State(state) => Ok(state),
         _ => fail(input),
@@ -76,7 +78,7 @@ pub fn parse_task(input: &mut &str, filename: String, config: &TasksConfig) -> R
 
     let mut task = Task {
         state: task_state,
-        filename,
+        path: path.to_path_buf(),
         ..Default::default()
     };
 
@@ -123,6 +125,8 @@ pub fn parse_task(input: &mut &str, filename: String, config: &TasksConfig) -> R
 #[cfg(test)]
 mod test {
 
+    use std::path::PathBuf;
+
     use chrono::{Datelike, Days, NaiveDate, NaiveDateTime, NaiveTime};
 
     use crate::{
@@ -137,7 +141,7 @@ mod test {
         let config = TasksConfig {
             ..Default::default()
         };
-        let res = parse_task(&mut input, String::new(), &config);
+        let res = parse_task(&mut input, PathBuf::new().as_path(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         let year = chrono::Local::now().year();
@@ -158,7 +162,7 @@ mod test {
     fn test_parse_task_only_state() {
         let mut input = "- [ ]";
         let config = TasksConfig::default();
-        let res = parse_task(&mut input, String::new(), &config);
+        let res = parse_task(&mut input, PathBuf::new().as_path(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         let expected = Task {
@@ -170,7 +174,7 @@ mod test {
             priority: 0,
             state: State::ToDo,
             line_number: Some(1),
-            filename: String::new(),
+            path: PathBuf::new(),
             is_today: false,
             completion: None,
         };
@@ -180,7 +184,7 @@ mod test {
     fn test_parse_task_with_due_date_words() {
         let mut input = "- [ ] today 15:30 task_name";
         let config = TasksConfig::default();
-        let res = parse_task(&mut input, String::new(), &config);
+        let res = parse_task(&mut input, PathBuf::new().as_path(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         let expected_date = chrono::Local::now().date_naive();
@@ -193,7 +197,7 @@ mod test {
     fn test_parse_task_with_weekday() {
         let mut input = "- [ ] monday 15:30 task_name";
         let config = TasksConfig::default();
-        let res = parse_task(&mut input, String::new(), &config);
+        let res = parse_task(&mut input, PathBuf::new().as_path(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
 
@@ -213,7 +217,7 @@ mod test {
     fn test_parse_task_with_weekday_this() {
         let mut input = "- [ ] this monday 15:30 task_name";
         let config = TasksConfig::default();
-        let res = parse_task(&mut input, String::new(), &config);
+        let res = parse_task(&mut input, PathBuf::new().as_path(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         let now = chrono::Local::now();
@@ -232,7 +236,7 @@ mod test {
     fn test_parse_task_with_weekday_next() {
         let mut input = "- [ ] next monday 15:30 task_name";
         let config = TasksConfig::default();
-        let res = parse_task(&mut input, String::new(), &config);
+        let res = parse_task(&mut input, PathBuf::new().as_path(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         let now = chrono::Local::now();
@@ -251,7 +255,7 @@ mod test {
     fn test_parse_task_without_due_date() {
         let mut input = "- [ ] task_name";
         let config = TasksConfig::default();
-        let res = parse_task(&mut input, String::new(), &config);
+        let res = parse_task(&mut input, PathBuf::new().as_path(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         let expected_due_date = None;
@@ -262,7 +266,7 @@ mod test {
     fn test_parse_task_with_invalid_state() {
         let mut input = "- [invalid] task_name";
         let config = TasksConfig::default();
-        let res = parse_task(&mut input, String::new(), &config);
+        let res = parse_task(&mut input, PathBuf::new().as_path(), &config);
         assert!(res.is_err());
     }
 
@@ -270,7 +274,7 @@ mod test {
     fn test_parse_task_without_state() {
         let mut input = "task_name";
         let config = TasksConfig::default();
-        let res = parse_task(&mut input, String::new(), &config);
+        let res = parse_task(&mut input, PathBuf::new().as_path(), &config);
         assert!(res.is_err());
     }
 
@@ -278,7 +282,7 @@ mod test {
     fn test_parse_task_with_invalid_priority() {
         let mut input = "- [ ] task_name p-9";
         let config = TasksConfig::default();
-        let res = parse_task(&mut input, String::new(), &config);
+        let res = parse_task(&mut input, PathBuf::new().as_path(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         assert_eq!(res.priority, 0);
@@ -288,7 +292,7 @@ mod test {
     fn test_parse_task_without_name() {
         let mut input = "- [ ]";
         let config = TasksConfig::default();
-        let res = parse_task(&mut input, String::new(), &config);
+        let res = parse_task(&mut input, PathBuf::new().as_path(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         assert_eq!(res.name, ""); // Default name is used when no name is provided
@@ -297,7 +301,7 @@ mod test {
     fn test_parse_task_with_today_flag() {
         let mut input = "- [ ] @t";
         let config = TasksConfig::default();
-        let res = parse_task(&mut input, String::new(), &config);
+        let res = parse_task(&mut input, PathBuf::new().as_path(), &config);
         assert!(res.is_ok());
         let res = res.unwrap();
         assert!(res.is_today);

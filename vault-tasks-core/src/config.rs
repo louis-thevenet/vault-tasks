@@ -313,15 +313,12 @@ pub(crate) fn get_data_dir() -> PathBuf {
 }
 
 pub(crate) fn get_config_dir() -> PathBuf {
-    CONFIG_FOLDER.clone().map_or_else(
-        || {
-            project_directory().map_or_else(
-                || PathBuf::from(".").join(".config"),
-                |proj_dirs| proj_dirs.config_local_dir().to_path_buf(),
-            )
-        },
-        |s| s,
-    )
+    CONFIG_FOLDER.clone().unwrap_or_else(|| {
+        project_directory().map_or_else(
+            || PathBuf::from(".").join(".config"),
+            |proj_dirs| proj_dirs.config_local_dir().to_path_buf(),
+        )
+    })
 }
 
 // TODO: change this

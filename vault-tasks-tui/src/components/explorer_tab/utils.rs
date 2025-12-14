@@ -1,6 +1,10 @@
 use crate::action::Action;
 use crate::tui::Tui;
-use vault_tasks_core::{task::Task, vault_data::VaultData};
+use vault_tasks_core::{
+    Found,
+    task::Task,
+    vault_data::{FileEntryNode, VaultNode},
+};
 
 use super::{DIRECTORY_EMOJI, ExplorerTab, FILE_EMOJI, TRACKER_EMOJI};
 use color_eyre::Result;
@@ -17,23 +21,43 @@ impl ExplorerTab<'_> {
             .collect()
     }
 
-    fn vault_data_to_prefix_name(vd: &VaultData) -> (String, String) {
+    fn vault_data_to_prefix_name(vd: &Found) -> (String, String) {
         match vd {
-            VaultData::Directory(name, _) => (DIRECTORY_EMOJI.to_owned(), name.clone()),
-            VaultData::Header(level, name, _) => (
-                if name.contains(".md") {
-                    FILE_EMOJI.to_owned()
-                } else {
-                    "#".repeat(*level).clone()
+            Found::Root(_new_vault_data) => {
+                unreachable!()
+            }
+            Found::Node(
+                VaultNode::Vault {
+                    content: _content,
+                    name,
+                    path: _path,
+                }
+                | VaultNode::Directory {
+                    content: _content,
+                    name,
+                    path: _path,
                 },
-                name.clone(),
-            ),
-            VaultData::Task(task) => (task.state.to_string(), task.name.clone()),
-            VaultData::Tracker(tracker) => (TRACKER_EMOJI.to_owned(), tracker.name.clone()),
+            ) => (DIRECTORY_EMOJI.to_owned(), name.clone()),
+            Found::Node(VaultNode::File {
+                content: _content,
+                name,
+                path: _path,
+            }) => (FILE_EMOJI.to_owned(), name.clone()),
+            Found::FileEntry(FileEntryNode::Header {
+                content: _content,
+                name,
+                heading_level,
+            }) => ("#".repeat(*heading_level).clone(), name.clone()),
+            Found::FileEntry(FileEntryNode::Task(task)) => {
+                (task.state.to_string(), task.name.clone())
+            }
+            Found::FileEntry(FileEntryNode::Tracker(tracker)) => {
+                (TRACKER_EMOJI.to_owned(), tracker.name.clone())
+            }
         }
     }
 
-    pub(super) fn vault_data_to_entry_list(vd: &[VaultData]) -> Vec<(String, String)> {
+    pub(super) fn vault_data_to_entry_list(vd: &[Found]) -> Vec<(String, String)> {
         let mut res = vd
             .iter()
             .map(Self::vault_data_to_prefix_name)
@@ -96,7 +120,7 @@ impl ExplorerTab<'_> {
         Ok(())
     }
     pub(super) fn get_current_path_to_file(&self) -> PathBuf {
-        let mut path = self.config.core.core.vault_path.clone();
+        let mut path = PathBuf::new();
         for e in &self
             .get_preview_path()
             .unwrap_or_else(|_| self.current_path.clone())
@@ -121,12 +145,12 @@ impl ExplorerTab<'_> {
         };
         debug!("Getting selected task from current path: {:?}", path);
 
-        let Ok(entry) = self.task_mgr.get_vault_data_from_path(&path) else {
+        let Ok(entry) = self.task_mgr.resolve_path(&path) else {
             error!("Error while collecting tasks from path");
             return None;
         };
 
-        if let VaultData::Task(task) = entry {
+        if let Found::FileEntry(FileEntryNode::Task(task)) = entry {
             Some(task.clone())
         } else {
             info!("Selected object is not a Task");

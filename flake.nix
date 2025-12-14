@@ -30,7 +30,7 @@
             inherit system overlays;
           };
           cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
-          rustToolchain = pkgs.rust-bin.stable."1.88.0".default;
+          rustToolchain = pkgs.rust-bin.stable."1.90.0".default;
 
           rust-toolchain = pkgs.symlinkJoin {
             name = "rust-toolchain";
@@ -59,19 +59,18 @@
 
             nativeBuildInputs = nativeBuildInputs;
             buildInputs = buildInputs;
-            postInstall =
-              ''
-                install -Dm444 desktop/vault-tasks.desktop -t $out/share/applications
-              ''
-              + ''
-                # vault-tasks tries to load a config file from ~/.config/ before generating completions
-                export HOME="$(mktemp -d)"
+            postInstall = ''
+              install -Dm444 desktop/vault-tasks.desktop -t $out/share/applications
+            ''
+            + ''
+              # vault-tasks tries to load a config file from ~/.config/ before generating completions
+              export HOME="$(mktemp -d)"
 
-                installShellCompletion --cmd vault-tasks \
-                  --bash <($out/bin/vault-tasks generate-completions bash) \
-                  --fish <($out/bin/vault-tasks generate-completions fish) \
-                  --zsh <($out/bin/vault-tasks generate-completions zsh)
-              '';
+              installShellCompletion --cmd vault-tasks \
+                --bash <($out/bin/vault-tasks generate-completions bash) \
+                --fish <($out/bin/vault-tasks generate-completions fish) \
+                --zsh <($out/bin/vault-tasks generate-completions zsh)
+            '';
           };
 
           # Rust dev environment
@@ -87,6 +86,7 @@
               ++ buildInputs
               ++ [
                 rust-toolchain
+                pkgs.go
                 pkgs.clippy
                 pkgs.just
                 pkgs.vhs
