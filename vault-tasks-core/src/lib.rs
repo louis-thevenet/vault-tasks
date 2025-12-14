@@ -177,7 +177,8 @@ impl TaskManager {
             }
 
             match node {
-                VaultNode::Vault { name, content, .. } | VaultNode::Directory { name, content, .. } => {
+                VaultNode::Vault { name, content, .. }
+                | VaultNode::Directory { name, content, .. } => {
                     if *name == path[path_index] {
                         // Check if we're at the end of the path
                         if path_index + 1 == path.len() {
@@ -392,7 +393,7 @@ impl TaskManager {
                         false
                     }
                     FileEntryNode::Tracker(_tracker) => false, // Trackers can't be entered at the moment
-                                                              // I plan on giving access to its categories someday
+                                                               // I plan on giving access to its categories someday
                 }
             }
         }

@@ -31,7 +31,8 @@ impl Display for VaultNode {
             depth: usize,
         ) -> std::fmt::Result {
             match node {
-                VaultNode::Vault { name, content, .. } | VaultNode::Directory { name, content, .. } => {
+                VaultNode::Vault { name, content, .. }
+                | VaultNode::Directory { name, content, .. } => {
                     write_underline_with_indent(&name.to_string(), depth, f)?;
                     for entry in content {
                         fmt_node_rec(entry, f, depth + 1)?;

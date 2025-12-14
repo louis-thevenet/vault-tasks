@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use color_eyre::Result;
 use color_eyre::eyre::eyre;
 use crossterm::event::Event;
@@ -73,9 +71,9 @@ impl ExplorerTab<'_> {
             Found::Root(new_vault_data) => {
                 new_vault_data.root.into_iter().map(Found::Node).collect()
             }
-            Found::Node(VaultNode::Vault { content, .. } | VaultNode::Directory { content, .. }) => {
-                content.into_iter().map(Found::Node).collect()
-            }
+            Found::Node(
+                VaultNode::Vault { content, .. } | VaultNode::Directory { content, .. },
+            ) => content.into_iter().map(Found::Node).collect(),
             Found::Node(VaultNode::File { content, .. }) => {
                 content.into_iter().map(Found::FileEntry).collect()
             }

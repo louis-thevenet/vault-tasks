@@ -148,8 +148,8 @@ pub fn filter_tasks_to_vec(vault_data: &Vaults, filter: &Filter) -> Vec<Task> {
                 });
             }
             FileEntryNode::Tracker(_tracker) => {} // Don't collect trackers in the result
-                                                  // It's only used by the Filter and Calendar
-                                                  // tabs and we don't want to display trackers there
+                                                   // It's only used by the Filter and Calendar
+                                                   // tabs and we don't want to display trackers there
         }
     }
     fn filter_tasks_from_node(node: &VaultNode, filter: &Filter, res: &mut Vec<Task>) {
@@ -177,7 +177,10 @@ pub fn filter_tasks_to_vec(vault_data: &Vaults, filter: &Filter) -> Vec<Task> {
 /// Only keeps the `VaultData` entries that match the filter criteria.
 #[must_use]
 pub fn filter(vault_data: &Vaults, task_filter: &Option<Filter>) -> Option<Vaults> {
-    fn filter_file_entry(file_entry: &FileEntryNode, task_filter: &Filter) -> Option<FileEntryNode> {
+    fn filter_file_entry(
+        file_entry: &FileEntryNode,
+        task_filter: &Filter,
+    ) -> Option<FileEntryNode> {
         match &file_entry {
             FileEntryNode::Header {
                 content,
