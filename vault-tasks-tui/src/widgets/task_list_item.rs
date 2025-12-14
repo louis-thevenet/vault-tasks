@@ -7,10 +7,7 @@ use ratatui::{
 use ratskin::RatSkin;
 use tracing::error;
 use vault_tasks_core::{
-    config::TasksConfig,
-    task::Task,
-    tracker::Tracker,
-    vault_data::NewFileEntry,
+    config::TasksConfig, task::Task, tracker::Tracker, vault_data::NewFileEntry,
 };
 
 use crate::config::Settings;
@@ -324,7 +321,7 @@ impl Widget for TaskListItem {
         match &self.item {
             NewFileEntry::Header {
                 name,
-                heading_level,
+                heading_level: _,
                 content: children,
             } => {
                 let surrounding_block = Block::default().borders(Borders::TOP).title(
@@ -402,14 +399,14 @@ mod tests {
     use vault_tasks_core::{
         date::Date,
         task::{State, Task},
-        vault_data::VaultData,
+        vault_data::NewFileEntry,
     };
 
     use crate::{config::Config, widgets::task_list_item::TaskListItem};
 
     #[test]
     fn test_task_list_item() {
-        let test_task = VaultData::Task(Task {
+        let test_task = NewFileEntry::Task(Task {
             name: "task with a very long title that should wrap to the next line".to_string(),
             state: State::Done,
             tags: Some(vec![String::from("tag"), String::from("tag2")]),

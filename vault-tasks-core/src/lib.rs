@@ -1,10 +1,6 @@
 use color_eyre::{Result, eyre::bail};
 
-use std::{
-    collections::HashSet,
-    fmt::Display,
-    path::PathBuf,
-};
+use std::{collections::HashSet, fmt::Display, path::PathBuf};
 use vault_data::{NewVaultData, VaultData};
 
 use filter::Filter;
@@ -53,7 +49,7 @@ impl Default for TaskManager {
     }
 }
 // Helper enum to unify return types
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Found {
     Root(NewVaultData),
     Node(NewNode),
@@ -350,138 +346,6 @@ impl TaskManager {
             .try_for_each(|node| explore_node(node, &mut PathBuf::new(), config))?;
         Ok(())
     }
-    /// Retrieves the `VaultData` at the given `path`, and returns the entries to display.
-    ///
-    /// If the path ends with a task, the `task_preview_offset` parameter determines whether the function should return the task itself or its content (subtasks) as with directories and headers.
-    pub fn get_vault_data_from_path(&self, path: &[String]) -> Result<VaultData> {
-        /// Recursively searches for the entry in the vault nodes.
-        /// `path_index` is the index of the current path element we are looking for.
-        fn aux_node(
-            node: &NewNode,
-            selected_header_path: &[String],
-            path_index: usize,
-        ) -> Result<NewNode> {
-            // Remaining path is empty?
-            if path_index == selected_header_path.len() {
-                Ok(node.clone())
-            } else {
-                match node {
-                    NewNode::Vault { name, content, .. }
-                    | NewNode::Directory { name, content, .. } => {
-                        if *name == selected_header_path[path_index] {
-                            if path_index + 1 == selected_header_path.len() {
-                                return Ok(node.clone());
-                            }
-                            // Look for the child that matches the path
-                            for child in content {
-                                if let Ok(found) =
-                                    aux_node(child, selected_header_path, path_index + 1)
-                                {
-                                    return Ok(found);
-                                }
-                            }
-                        }
-                        bail!("Couldn't find corresponding entry in vault/directory");
-                    }
-                    NewNode::File { name, content, .. } => {
-                        if *name == selected_header_path[path_index] {
-                            if path_index + 1 == selected_header_path.len() {
-                                return Ok(node.clone());
-                            }
-                            // Look for the child that matches the path in file entries
-                            for child in content {
-                                if let Ok(found) =
-                                    aux_file_entry(child, selected_header_path, path_index + 1)
-                                {
-                                    // Wrap the file entry in a temporary file node
-                                    return Ok(NewNode::File {
-                                        name: name.clone(),
-                                        path: match node {
-                                            NewNode::File { path, .. } => path.clone(),
-                                            _ => unreachable!(),
-                                        },
-                                        content: vec![found],
-                                    });
-                                }
-                            }
-                        }
-                        bail!("Couldn't find corresponding entry in file");
-                    }
-                }
-            }
-        }
-
-        fn aux_file_entry(
-            file_entry: &NewFileEntry,
-            selected_header_path: &[String],
-            path_index: usize,
-        ) -> Result<NewFileEntry> {
-            if path_index == selected_header_path.len() {
-                Ok(file_entry.clone())
-            } else {
-                match file_entry {
-                    NewFileEntry::Header { name, content, .. } => {
-                        if *name == selected_header_path[path_index] {
-                            if path_index + 1 == selected_header_path.len() {
-                                return Ok(file_entry.clone());
-                            }
-                            for child in content {
-                                if let Ok(found) =
-                                    aux_file_entry(child, selected_header_path, path_index + 1)
-                                {
-                                    return Ok(found);
-                                }
-                            }
-                        }
-                        bail!("Couldn't find corresponding entry in header");
-                    }
-                    NewFileEntry::Task(task) => {
-                        if task.name == selected_header_path[path_index] {
-                            if path_index + 1 == selected_header_path.len() {
-                                return Ok(file_entry.clone());
-                            }
-                            for child in &task.subtasks {
-                                if let Ok(found) = aux_file_entry(
-                                    &NewFileEntry::Task(child.clone()),
-                                    selected_header_path,
-                                    path_index + 1,
-                                ) {
-                                    return Ok(found);
-                                }
-                            }
-                        }
-                        bail!("Couldn't find corresponding entry in task");
-                    }
-                    NewFileEntry::Tracker(tracker) => {
-                        if tracker.name == selected_header_path[path_index] {
-                            if path_index + 1 == selected_header_path.len() {
-                                return Ok(file_entry.clone());
-                            }
-                            bail!("Path was too long while we went down on a tracker")
-                        }
-                        bail!("Tracker name not matching")
-                    }
-                }
-            }
-        }
-
-        // Try to find the entry in each vault root node
-        for node in &self.tasks_refactored.root {
-            if let Ok(found_node) = aux_node(node, path, 0) {
-                // Convert the found node to legacy VaultData format
-                let new_vault_data = NewVaultData {
-                    root: vec![found_node],
-                };
-                let legacy = tmp_refactor::convert_new_to_legacy(&new_vault_data);
-                if let Some(result) = legacy.first() {
-                    return Ok(result.clone());
-                }
-            }
-        }
-
-        error!("Entry not found at path: {:?}", path);
-        bail!("Entry not found at path")
-    }
 
     /// Whether the path resolves to something that can be entered or not.
     /// Directories, Headers and Tasks with subtasks can be entered.
@@ -567,79 +431,129 @@ mod tests {
 
     use super::TaskManager;
 
-    use crate::{task::Task, tmp_refactor, vault_data::VaultData};
+    use crate::{
+        Found,
+        task::Task,
+        vault_data::{NewFileEntry, NewNode, NewVaultData, VaultData},
+    };
 
     #[test]
     fn test_get_vault_data() {
-        let expected_tasks = vec![
-            VaultData::Task(Task {
-                name: "test".to_string(),
-                line_number: Some(8),
-                description: Some("test\ndesc".to_string()),
-                ..Default::default()
-            }),
-            VaultData::Task(Task {
-                name: "test".to_string(),
-                line_number: Some(8),
-                description: Some("test\ndesc".to_string()),
-                ..Default::default()
-            }),
-            VaultData::Task(Task {
-                name: "test".to_string(),
-                line_number: Some(8),
-                description: Some("test\ndesc".to_string()),
-                ..Default::default()
-            }),
-        ];
-        let expected_header = VaultData::Header(2, "2".to_string(), vec![]);
-        let input = VaultData::Directory(
-            "test".to_owned(),
-            vec![VaultData::Header(
-                0,
-                "Test".to_string(),
-                vec![
-                    VaultData::Header(
-                        1,
-                        "1".to_string(),
-                        vec![VaultData::Header(2, "2".to_string(), vec![])],
-                    ),
-                    VaultData::Header(
-                        1,
-                        "1.2".to_string(),
-                        vec![
-                            VaultData::Header(3, "3".to_string(), vec![]),
-                            VaultData::Header(2, "4".to_string(), expected_tasks.clone()),
-                        ],
-                    ),
-                ],
-            )],
-        );
+        use std::path::Path;
 
-        let refactored = tmp_refactor::convert_legacy_to_new(vec![input.clone()]);
+        // Create tasks that will be in a header
+        let task1 = Task {
+            name: "test task 1".to_string(),
+            line_number: Some(8),
+            description: Some("test\ndesc".to_string()),
+            ..Default::default()
+        };
+        let task2 = Task {
+            name: "test task 2".to_string(),
+            line_number: Some(9),
+            description: Some("another desc".to_string()),
+            ..Default::default()
+        };
+        let task3 = Task {
+            name: "test task 3".to_string(),
+            line_number: Some(10),
+            ..Default::default()
+        };
+
+        // Build a vault structure: Vault -> Directory -> File -> Headers -> Tasks
+        let file_content = vec![
+            NewFileEntry::Header {
+                name: "1".to_string(),
+                heading_level: 1,
+                content: vec![NewFileEntry::Header {
+                    name: "2".to_string(),
+                    heading_level: 2,
+                    content: vec![],
+                }],
+            },
+            NewFileEntry::Header {
+                name: "1.2".to_string(),
+                heading_level: 1,
+                content: vec![
+                    NewFileEntry::Header {
+                        name: "3".to_string(),
+                        heading_level: 3,
+                        content: vec![],
+                    },
+                    NewFileEntry::Header {
+                        name: "4".to_string(),
+                        heading_level: 2,
+                        content: vec![
+                            NewFileEntry::Task(task1.clone()),
+                            NewFileEntry::Task(task2.clone()),
+                            NewFileEntry::Task(task3.clone()),
+                        ],
+                    },
+                ],
+            },
+        ];
+
+        let test_file = NewNode::File {
+            name: "Test".to_string(),
+            path: Path::new("test/Test.md").into(),
+            content: file_content,
+        };
+
+        let test_directory = NewNode::Directory {
+            name: "test".to_string(),
+            path: Path::new("test").into(),
+            content: vec![test_file],
+        };
+
+        let vault_data = NewVaultData {
+            root: vec![test_directory],
+        };
+
         let task_mgr = TaskManager {
-            tasks: input,
-            tasks_refactored: refactored,
+            tasks: VaultData::Directory("Empty Vault".to_owned(), vec![]),
+            tasks_refactored: vault_data,
             tags: HashSet::new(),
             ..Default::default()
         };
 
+        // Test path to empty header "2" - should return the header FileEntry
         let path = vec![
             String::from("test"),
             String::from("Test"),
             String::from("1"),
             String::from("2"),
         ];
-        let res = task_mgr.get_vault_data_from_path(&path).unwrap();
-        assert_eq!(expected_header, res);
+        let found = task_mgr.resolve_path(&path).unwrap();
+        let expected_header = NewFileEntry::Header {
+            name: "2".to_string(),
+            heading_level: 2,
+            content: vec![],
+        };
+        match found {
+            Found::FileEntry(entry) => assert_eq!(expected_header, entry),
+            _ => panic!("Expected FileEntry, got {:?}", found),
+        }
 
+        // Test path to header "4" with tasks
         let path = vec![
             String::from("test"),
             String::from("Test"),
             String::from("1.2"),
             String::from("4"),
         ];
-        let res = task_mgr.get_vault_data_from_path(&path).unwrap();
-        let expected_header = VaultData::Header(2, "4".to_string(), expected_tasks.clone());
-        assert_eq!(expected_header, res);
+        let found = task_mgr.resolve_path(&path).unwrap();
+        let expected_header_with_tasks = NewFileEntry::Header {
+            name: "4".to_string(),
+            heading_level: 2,
+            content: vec![
+                NewFileEntry::Task(task1),
+                NewFileEntry::Task(task2),
+                NewFileEntry::Task(task3),
+            ],
+        };
+        match found {
+            Found::FileEntry(entry) => assert_eq!(expected_header_with_tasks, entry),
+            _ => panic!("Expected FileEntry, got {:?}", found),
+        }
     }
 }

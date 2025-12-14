@@ -425,11 +425,9 @@ impl Component for ExplorerTab<'_> {
             match action {
                 Action::Enter => {
                     // We're already sure it exists since we entered the task editing mode
-                    if let VaultData::Task(task) = self
+                    if let Found::FileEntry(NewFileEntry::Task(task)) = self
                         .task_mgr
-                        .get_vault_data_from_path(
-                            &self.get_preview_path().unwrap_or(self.current_path.clone()),
-                        )
+                        .resolve_path(&self.get_preview_path().unwrap_or(self.current_path.clone()))
                         .unwrap()
                         .clone()
                     {
