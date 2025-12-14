@@ -1,7 +1,4 @@
-use std::{
-    iter::Peekable,
-    path::{Path, PathBuf},
-};
+use std::{iter::Peekable, path::PathBuf};
 
 use color_eyre::eyre::bail;
 use tracing::{debug, error, info};
@@ -739,7 +736,9 @@ impl ParserFileEntry<'_> {
         );
 
         if self.config.core.file_tags_propagation {
-            file_tags.iter().for_each(|t| add_global_tag(&mut res, t));
+            for t in &file_tags {
+                add_global_tag(&mut res, t);
+            }
         }
 
         self.clean_file_entry(&mut res)
