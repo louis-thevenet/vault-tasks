@@ -6,7 +6,9 @@ use ratatui::{
 };
 use ratskin::RatSkin;
 use tracing::error;
-use vault_tasks_core::{config::TasksConfig, task::Task, tracker::Tracker, vault_data::VaultData};
+use vault_tasks_core::{
+    config::TasksConfig, task::Task, tracker::Tracker, vault_data::FileEntryNode,
+};
 
 use crate::config::Settings;
 
@@ -14,7 +16,7 @@ const HEADER_INDENT_RATIO: u16 = 3;
 
 #[derive(Clone)]
 pub struct TaskListItem {
-    item: VaultData,
+    item: FileEntryNode,
     pub height: u16,
     // TODO: here we use stuff that should be in TUI and not core
     config: TasksConfig,
@@ -30,7 +32,7 @@ impl TaskListItem {
         self
     }
     pub fn new(
-        item: VaultData,
+        item: FileEntryNode,
         config: TasksConfig,
         settings: Settings,
         max_width: u16,
@@ -48,7 +50,7 @@ impl TaskListItem {
         }
     }
     #[allow(clippy::too_many_lines)]
-    fn task_to_paragraph(&self, area: Rect, task: &Task) -> (Rc<[Rect]>, Paragraph<'_>) {
+    fn task_to_paragraph<'a>(&self, area: Rect, task: &'a Task) -> (Rc<[Rect]>, Paragraph<'a>) {
         let mut lines = vec![];
         let mut data_line = vec![];
 
@@ -70,7 +72,14 @@ impl TaskListItem {
             Block::default()
                 .borders(Borders::ALL)
                 .title_bottom(if self.display_filename {
-                    Line::from(task.filename.clone()).right_aligned()
+                    Line::from(
+                        task.path
+                            .file_name()
+                            .unwrap_or_default()
+                            .to_str()
+                            .unwrap_or_default(),
+                    )
+                    .right_aligned()
                 } else {
                     Line::from("")
                 });
@@ -142,7 +151,7 @@ impl TaskListItem {
 
         for st in &task.subtasks {
             constraints.push(Constraint::Length(Self::compute_height(
-                &VaultData::Task(st.clone()),
+                &FileEntryNode::Task(st.clone()),
                 self.max_width - 2, // -2 for borders
             )));
         }
@@ -257,18 +266,21 @@ impl TaskListItem {
             .column_spacing(2)
             .block(Block::bordered().title(tracker.name.clone()))
     }
-    fn compute_height(item: &VaultData, max_width: u16) -> u16 {
+    fn compute_height(item: &FileEntryNode, max_width: u16) -> u16 {
         let rat_skin = RatSkin::default();
         match &item {
-            VaultData::Directory(_, _) => 1,
-            VaultData::Header(_, _, children) => {
-                children
+            FileEntryNode::Header {
+                name: _,
+                heading_level: _,
+                content,
+            } => {
+                content
                     .iter()
                     .map(|c| Self::compute_height(c, max_width * (100 - HEADER_INDENT_RATIO) / 100))
                     .sum::<u16>()
                     + 1 // name in block (border only on top)
             }
-            VaultData::Task(task) => {
+            FileEntryNode::Task(task) => {
                 let mut count: u16 = 2; // block
                 if 2 + task.name.len() >= max_width as usize {
                     count += (2 + task.name.len() as u16) / max_width;
@@ -291,12 +303,12 @@ impl TaskListItem {
                     count += 1;
                 }
                 for sb in &task.subtasks {
-                    count += Self::compute_height(&VaultData::Task(sb.clone()), max_width - 2);
+                    count += Self::compute_height(&FileEntryNode::Task(sb.clone()), max_width - 2);
                 }
                 count.max(3) // If count == 2 then task name will go directly inside a block
                 // Else task name will be the block's title and content will go inside
             }
-            VaultData::Tracker(tracker) => {
+            FileEntryNode::Tracker(tracker) => {
                 2 // block
                     + 1 // header
                     + tracker
@@ -314,8 +326,11 @@ impl Widget for TaskListItem {
     {
         let rat_skin = RatSkin::default();
         match &self.item {
-            VaultData::Directory(name, _) => error!("TaskList widget received a directory: {name}"),
-            VaultData::Header(_level, name, children) => {
+            FileEntryNode::Header {
+                name,
+                heading_level: _,
+                content: children,
+            } => {
                 let surrounding_block = Block::default().borders(Borders::TOP).title(
                     rat_skin
                         .parse(RatSkin::parse_text(name), area.width)
@@ -359,13 +374,13 @@ impl Widget for TaskListItem {
                     sb_widget.render(layout[i], buf);
                 }
             }
-            VaultData::Task(task) => {
+            FileEntryNode::Task(task) => {
                 let (layout, par) = self.task_to_paragraph(area, task);
                 par.render(area, buf);
 
                 for (i, sb) in task.subtasks.iter().enumerate() {
                     let sb_widget = Self::new(
-                        VaultData::Task(sb.clone()),
+                        FileEntryNode::Task(sb.clone()),
                         self.config.clone(),
                         self.settings.clone(),
                         self.max_width - 2, // surrounding block
@@ -376,7 +391,7 @@ impl Widget for TaskListItem {
                     sb_widget.render(layout[i + 1], buf);
                 }
             }
-            VaultData::Tracker(tracker) => {
+            FileEntryNode::Tracker(tracker) => {
                 Widget::render(self.tracker_to_table(tracker), area, buf);
             }
         }
@@ -391,14 +406,14 @@ mod tests {
     use vault_tasks_core::{
         date::Date,
         task::{State, Task},
-        vault_data::VaultData,
+        vault_data::FileEntryNode,
     };
 
     use crate::{config::Config, widgets::task_list_item::TaskListItem};
 
     #[test]
     fn test_task_list_item() {
-        let test_task = VaultData::Task(Task {
+        let test_task = FileEntryNode::Task(Task {
             name: "task with a very long title that should wrap to the next line".to_string(),
             state: State::Done,
             tags: Some(vec![String::from("tag"), String::from("tag2")]),

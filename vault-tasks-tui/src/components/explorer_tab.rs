@@ -22,9 +22,9 @@ use crate::widgets::help_menu::HelpMenu;
 use crate::widgets::input_bar::InputBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
-use vault_tasks_core::TaskManager;
 use vault_tasks_core::filter::parse_search_input;
-use vault_tasks_core::vault_data::VaultData;
+use vault_tasks_core::vault_data::{FileEntryNode, VaultNode};
+use vault_tasks_core::{Found, TaskManager};
 
 mod entry_list;
 mod utils;
@@ -54,7 +54,7 @@ pub struct ExplorerTab<'a> {
     entries_left_view: Vec<(String, String)>,
     state_center_view: ListState,
     entries_center_view: Vec<(String, String)>,
-    entries_right_view: Vec<VaultData>,
+    entries_right_view: Vec<Found>,
     search_bar_widget: InputBar<'a>,
     task_list_widget_state: ScrollViewState,
     show_help: bool,
@@ -66,43 +66,62 @@ impl ExplorerTab<'_> {
     pub fn new() -> Self {
         Self::default()
     }
-
-    /// Updates left and center entries.
-    pub(super) fn update_entries(&mut self) -> Result<()> {
-        debug!("Updating entries");
-
+    fn get_children(data: Found) -> Vec<Found> {
+        match data {
+            Found::Root(new_vault_data) => {
+                new_vault_data.root.into_iter().map(Found::Node).collect()
+            }
+            Found::Node(
+                VaultNode::Vault { content, .. } | VaultNode::Directory { content, .. },
+            ) => content.into_iter().map(Found::Node).collect(),
+            Found::Node(VaultNode::File { content, .. }) => {
+                content.into_iter().map(Found::FileEntry).collect()
+            }
+            Found::FileEntry(FileEntryNode::Header { content, .. }) => {
+                content.into_iter().map(Found::FileEntry).collect()
+            }
+            Found::FileEntry(FileEntryNode::Task(t)) => t
+                .subtasks
+                .into_iter()
+                .map(FileEntryNode::Task)
+                .map(Found::FileEntry)
+                .collect(),
+            Found::FileEntry(FileEntryNode::Tracker(t)) => {
+                vec![Found::FileEntry(FileEntryNode::Tracker(t))]
+            }
+        }
+    }
+    pub(super) fn update_left_entries(&mut self) -> Result<()> {
+        debug!("Updating left entries");
         if self.current_path.is_empty() {
-            // Vault root
+            // no parent
             self.entries_left_view = vec![];
         } else {
-            self.entries_left_view = match self.task_mgr.get_explorer_entries_without_children(
-                &self.current_path[0..self.current_path.len() - 1],
-            ) {
-                Ok(res) => Self::vault_data_to_entry_list(&res),
-                Err(e) => vec![(String::from(WARNING_EMOJI), (e.to_string()))],
+            let parent_path = &self.current_path[0..self.current_path.len() - 1];
+            let Ok(parent_entry) = self.task_mgr.resolve_path(parent_path) else {
+                self.leave_selected_entry()?;
+                return self.update_left_entries();
             };
+            self.entries_left_view =
+                Self::vault_data_to_entry_list(&Self::get_children(parent_entry));
         }
-        self.entries_center_view = match self
-            .task_mgr
-            .get_explorer_entries_without_children(&self.current_path)
-        {
-            Ok(res) => Self::vault_data_to_entry_list(&res),
+        Ok(())
+    }
+    pub(super) fn update_center_entries(&mut self) -> Result<()> {
+        self.entries_center_view = match self.task_mgr.resolve_path(&self.current_path) {
+            Ok(res) => Self::vault_data_to_entry_list(&Self::get_children(res)),
             Err(_e) => {
                 // If no entries are found, go to parent object
-                while self
-                    .task_mgr
-                    .get_explorer_entries_without_children(&self.current_path)
-                    .is_err()
+                while self.task_mgr.resolve_path(&self.current_path).is_err()
                     && !self.current_path.is_empty()
                 {
                     self.leave_selected_entry()?;
                 }
-                Self::vault_data_to_entry_list(
-                    &self
-                        .task_mgr
-                        .get_explorer_entries_without_children(&self.current_path)
-                        .unwrap_or_default(),
-                )
+                let data = self.task_mgr.resolve_path(&self.current_path);
+                match data {
+                    Ok(data) => Self::vault_data_to_entry_list(&Self::get_children(data)),
+                    Err(e) => vec![(WARNING_EMOJI.to_owned(), e.to_string())],
+                }
             }
         };
         if self.state_left_view.selected.unwrap_or_default() >= self.entries_left_view.len() {
@@ -113,6 +132,13 @@ impl ExplorerTab<'_> {
         if self.state_center_view.selected.unwrap_or_default() >= self.entries_center_view.len() {
             self.state_center_view.select(Some(0));
         }
+        Ok(())
+    }
+    /// Updates left and center entries.
+    pub(super) fn update_entries(&mut self) -> Result<()> {
+        debug!("Updating entries");
+        self.update_left_entries()?;
+        self.update_center_entries()?;
         self.update_preview();
         Ok(())
     }
@@ -124,9 +150,15 @@ impl ExplorerTab<'_> {
             return;
         };
 
-        self.entries_right_view = match self.task_mgr.get_vault_data_from_path(&path_to_preview) {
-            Ok(res) => vec![res],
-            Err(e) => vec![VaultData::Directory(e.to_string(), vec![])],
+        self.entries_right_view = match self.task_mgr.resolve_path(&path_to_preview) {
+            Ok(Found::FileEntry(FileEntryNode::Task(t))) => {
+                vec![Found::FileEntry(FileEntryNode::Task(t))]
+            }
+            Ok(Found::FileEntry(FileEntryNode::Tracker(t))) => {
+                vec![Found::FileEntry(FileEntryNode::Tracker(t))]
+            }
+            Ok(res) => Self::get_children(res),
+            Err(_e) => vec![],
         };
         self.task_list_widget_state.scroll_up();
     }
@@ -243,27 +275,28 @@ impl ExplorerTab<'_> {
             .render(area, frame.buffer_mut());
     }
     fn render_preview(&mut self, frame: &mut Frame, area: Rect, highlighted_style: Style) {
-        // If we have tasks, then render a TaskList widget
         match self.entries_right_view.first() {
-            Some(VaultData::Task(_) | VaultData::Header(_, _, _) | VaultData::Tracker(_)) => {
-                TaskList::new(&self.config, &self.entries_right_view, area.width, false).render(
-                    area,
-                    frame.buffer_mut(),
-                    &mut self.task_list_widget_state,
-                );
-            }
-            // Else render a ListView widget
-            Some(VaultData::Directory(_, _)) => Self::build_list(
-                Self::apply_prefixes(&Self::vault_data_to_entry_list(
+            Some(Found::FileEntry(_)) => {
+                TaskList::new(
+                    &self.config,
                     &self
-                        .task_mgr
-                        .get_explorer_entries_without_children(
-                            &self
-                                .get_preview_path()
-                                .unwrap_or_else(|_| self.current_path.clone()),
-                        )
-                        .unwrap_or_default(),
-                )),
+                        .entries_right_view
+                        .iter()
+                        .map(|f| {
+                            if let Found::FileEntry(fe) = f {
+                                fe.clone()
+                            } else {
+                                panic!("Expected FileEntry");
+                            }
+                        })
+                        .collect::<Vec<FileEntryNode>>(),
+                    area.width,
+                    false,
+                )
+                .render(area, frame.buffer_mut(), &mut self.task_list_widget_state);
+            }
+            Some(Found::Root(_) | Found::Node(_)) => Self::build_list(
+                Self::apply_prefixes(&Self::vault_data_to_entry_list(&self.entries_right_view)),
                 Block::new(),
                 highlighted_style,
             )
@@ -308,7 +341,7 @@ impl ExplorerTab<'_> {
     fn edit_selected_task_state(&mut self, new_state: State) -> Result<()> {
         if let Some(mut task) = self.get_selected_task() {
             task.state = new_state;
-            task.fix_task_attributes(&self.config.core, &self.get_current_path_to_file())?;
+            task.fix_task_attributes(&self.config.core)?;
             return Ok(());
         }
         Err(eyre!("No selected task"))
@@ -335,7 +368,7 @@ impl ExplorerTab<'_> {
                 None if diff > 0 => Some(diff.unsigned_abs()),
                 None => None,
             };
-            task.fix_task_attributes(&self.config.core, &self.get_current_path_to_file())?;
+            task.fix_task_attributes(&self.config.core)?;
             return Ok(());
         }
         Err(eyre!("No selected task"))
@@ -398,34 +431,24 @@ impl Component for ExplorerTab<'_> {
             match action {
                 Action::Enter => {
                     // We're already sure it exists since we entered the task editing mode
-                    if let VaultData::Task(task) = self
+                    if let Found::FileEntry(FileEntryNode::Task(task)) = self
                         .task_mgr
-                        .get_vault_data_from_path(
-                            &self.get_preview_path().unwrap_or(self.current_path.clone()),
-                        )
+                        .resolve_path(&self.get_preview_path().unwrap_or(self.current_path.clone()))
                         .unwrap()
                         .clone()
                     {
                         // Get input
                         let mut input = self.edit_task_bar.input.value();
                         // Parse it
-                        let Ok(mut parsed_task) = parse_task(
-                            &mut input,
-                            self.get_current_path_to_file()
-                                .to_str()
-                                .unwrap()
-                                .to_string(),
-                            &self.config.core,
-                        ) else {
+                        let Ok(mut parsed_task) =
+                            parse_task(&mut input, &task.path, &self.config.core)
+                        else {
                             // Don't accept invalid input
                             return Ok(None);
                         };
                         // Write changes
                         parsed_task.line_number = task.line_number;
-                        parsed_task.fix_task_attributes(
-                            &self.config.core,
-                            &self.get_current_path_to_file(),
-                        )?;
+                        parsed_task.fix_task_attributes(&self.config.core)?;
                         // Quit editing mode
                         self.edit_task_bar.is_focused = !self.edit_task_bar.is_focused;
                         // Reload vault

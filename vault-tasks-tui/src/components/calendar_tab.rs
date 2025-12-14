@@ -22,10 +22,10 @@ use crate::{
 use vault_tasks_core::{
     TaskManager,
     date::Date,
-    filter::{Filter, filter_to_vec},
+    filter::{Filter, filter_tasks_to_vec},
     sorter::SortingMode,
     task::{State, Task},
-    vault_data::VaultData,
+    vault_data::FileEntryNode,
 };
 
 use super::Component;
@@ -133,7 +133,7 @@ impl CalendarTab<'_> {
     }
     fn update_tasks(&mut self) {
         // Gather tasks to vector
-        self.tasks = filter_to_vec(&self.task_mgr.tasks, &Filter::default());
+        self.tasks = filter_tasks_to_vec(&self.task_mgr.tasks_refactored, &Filter::default());
         self.tasks.sort_by(SortingMode::cmp_due_date);
     }
     fn updated_date(&mut self) {
@@ -184,20 +184,20 @@ impl CalendarTab<'_> {
                     None => None,
                     Some(Date::Day(naive_date)) => {
                         if naive_date == previewed_date {
-                            Some(VaultData::Task(t.clone()))
+                            Some(FileEntryNode::Task(t.clone()))
                         } else {
                             None
                         }
                     }
                     Some(Date::DayTime(naive_date_time)) => {
                         if naive_date_time.date() == previewed_date {
-                            Some(VaultData::Task(t.clone()))
+                            Some(FileEntryNode::Task(t.clone()))
                         } else {
                             None
                         }
                     }
                 })
-                .collect::<Vec<VaultData>>()
+                .collect::<Vec<FileEntryNode>>()
         } else {
             vec![]
         };

@@ -24,3 +24,4 @@ target/
 tarpaulin-report.html
 
 out.gif
+.vscode/

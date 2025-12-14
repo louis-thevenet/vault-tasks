@@ -34,7 +34,7 @@ async fn main() -> Result<()> {
         Some(cli::Commands::GenerateConfig { path }) => Config::generate_config(path),
         Some(cli::Commands::Stdout) => {
             let task_mgr = TaskManager::load_from_config(&config.core)?;
-            println!("{}", task_mgr.tasks);
+            println!("{}", task_mgr.tasks_refactored);
             Ok(())
         }
         Some(cli::Commands::NewTask {

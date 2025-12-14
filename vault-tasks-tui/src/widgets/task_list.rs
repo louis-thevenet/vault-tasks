@@ -1,6 +1,6 @@
 use ratatui::prelude::*;
 use tui_scrollview::{ScrollView, ScrollViewState};
-use vault_tasks_core::vault_data::VaultData;
+use vault_tasks_core::vault_data::FileEntryNode;
 
 use crate::config::Config;
 
@@ -16,7 +16,7 @@ pub struct TaskList {
 impl TaskList {
     pub fn new(
         config: &Config,
-        file_content: &[VaultData],
+        file_content: &[FileEntryNode],
         max_width: u16,
         display_filename: bool,
     ) -> Self {
@@ -100,96 +100,96 @@ mod tests {
     use vault_tasks_core::{
         date::Date,
         task::{State, Task},
-        vault_data::VaultData,
+        vault_data::FileEntryNode,
     };
 
     use crate::{config::Config, widgets::task_list::TaskList};
 
     #[test]
     fn test_task_list() {
-        let test_vault = VaultData::Header(
-            0,
-            "Test".to_string(),
-            vec![
-                VaultData::Header(
-                    1,
-                    "1".to_string(),
-                    vec![
-                        VaultData::Task(Task {
-                            name: "task 1".to_string(),
-                            state: State::Done,
-                            tags: Some(vec![String::from("tag"), String::from("tag2")]),
-                            priority: 5,
-                            due_date: Some(Date::DayTime(
-                                NaiveDate::from_ymd_opt(2016, 7, 8)
-                                    .unwrap()
-                                    .and_hms_opt(9, 10, 11)
-                                    .unwrap(),
-                            )),
-                            subtasks: vec![
-                                Task {
-                                    name: "subtask test with desc".to_string(),
-                                    description: Some("test\ndesc".to_string()),
-                                    ..Default::default()
-                                },
-                                Task {
-                                    name: "subtask test with tags".to_string(),
-                                    tags: Some(vec![String::from("tag"), String::from("tag2")]),
-                                    ..Default::default()
-                                },
-                                Task {
-                                    name: "subtask test".to_string(),
-                                    ..Default::default()
-                                },
-                            ],
-                            ..Default::default()
-                        }),
-                        VaultData::Header(
-                            2,
-                            "1.1".to_string(),
-                            vec![VaultData::Header(
-                                3,
-                                "1.1.1".to_string(),
-                                vec![VaultData::Task(Task {
-                                    name: "test 1.1.1".to_string(),
-                                    description: Some("test\ndesc\n🥃".to_string()),
-                                    ..Default::default()
-                                })],
-                            )],
-                        ),
-                    ],
-                ),
-                VaultData::Header(
-                    1,
-                    "2".to_string(),
-                    vec![
-                        VaultData::Header(3, "2.1".to_string(), vec![]),
-                        VaultData::Header(
-                            2,
-                            "2.2".to_string(),
-                            vec![VaultData::Task(Task {
-                                name: "test 2.2".to_string(),
+        // Create file entries that would come from a markdown file
+        let file_content = vec![
+            FileEntryNode::Header {
+                name: "1".to_string(),
+                heading_level: 1,
+                content: vec![
+                    FileEntryNode::Task(Task {
+                        name: "task 1".to_string(),
+                        state: State::Done,
+                        tags: Some(vec![String::from("tag"), String::from("tag2")]),
+                        priority: 5,
+                        due_date: Some(Date::DayTime(
+                            NaiveDate::from_ymd_opt(2016, 7, 8)
+                                .unwrap()
+                                .and_hms_opt(9, 10, 11)
+                                .unwrap(),
+                        )),
+                        subtasks: vec![
+                            Task {
+                                name: "subtask test with desc".to_string(),
                                 description: Some("test\ndesc".to_string()),
-                                subtasks: vec![Task {
-                                    name: "subtask 2.2".to_string(),
-
-                                    due_date: Some(Date::DayTime(
-                                        NaiveDate::from_ymd_opt(2016, 7, 8)
-                                            .unwrap()
-                                            .and_hms_opt(9, 10, 11)
-                                            .unwrap(),
-                                    )),
-                                    description: Some("test\ndesc".to_string()),
-                                    tags: Some(vec![String::from("tag"), String::from("tag2")]),
-                                    ..Default::default()
-                                }],
+                                ..Default::default()
+                            },
+                            Task {
+                                name: "subtask test with tags".to_string(),
+                                tags: Some(vec![String::from("tag"), String::from("tag2")]),
+                                ..Default::default()
+                            },
+                            Task {
+                                name: "subtask test".to_string(),
+                                ..Default::default()
+                            },
+                        ],
+                        ..Default::default()
+                    }),
+                    FileEntryNode::Header {
+                        name: "1.1".to_string(),
+                        heading_level: 2,
+                        content: vec![FileEntryNode::Header {
+                            name: "1.1.1".to_string(),
+                            heading_level: 3,
+                            content: vec![FileEntryNode::Task(Task {
+                                name: "test 1.1.1".to_string(),
+                                description: Some("test\ndesc\n🥃".to_string()),
                                 ..Default::default()
                             })],
-                        ),
-                    ],
-                ),
-            ],
-        );
+                        }],
+                    },
+                ],
+            },
+            FileEntryNode::Header {
+                name: "2".to_string(),
+                heading_level: 1,
+                content: vec![
+                    FileEntryNode::Header {
+                        name: "2.1".to_string(),
+                        heading_level: 3,
+                        content: vec![],
+                    },
+                    FileEntryNode::Header {
+                        name: "2.2".to_string(),
+                        heading_level: 2,
+                        content: vec![FileEntryNode::Task(Task {
+                            name: "test 2.2".to_string(),
+                            description: Some("test\ndesc".to_string()),
+                            subtasks: vec![Task {
+                                name: "subtask 2.2".to_string(),
+                                due_date: Some(Date::DayTime(
+                                    NaiveDate::from_ymd_opt(2016, 7, 8)
+                                        .unwrap()
+                                        .and_hms_opt(9, 10, 11)
+                                        .unwrap(),
+                                )),
+                                description: Some("test\ndesc".to_string()),
+                                tags: Some(vec![String::from("tag"), String::from("tag2")]),
+                                ..Default::default()
+                            }],
+                            ..Default::default()
+                        })],
+                    },
+                ],
+            },
+        ];
 
         let mut config = Config::default();
 
@@ -197,7 +197,7 @@ mod tests {
         config.core.display.show_relative_due_dates = false;
 
         let max_width = 40;
-        let task_list = TaskList::new(&config, &[test_vault], max_width, true);
+        let task_list = TaskList::new(&config, &file_content, max_width, true);
         let mut terminal = Terminal::new(TestBackend::new(max_width, 40)).unwrap();
         terminal
             .draw(|frame| {

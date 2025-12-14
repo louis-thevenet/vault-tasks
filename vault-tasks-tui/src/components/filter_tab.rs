@@ -19,10 +19,10 @@ use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
 use tui_input::backend::crossterm::EventHandler;
 use vault_tasks_core::TaskManager;
-use vault_tasks_core::filter::{self, filter_to_vec, parse_search_input};
+use vault_tasks_core::filter::{self, filter_tasks_to_vec, parse_search_input};
 use vault_tasks_core::sorter::SortingMode;
 use vault_tasks_core::task::Task;
-use vault_tasks_core::vault_data::VaultData;
+use vault_tasks_core::vault_data::FileEntryNode;
 
 /// Struct that helps with drawing the component
 struct FilterTabArea {
@@ -62,7 +62,7 @@ impl FilterTab<'_> {
             parse_search_input(self.input_bar_widget.input.value(), &self.config.core);
 
         // Filter tasks
-        self.matching_tasks = filter_to_vec(&self.task_mgr.tasks, &filter_task);
+        self.matching_tasks = filter_tasks_to_vec(&self.task_mgr.tasks_refactored, &filter_task);
         SortingMode::sort(&mut self.matching_tasks, self.sorting_mode);
 
         // Reset ScrollViewState
@@ -73,11 +73,9 @@ impl FilterTab<'_> {
             // We know that the vault will not be empty here
 
             let mut tags = HashSet::new();
-            TaskManager::collect_tags(
-                &filter::filter(&self.task_mgr.tasks, &filter_task)
-                    .expect("Entry list was not empty but vault was."),
-                &mut tags,
-            );
+            let tasks = &filter::filter(&self.task_mgr.tasks_refactored, &Some(filter_task))
+                .expect("Entry list was not empty but vault was.");
+            TaskManager::collect_tags(tasks, &mut tags);
             self.matching_tags = tags.iter().cloned().collect::<Vec<String>>();
             self.matching_tags.sort();
         }
@@ -275,8 +273,8 @@ impl Component for FilterTab<'_> {
                 .matching_tasks
                 .clone()
                 .iter()
-                .map(|t| VaultData::Task(t.clone()))
-                .collect::<Vec<VaultData>>(),
+                .map(|t| FileEntryNode::Task(t.clone()))
+                .collect::<Vec<FileEntryNode>>(),
             areas.task_list.width,
             true,
         );
