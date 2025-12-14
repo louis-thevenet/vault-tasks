@@ -77,7 +77,7 @@ impl FilterTab<'_> {
             let tasks = &filter::filter(&self.task_mgr.tasks_refactored, &Some(filter_task))
                 .expect("Entry list was not empty but vault was.");
             TaskManager::collect_tags(
-                &tmp_refactor::convert_legacy_to_new(vec![tasks.clone()], &PathBuf::new()), // TODO: refactor
+                &tmp_refactor::convert_legacy_to_new(vec![tasks.clone()]), // TODO: refactor
                 &mut tags,
             );
             self.matching_tags = tags.iter().cloned().collect::<Vec<String>>();

@@ -93,10 +93,7 @@ impl TaskManager {
 
         self.tasks = tasks;
         // TODO: until parsing is refactored
-        self.tasks_refactored = tmp_refactor::convert_legacy_to_new(
-            vec![self.tasks.clone()],
-            &self.config.core.vault_path,
-        );
+        self.tasks_refactored = tmp_refactor::convert_legacy_to_new(vec![self.tasks.clone()]);
 
         Self::rewrite_vault_tasks(config, &self.tasks_refactored)
             .unwrap_or_else(|e| error!("Failed to fix tasks: {e}"));
@@ -508,7 +505,7 @@ mod tests {
             )],
         );
 
-        let refactored = tmp_refactor::convert_legacy_to_new(vec![input.clone()], &PathBuf::new());
+        let refactored = tmp_refactor::convert_legacy_to_new(vec![input.clone()]);
         let task_mgr = TaskManager {
             tasks: input,
             tasks_refactored: refactored,

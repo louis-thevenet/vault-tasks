@@ -1,5 +1,5 @@
 /// Temporary module for ``VaultData`` refactoring
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::vault_data::{NewFileEntry, NewNode, NewVaultData, VaultData};
 
@@ -107,10 +107,10 @@ impl VaultData {
 /// Helper function to convert a Vec<VaultData> to `NewVaultData`
 /// This assumes each top-level `VaultData` represents a vault or directory
 #[must_use]
-pub fn convert_legacy_to_new(legacy_data: Vec<VaultData>, base_path: &Path) -> NewVaultData {
+pub fn convert_legacy_to_new(legacy_data: Vec<VaultData>) -> NewVaultData {
     let root = legacy_data
         .into_iter()
-        .map(|item| item.to_new_node(base_path))
+        .map(|item| item.to_new_node(&PathBuf::new()))
         .collect();
     NewVaultData::new(root)
 }
@@ -409,8 +409,7 @@ mod tests {
             VaultData::Directory("folder2".to_string(), vec![file2]),
         ];
 
-        let base_path = PathBuf::from("/vault");
-        let result = convert_legacy_to_new(legacy_data, &base_path);
+        let result = convert_legacy_to_new(legacy_data);
 
         assert_eq!(result.root.len(), 2);
 
@@ -707,8 +706,7 @@ mod tests {
             VaultData::Directory("Personal".to_string(), vec![habits_file]),
         ];
 
-        let base_path = PathBuf::from("/vault");
-        let new_vault = convert_legacy_to_new(legacy_data.clone(), &base_path);
+        let new_vault = convert_legacy_to_new(legacy_data.clone());
 
         // Compare outputs
         let mut legacy_combined = String::new();
@@ -854,8 +852,7 @@ mod tests {
 
         let legacy_data = vec![work_dir, personal_dir];
 
-        let base_path = PathBuf::from("/vault");
-        let new_vault = convert_legacy_to_new(legacy_data.clone(), &base_path);
+        let new_vault = convert_legacy_to_new(legacy_data.clone());
         let back_to_legacy = convert_new_to_legacy(&new_vault);
 
         assert_eq!(
@@ -876,8 +873,7 @@ mod tests {
 
         let legacy_data = vec![outer_dir];
 
-        let base_path = PathBuf::from("/vault");
-        let new_vault = convert_legacy_to_new(legacy_data.clone(), &base_path);
+        let new_vault = convert_legacy_to_new(legacy_data.clone());
         let back_to_legacy = convert_new_to_legacy(&new_vault);
 
         assert_eq!(

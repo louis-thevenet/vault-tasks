@@ -1165,7 +1165,7 @@ mod tests {
                 )],
             )],
         ));
-        let input = tmp_refactor::convert_legacy_to_new(vec![input], &PathBuf::new()).clone();
+        let input = tmp_refactor::convert_legacy_to_new(vec![input]).clone();
         let res = filter(
             &input,
             &Some(Filter {
