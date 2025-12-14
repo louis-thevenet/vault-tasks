@@ -31,7 +31,7 @@ mod utils;
 
 pub const FILE_EMOJI: &str = "📄";
 pub const DIRECTORY_EMOJI: &str = "📁";
-pub const _WARNING_EMOJI: &str = "⚠️"; // investigate
+pub const WARNING_EMOJI: &str = "⚠️";
 pub const TRACKER_EMOJI: &str = "📊";
 
 /// Struct that helps with drawing the component
@@ -98,7 +98,10 @@ impl ExplorerTab<'_> {
             self.entries_left_view = vec![];
         } else {
             let parent_path = &self.current_path[0..self.current_path.len() - 1];
-            let parent_entry = self.task_mgr.resolve_path(parent_path)?;
+            let Ok(parent_entry) = self.task_mgr.resolve_path(parent_path) else {
+                self.leave_selected_entry()?;
+                return self.update_left_entries();
+            };
             self.entries_left_view =
                 Self::vault_data_to_entry_list(&Self::get_children(parent_entry));
         }
@@ -114,8 +117,11 @@ impl ExplorerTab<'_> {
                 {
                     self.leave_selected_entry()?;
                 }
-                let data = self.task_mgr.resolve_path(&self.current_path).unwrap();
-                Self::vault_data_to_entry_list(&Self::get_children(data))
+                let data = self.task_mgr.resolve_path(&self.current_path);
+                match data {
+                    Ok(data) => Self::vault_data_to_entry_list(&Self::get_children(data)),
+                    Err(e) => vec![(WARNING_EMOJI.to_owned(), e.to_string())],
+                }
             }
         };
         if self.state_left_view.selected.unwrap_or_default() >= self.entries_left_view.len() {
@@ -152,11 +158,7 @@ impl ExplorerTab<'_> {
                 vec![Found::FileEntry(FileEntryNode::Tracker(t))]
             }
             Ok(res) => Self::get_children(res),
-            Err(e) => vec![Found::Node(VaultNode::Directory {
-                name: e.to_string(),
-                content: vec![],
-                path: PathBuf::new(), // copy preview ?
-            })],
+            Err(_e) => vec![],
         };
         self.task_list_widget_state.scroll_up();
     }
