@@ -25,7 +25,7 @@ use crate::widgets::input_bar::InputBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
 use vault_tasks_core::filter::parse_search_input;
-use vault_tasks_core::vault_data::{NewFileEntry, NewNode, VaultData};
+use vault_tasks_core::vault_data::{NewFileEntry, NewNode};
 use vault_tasks_core::{Found, TaskManager};
 
 mod entry_list;
@@ -33,7 +33,7 @@ mod utils;
 
 pub const FILE_EMOJI: &str = "📄";
 pub const DIRECTORY_EMOJI: &str = "📁";
-pub const WARNING_EMOJI: &str = "⚠️";
+pub const _WARNING_EMOJI: &str = "⚠️"; // investigate
 pub const TRACKER_EMOJI: &str = "📊";
 
 /// Struct that helps with drawing the component

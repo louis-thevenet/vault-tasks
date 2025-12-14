@@ -1,10 +1,6 @@
 use color_eyre::{Result, eyre::bail};
 
-use std::{
-    collections::HashSet,
-    fmt::Display,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashSet, fmt::Display};
 use vault_data::{NewVaultData, VaultData};
 
 use filter::Filter;

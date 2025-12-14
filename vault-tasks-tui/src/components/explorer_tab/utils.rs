@@ -3,7 +3,7 @@ use crate::tui::Tui;
 use vault_tasks_core::{
     Found,
     task::Task,
-    vault_data::{NewFileEntry, NewNode, VaultData},
+    vault_data::{NewFileEntry, NewNode},
 };
 
 use super::{DIRECTORY_EMOJI, ExplorerTab, FILE_EMOJI, TRACKER_EMOJI};

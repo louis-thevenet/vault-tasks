@@ -14,7 +14,7 @@ use parser_priorities::parse_priority;
 use parser_state::parse_task_state;
 use parser_tags::parse_tag;
 use token::Token;
-use tracing::{debug, error, trace};
+use tracing::error;
 use winnow::{
     Parser, Result,
     combinator::{alt, fail, repeat},

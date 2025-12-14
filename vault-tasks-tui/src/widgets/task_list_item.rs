@@ -77,8 +77,7 @@ impl TaskListItem {
                             .file_name()
                             .unwrap_or_default()
                             .to_str()
-                            .unwrap_or_default()
-                            .clone(),
+                            .unwrap_or_default(),
                     )
                     .right_aligned()
                 } else {

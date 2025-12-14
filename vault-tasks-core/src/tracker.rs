@@ -4,7 +4,7 @@ use frequency::Frequency;
 use std::fs::read_to_string;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::{fmt::Display, fs::File, path};
+use std::{fmt::Display, fs::File};
 use tabled::{builder::Builder, settings::Style};
 use tracker_category::{NoteEntry, TrackerCategory, TrackerEntry};
 
