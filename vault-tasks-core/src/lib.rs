@@ -91,7 +91,7 @@ impl TaskManager {
         let vault_parser = VaultParser::new(config.clone());
         let tasks = vault_parser.scan_vault()?;
 
-        self.tasks_refactored = tmp_refactor::convert_legacy_to_new(vec![tasks]);
+        self.tasks_refactored = tasks;
 
         Self::rewrite_vault_tasks(config, &self.tasks_refactored)
             .unwrap_or_else(|e| error!("Failed to fix tasks: {e}"));

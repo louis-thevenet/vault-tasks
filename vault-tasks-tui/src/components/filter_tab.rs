@@ -18,11 +18,11 @@ use crate::widgets::input_bar::InputBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
 use tui_input::backend::crossterm::EventHandler;
+use vault_tasks_core::TaskManager;
 use vault_tasks_core::filter::{self, filter_tasks_to_vec, parse_search_input};
 use vault_tasks_core::sorter::SortingMode;
 use vault_tasks_core::task::Task;
 use vault_tasks_core::vault_data::NewFileEntry;
-use vault_tasks_core::TaskManager;
 
 /// Struct that helps with drawing the component
 struct FilterTabArea {
