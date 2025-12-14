@@ -111,7 +111,27 @@ pub fn convert_legacy_to_new(legacy_data: Vec<VaultData>) -> NewVaultData {
     let root = legacy_data
         .into_iter()
         .map(|item| item.to_new_node(&PathBuf::new()))
+        .collect::<Vec<NewNode>>();
+    // convert all first directory to vaults
+    let root = root
+        .iter()
+        .map(|node| {
+            let NewNode::Directory {
+                name,
+                path,
+                content,
+            } = node
+            else {
+                return node.clone();
+            };
+            NewNode::Vault {
+                name: name.clone(),
+                path: path.clone(),
+                content: content.clone(),
+            }
+        })
         .collect();
+
     NewVaultData::new(root)
 }
 
@@ -415,12 +435,12 @@ mod tests {
 
         for node in &result.root {
             match node {
-                NewNode::Directory { content, .. } => {
+                NewNode::Vault { content, .. } => {
                     assert_eq!(content.len(), 1);
                     // Each directory should contain a file
                     assert!(matches!(content[0], NewNode::File { .. }));
                 }
-                _ => panic!("Expected Directory nodes"),
+                _ => panic!("Expected Vault nodes"),
             }
         }
     }

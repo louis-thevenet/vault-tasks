@@ -25,7 +25,7 @@ use vault_tasks_core::{
     filter::{Filter, filter_tasks_to_vec},
     sorter::SortingMode,
     task::{State, Task},
-    vault_data::VaultData,
+    vault_data::{NewFileEntry, VaultData},
 };
 
 use super::Component;
@@ -202,7 +202,21 @@ impl CalendarTab<'_> {
             vec![]
         };
         self.previewed_date = Some(Self::naive_date_to_date(previewed_date));
-        self.entries_list = TaskList::new(&self.config, &tasks_to_preview, 200, true);
+        self.entries_list = TaskList::new(
+            &self.config,
+            &tasks_to_preview
+                .iter()
+                .map(|f| {
+                    if let VaultData::Task(task) = f {
+                        NewFileEntry::Task(task.clone())
+                    } else {
+                        panic!("Expected FileEntry");
+                    }
+                })
+                .collect::<Vec<NewFileEntry>>(),
+            200,
+            true,
+        );
         self.task_list_widget_state.scroll_to_top(); // reset view
         self.tasks_to_events(self.tasks.clone().get(index_closest_task));
     }

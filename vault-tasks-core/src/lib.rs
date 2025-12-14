@@ -1,15 +1,14 @@
 use color_eyre::{Result, eyre::bail};
-use task::Task;
 
 use std::{
     collections::HashSet,
     fmt::Display,
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 use vault_data::{NewVaultData, VaultData};
 
-use filter::{Filter, filter};
-use tracing::{debug, error};
+use filter::Filter;
+use tracing::error;
 use vault_parser::VaultParser;
 
 use crate::{
@@ -52,6 +51,13 @@ impl Default for TaskManager {
             config: TasksConfig::default(),
         }
     }
+}
+// Helper enum to unify return types
+#[derive(Clone)]
+pub enum Found {
+    Root(NewVaultData),
+    Node(NewNode),
+    FileEntry(NewFileEntry),
 }
 impl TaskManager {
     /// Loads a vault from a `Config` and returns a `TaskManager`.
@@ -101,7 +107,6 @@ impl TaskManager {
         let mut tags = HashSet::new();
         Self::collect_tags(&self.tasks_refactored, &mut tags);
         self.tags = tags;
-
         Ok(())
     }
     /// Explores every `NewFileEntry` from the vault and applies the given function `f` on it.
@@ -173,82 +178,112 @@ impl TaskManager {
         });
     }
 
-    /// Follows the `selected_header_path` to retrieve the correct `VaultData`.
-    /// Then returns every `VaultData` objects on the same layer.
+    /// Follows the `path` to retrieve the correct `VaultData`.
     ///
     /// # Errors
-    /// Will return an error if the vault is empty or the first layer is not a `VaultData::Directory`
-    pub fn get_explorer_entries(&self, selected_header_path: &[String]) -> Result<Vec<VaultData>> {
-        fn aux(
-            file_entry: Vec<VaultData>,
-            selected_header_path: &[String],
-            path_index: usize,
-        ) -> Result<Vec<VaultData>> {
-            if path_index == selected_header_path.len() {
-                Ok(file_entry)
-            } else {
-                for entry in file_entry {
-                    match entry {
-                        VaultData::Directory(name, children)
-                        | VaultData::Header(_, name, children) => {
-                            if name == selected_header_path[path_index] {
-                                return aux(children, selected_header_path, path_index + 1);
-                            }
+    /// Will return an error if the vault is empty or the path cannot be resolved
+    pub fn resolve_path(&self, path: &[String]) -> Result<Found> {
+        fn aux_node(node: &NewNode, path: &[String], path_index: usize) -> Option<Found> {
+            if path_index == path.len() {
+                return Some(Found::Node(node.clone()));
+            }
+
+            match node {
+                NewNode::Vault { name, content, .. } | NewNode::Directory { name, content, .. } => {
+                    if *name == path[path_index] {
+                        // Check if we're at the end of the path
+                        if path_index + 1 == path.len() {
+                            return Some(Found::Node(node.clone()));
                         }
-                        VaultData::Task(task) => {
-                            if task.name == selected_header_path[path_index] {
-                                return aux(
-                                    task.subtasks
-                                        .iter()
-                                        .map(|t| VaultData::Task(t.clone()))
-                                        .collect(),
-                                    selected_header_path,
-                                    path_index + 1,
-                                );
-                            }
-                        }
-                        VaultData::Tracker(tracker) => {
-                            bail!("Tried to list a Tracker's entries: {tracker}")
-                        } // We can't enter Trackers so we won't ever have to resolve a path to one
+                        // Otherwise, continue recursing into children
+                        return content
+                            .iter()
+                            .find_map(|child| aux_node(child, path, path_index + 1));
                     }
                 }
-                bail!("Couldn't find corresponding entry");
+                NewNode::File { name, content, .. } => {
+                    if *name == path[path_index] {
+                        // If we're at the end of the path, return file entries as nodes
+                        if path_index + 1 == path.len() {
+                            // Wrap each file entry in a temporary file node for conversion
+                            return Some(Found::Node(node.clone()));
+                        }
+                        // Navigate into file entries
+                        return content
+                            .iter()
+                            .find_map(|entry| aux_file_entry(entry, path, path_index + 1));
+                    }
+                }
+            }
+            None
+        }
+
+        fn aux_file_entry(
+            file_entry: &NewFileEntry,
+            path: &[String],
+            path_index: usize,
+        ) -> Option<Found> {
+            if path_index == path.len() {
+                return Some(Found::FileEntry(file_entry.clone()));
+            }
+
+            match file_entry {
+                NewFileEntry::Header { name, content, .. } => {
+                    if *name == path[path_index] {
+                        // Check if we're at the end of the path
+                        if path_index + 1 == path.len() {
+                            return Some(Found::FileEntry(file_entry.clone()));
+                        }
+                        // Otherwise, continue recursing into children
+                        return content
+                            .iter()
+                            .find_map(|child| aux_file_entry(child, path, path_index + 1));
+                    }
+                }
+                NewFileEntry::Task(task) => {
+                    if task.name == path[path_index] {
+                        // Check if we're at the end of the path
+                        if path_index + 1 == path.len() {
+                            return Some(Found::FileEntry(file_entry.clone()));
+                        }
+                        // Otherwise, continue recursing into subtasks
+                        let subtask_entries: Vec<NewFileEntry> = task
+                            .subtasks
+                            .iter()
+                            .map(|t| NewFileEntry::Task(t.clone()))
+                            .collect();
+                        return subtask_entries
+                            .iter()
+                            .find_map(|st| aux_file_entry(st, path, path_index + 1));
+                    }
+                }
+                NewFileEntry::Tracker(tracker) => {
+                    if tracker.name == path[path_index] {
+                        // Check if we're at the end of the path
+                        if path_index + 1 == path.len() {
+                            return Some(Found::FileEntry(file_entry.clone()));
+                        }
+                        // Trackers can't be entered, so return None
+                        return None;
+                    }
+                }
+            }
+            None
+        }
+
+        // If path is empty, return all root nodes
+        if path.is_empty() {
+            return Ok(Found::Root(self.tasks_refactored.clone()));
+        }
+
+        // Try to find entries in each vault root node
+        for node in &self.tasks_refactored.root {
+            if let Some(found) = aux_node(node, path, 0) {
+                return Ok(found); // path only resolves to one node
             }
         }
 
-        let filtered_tasks = filter(&self.tasks_refactored, &self.current_filter);
-        match filtered_tasks {
-            Some(VaultData::Directory(_, entries)) => aux(entries, selected_header_path, 0),
-            None => bail!("Empty Vault"),
-            _ => {
-                error!("First layer of VaultData was not a Directory");
-                bail!("First layer of VaultData was not a Directory")
-            }
-        }
-    }
-
-    /// Same as `get_explorer_entries`, but discards any children of the entries.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the path can't be resolved.
-    pub fn get_explorer_entries_without_children(&self, path: &[String]) -> Result<Vec<VaultData>> {
-        Ok(self
-            .get_explorer_entries(path)? // Get the entries at the path
-            .iter() // Discard every children
-            .map(|vd| match vd {
-                VaultData::Directory(name, _) => VaultData::Directory(name.clone(), vec![]),
-                VaultData::Header(level, name, _) => {
-                    VaultData::Header(*level, name.clone(), vec![])
-                }
-                VaultData::Task(t) => {
-                    let mut t = t.clone();
-                    t.subtasks = vec![]; // Discard subtasks
-                    VaultData::Task(t)
-                }
-                VaultData::Tracker(tracker) => VaultData::Tracker(tracker.clone()),
-            })
-            .collect::<Vec<VaultData>>())
+        bail!("Couldn't find entries at path: {:?}", path)
     }
 
     /// Recursively calls `Task.fix_task_attributes` on every task from the vault.
@@ -319,46 +354,95 @@ impl TaskManager {
     ///
     /// If the path ends with a task, the `task_preview_offset` parameter determines whether the function should return the task itself or its content (subtasks) as with directories and headers.
     pub fn get_vault_data_from_path(&self, path: &[String]) -> Result<VaultData> {
-        /// Recursively searches for the entry in the vault.
+        /// Recursively searches for the entry in the vault nodes.
         /// `path_index` is the index of the current path element we are looking for.
-        fn aux(
-            file_entry: VaultData,
+        fn aux_node(
+            node: &NewNode,
             selected_header_path: &[String],
             path_index: usize,
-        ) -> Result<VaultData> {
+        ) -> Result<NewNode> {
             // Remaining path is empty?
             if path_index == selected_header_path.len() {
-                Ok(file_entry)
+                Ok(node.clone())
             } else {
-                match &file_entry {
-                    VaultData::Header(_, name, children) | VaultData::Directory(name, children) => {
+                match node {
+                    NewNode::Vault { name, content, .. }
+                    | NewNode::Directory { name, content, .. } => {
+                        if *name == selected_header_path[path_index] {
+                            if path_index + 1 == selected_header_path.len() {
+                                return Ok(node.clone());
+                            }
+                            // Look for the child that matches the path
+                            for child in content {
+                                if let Ok(found) =
+                                    aux_node(child, selected_header_path, path_index + 1)
+                                {
+                                    return Ok(found);
+                                }
+                            }
+                        }
+                        bail!("Couldn't find corresponding entry in vault/directory");
+                    }
+                    NewNode::File { name, content, .. } => {
+                        if *name == selected_header_path[path_index] {
+                            if path_index + 1 == selected_header_path.len() {
+                                return Ok(node.clone());
+                            }
+                            // Look for the child that matches the path in file entries
+                            for child in content {
+                                if let Ok(found) =
+                                    aux_file_entry(child, selected_header_path, path_index + 1)
+                                {
+                                    // Wrap the file entry in a temporary file node
+                                    return Ok(NewNode::File {
+                                        name: name.clone(),
+                                        path: match node {
+                                            NewNode::File { path, .. } => path.clone(),
+                                            _ => unreachable!(),
+                                        },
+                                        content: vec![found],
+                                    });
+                                }
+                            }
+                        }
+                        bail!("Couldn't find corresponding entry in file");
+                    }
+                }
+            }
+        }
+
+        fn aux_file_entry(
+            file_entry: &NewFileEntry,
+            selected_header_path: &[String],
+            path_index: usize,
+        ) -> Result<NewFileEntry> {
+            if path_index == selected_header_path.len() {
+                Ok(file_entry.clone())
+            } else {
+                match file_entry {
+                    NewFileEntry::Header { name, content, .. } => {
                         if *name == selected_header_path[path_index] {
                             if path_index + 1 == selected_header_path.len() {
                                 return Ok(file_entry.clone());
                             }
-                            // Look for the child that matches the path
-                            for child in children {
+                            for child in content {
                                 if let Ok(found) =
-                                    aux(child.clone(), selected_header_path, path_index + 1)
+                                    aux_file_entry(child, selected_header_path, path_index + 1)
                                 {
                                     return Ok(found);
-                                    // I'm tempted to break here but we might have multiple entries with the same name
                                 }
                             }
                         }
-                        // Either it's the first layer and the path is wrong or we recursively called on the wrong entry which is impossible
-                        bail!("Couldn't find corresponding entry");
+                        bail!("Couldn't find corresponding entry in header");
                     }
-                    VaultData::Task(task) => {
+                    NewFileEntry::Task(task) => {
                         if task.name == selected_header_path[path_index] {
-                            // If we are at the end of the path, we return the task itself
-                            // This depends on the `task_preview_offset` parameter
                             if path_index + 1 == selected_header_path.len() {
                                 return Ok(file_entry.clone());
                             }
                             for child in &task.subtasks {
-                                if let Ok(found) = aux(
-                                    VaultData::Task(child.clone()),
+                                if let Ok(found) = aux_file_entry(
+                                    &NewFileEntry::Task(child.clone()),
                                     selected_header_path,
                                     path_index + 1,
                                 ) {
@@ -366,9 +450,9 @@ impl TaskManager {
                                 }
                             }
                         }
-                        bail!("Couldn't find corresponding entry");
+                        bail!("Couldn't find corresponding entry in task");
                     }
-                    VaultData::Tracker(tracker) => {
+                    NewFileEntry::Tracker(tracker) => {
                         if tracker.name == selected_header_path[path_index] {
                             if path_index + 1 == selected_header_path.len() {
                                 return Ok(file_entry.clone());
@@ -381,23 +465,22 @@ impl TaskManager {
             }
         }
 
-        let filtered_tasks = filter(&self.tasks_refactored, &self.current_filter);
-        match filtered_tasks {
-            Some(VaultData::Directory(_, entries)) => {
-                for entry in entries {
-                    if let Ok(res) = aux(entry, path, 0) {
-                        return Ok(res);
-                    }
+        // Try to find the entry in each vault root node
+        for node in &self.tasks_refactored.root {
+            if let Ok(found_node) = aux_node(node, path, 0) {
+                // Convert the found node to legacy VaultData format
+                let new_vault_data = NewVaultData {
+                    root: vec![found_node],
+                };
+                let legacy = tmp_refactor::convert_new_to_legacy(&new_vault_data);
+                if let Some(result) = legacy.first() {
+                    return Ok(result.clone());
                 }
-                error!("Vault was not empty but the entry was not found");
-                bail!("Vault was not empty but the entry was not found");
-            }
-            None => bail!("Empty Vault"),
-            _ => {
-                error!("First layer of VaultData was not a Directory");
-                bail!("Empty Vault")
             }
         }
+
+        error!("Entry not found at path: {:?}", path);
+        bail!("Entry not found at path")
     }
 
     /// Whether the path resolves to something that can be entered or not.
@@ -480,7 +563,7 @@ impl Display for TaskManager {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashSet, path::PathBuf};
+    use std::collections::HashSet;
 
     use super::TaskManager;
 
@@ -540,11 +623,21 @@ mod tests {
             ..Default::default()
         };
 
-        let path = vec![String::from("Test"), String::from("1"), String::from("2")];
+        let path = vec![
+            String::from("test"),
+            String::from("Test"),
+            String::from("1"),
+            String::from("2"),
+        ];
         let res = task_mgr.get_vault_data_from_path(&path).unwrap();
         assert_eq!(expected_header, res);
 
-        let path = vec![String::from("Test"), String::from("1.2"), String::from("4")];
+        let path = vec![
+            String::from("test"),
+            String::from("Test"),
+            String::from("1.2"),
+            String::from("4"),
+        ];
         let res = task_mgr.get_vault_data_from_path(&path).unwrap();
         let expected_header = VaultData::Header(2, "4".to_string(), expected_tasks.clone());
         assert_eq!(expected_header, res);

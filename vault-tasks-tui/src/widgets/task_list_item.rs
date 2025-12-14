@@ -6,7 +6,12 @@ use ratatui::{
 };
 use ratskin::RatSkin;
 use tracing::error;
-use vault_tasks_core::{config::TasksConfig, task::Task, tracker::Tracker, vault_data::VaultData};
+use vault_tasks_core::{
+    config::TasksConfig,
+    task::Task,
+    tracker::Tracker,
+    vault_data::NewFileEntry,
+};
 
 use crate::config::Settings;
 
@@ -14,7 +19,7 @@ const HEADER_INDENT_RATIO: u16 = 3;
 
 #[derive(Clone)]
 pub struct TaskListItem {
-    item: VaultData,
+    item: NewFileEntry,
     pub height: u16,
     // TODO: here we use stuff that should be in TUI and not core
     config: TasksConfig,
@@ -30,7 +35,7 @@ impl TaskListItem {
         self
     }
     pub fn new(
-        item: VaultData,
+        item: NewFileEntry,
         config: TasksConfig,
         settings: Settings,
         max_width: u16,
@@ -142,7 +147,7 @@ impl TaskListItem {
 
         for st in &task.subtasks {
             constraints.push(Constraint::Length(Self::compute_height(
-                &VaultData::Task(st.clone()),
+                &NewFileEntry::Task(st.clone()),
                 self.max_width - 2, // -2 for borders
             )));
         }
@@ -257,18 +262,21 @@ impl TaskListItem {
             .column_spacing(2)
             .block(Block::bordered().title(tracker.name.clone()))
     }
-    fn compute_height(item: &VaultData, max_width: u16) -> u16 {
+    fn compute_height(item: &NewFileEntry, max_width: u16) -> u16 {
         let rat_skin = RatSkin::default();
         match &item {
-            VaultData::Directory(_, _) => 1,
-            VaultData::Header(_, _, children) => {
-                children
+            NewFileEntry::Header {
+                name: _,
+                heading_level: _,
+                content,
+            } => {
+                content
                     .iter()
                     .map(|c| Self::compute_height(c, max_width * (100 - HEADER_INDENT_RATIO) / 100))
                     .sum::<u16>()
                     + 1 // name in block (border only on top)
             }
-            VaultData::Task(task) => {
+            NewFileEntry::Task(task) => {
                 let mut count: u16 = 2; // block
                 if 2 + task.name.len() >= max_width as usize {
                     count += (2 + task.name.len() as u16) / max_width;
@@ -291,12 +299,12 @@ impl TaskListItem {
                     count += 1;
                 }
                 for sb in &task.subtasks {
-                    count += Self::compute_height(&VaultData::Task(sb.clone()), max_width - 2);
+                    count += Self::compute_height(&NewFileEntry::Task(sb.clone()), max_width - 2);
                 }
                 count.max(3) // If count == 2 then task name will go directly inside a block
                 // Else task name will be the block's title and content will go inside
             }
-            VaultData::Tracker(tracker) => {
+            NewFileEntry::Tracker(tracker) => {
                 2 // block
                     + 1 // header
                     + tracker
@@ -314,8 +322,11 @@ impl Widget for TaskListItem {
     {
         let rat_skin = RatSkin::default();
         match &self.item {
-            VaultData::Directory(name, _) => error!("TaskList widget received a directory: {name}"),
-            VaultData::Header(_level, name, children) => {
+            NewFileEntry::Header {
+                name,
+                heading_level,
+                content: children,
+            } => {
                 let surrounding_block = Block::default().borders(Borders::TOP).title(
                     rat_skin
                         .parse(RatSkin::parse_text(name), area.width)
@@ -359,13 +370,13 @@ impl Widget for TaskListItem {
                     sb_widget.render(layout[i], buf);
                 }
             }
-            VaultData::Task(task) => {
+            NewFileEntry::Task(task) => {
                 let (layout, par) = self.task_to_paragraph(area, task);
                 par.render(area, buf);
 
                 for (i, sb) in task.subtasks.iter().enumerate() {
                     let sb_widget = Self::new(
-                        VaultData::Task(sb.clone()),
+                        NewFileEntry::Task(sb.clone()),
                         self.config.clone(),
                         self.settings.clone(),
                         self.max_width - 2, // surrounding block
@@ -376,8 +387,8 @@ impl Widget for TaskListItem {
                     sb_widget.render(layout[i + 1], buf);
                 }
             }
-            VaultData::Tracker(tracker) => {
-                Widget::render(self.tracker_to_table(tracker), area, buf);
+            NewFileEntry::Tracker(tracker) => {
+                Widget::render(self.tracker_to_table(tracker), area, buf)
             }
         }
     }

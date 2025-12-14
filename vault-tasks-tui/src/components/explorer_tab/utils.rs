@@ -1,6 +1,10 @@
 use crate::action::Action;
 use crate::tui::Tui;
-use vault_tasks_core::{task::Task, vault_data::VaultData};
+use vault_tasks_core::{
+    Found,
+    task::Task,
+    vault_data::{NewFileEntry, NewNode, VaultData},
+};
 
 use super::{DIRECTORY_EMOJI, ExplorerTab, FILE_EMOJI, TRACKER_EMOJI};
 use color_eyre::Result;
@@ -17,23 +21,43 @@ impl ExplorerTab<'_> {
             .collect()
     }
 
-    fn vault_data_to_prefix_name(vd: &VaultData) -> (String, String) {
+    fn vault_data_to_prefix_name(vd: &Found) -> (String, String) {
         match vd {
-            VaultData::Directory(name, _) => (DIRECTORY_EMOJI.to_owned(), name.clone()),
-            VaultData::Header(level, name, _) => (
-                if name.contains(".md") {
-                    FILE_EMOJI.to_owned()
-                } else {
-                    "#".repeat(*level).clone()
+            Found::Root(_new_vault_data) => {
+                unreachable!()
+            }
+            Found::Node(
+                NewNode::Vault {
+                    content: _content,
+                    name,
+                    path: _path,
+                }
+                | NewNode::Directory {
+                    content: _content,
+                    name,
+                    path: _path,
                 },
-                name.clone(),
-            ),
-            VaultData::Task(task) => (task.state.to_string(), task.name.clone()),
-            VaultData::Tracker(tracker) => (TRACKER_EMOJI.to_owned(), tracker.name.clone()),
+            ) => (DIRECTORY_EMOJI.to_owned(), name.clone()),
+            Found::Node(NewNode::File {
+                content: _content,
+                name,
+                path: _path,
+            }) => (FILE_EMOJI.to_owned(), name.clone()),
+            Found::FileEntry(NewFileEntry::Header {
+                content: _content,
+                name,
+                heading_level,
+            }) => ("#".repeat(*heading_level).clone(), name.clone()),
+            Found::FileEntry(NewFileEntry::Task(task)) => {
+                (task.state.to_string(), task.name.clone())
+            }
+            Found::FileEntry(NewFileEntry::Tracker(tracker)) => {
+                (TRACKER_EMOJI.to_owned(), tracker.name.clone())
+            }
         }
     }
 
-    pub(super) fn vault_data_to_entry_list(vd: &[VaultData]) -> Vec<(String, String)> {
+    pub(super) fn vault_data_to_entry_list(vd: &[Found]) -> Vec<(String, String)> {
         let mut res = vd
             .iter()
             .map(Self::vault_data_to_prefix_name)

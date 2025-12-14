@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use std::path::PathBuf;
 
 use color_eyre::Result;
 use crossterm::event::Event;
@@ -22,7 +21,7 @@ use tui_input::backend::crossterm::EventHandler;
 use vault_tasks_core::filter::{self, filter_tasks_to_vec, parse_search_input};
 use vault_tasks_core::sorter::SortingMode;
 use vault_tasks_core::task::Task;
-use vault_tasks_core::vault_data::VaultData;
+use vault_tasks_core::vault_data::NewFileEntry;
 use vault_tasks_core::{TaskManager, tmp_refactor};
 
 /// Struct that helps with drawing the component
@@ -277,8 +276,8 @@ impl Component for FilterTab<'_> {
                 .matching_tasks
                 .clone()
                 .iter()
-                .map(|t| VaultData::Task(t.clone()))
-                .collect::<Vec<VaultData>>(),
+                .map(|t| NewFileEntry::Task(t.clone()))
+                .collect::<Vec<NewFileEntry>>(),
             areas.task_list.width,
             true,
         );

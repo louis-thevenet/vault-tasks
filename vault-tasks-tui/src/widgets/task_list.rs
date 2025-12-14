@@ -1,6 +1,6 @@
 use ratatui::prelude::*;
 use tui_scrollview::{ScrollView, ScrollViewState};
-use vault_tasks_core::vault_data::VaultData;
+use vault_tasks_core::vault_data::NewFileEntry;
 
 use crate::config::Config;
 
@@ -16,7 +16,7 @@ pub struct TaskList {
 impl TaskList {
     pub fn new(
         config: &Config,
-        file_content: &[VaultData],
+        file_content: &[NewFileEntry],
         max_width: u16,
         display_filename: bool,
     ) -> Self {
