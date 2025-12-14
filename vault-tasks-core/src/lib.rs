@@ -262,14 +262,18 @@ impl TaskManager {
             }
             None
         }
-
+        // apply filter
+        let Some(filtered_tasks) = filter::filter(&self.tasks_refactored, &self.current_filter)
+        else {
+            bail!("No tasks found after applying filter");
+        };
         // If path is empty, return all root nodes
         if path.is_empty() {
-            return Ok(Found::Root(self.tasks_refactored.clone()));
+            return Ok(Found::Root(filtered_tasks.clone()));
         }
 
         // Try to find entries in each vault root node
-        for node in &self.tasks_refactored.root {
+        for node in &filtered_tasks.root {
             if let Some(found) = aux_node(node, path, 0) {
                 return Ok(found); // path only resolves to one node
             }

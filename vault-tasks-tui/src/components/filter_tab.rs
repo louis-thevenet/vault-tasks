@@ -22,7 +22,7 @@ use vault_tasks_core::filter::{self, filter_tasks_to_vec, parse_search_input};
 use vault_tasks_core::sorter::SortingMode;
 use vault_tasks_core::task::Task;
 use vault_tasks_core::vault_data::NewFileEntry;
-use vault_tasks_core::{TaskManager, tmp_refactor};
+use vault_tasks_core::TaskManager;
 
 /// Struct that helps with drawing the component
 struct FilterTabArea {
@@ -75,10 +75,7 @@ impl FilterTab<'_> {
             let mut tags = HashSet::new();
             let tasks = &filter::filter(&self.task_mgr.tasks_refactored, &Some(filter_task))
                 .expect("Entry list was not empty but vault was.");
-            TaskManager::collect_tags(
-                &tmp_refactor::convert_legacy_to_new(vec![tasks.clone()]), // TODO: refactor
-                &mut tags,
-            );
+            TaskManager::collect_tags(tasks, &mut tags);
             self.matching_tags = tags.iter().cloned().collect::<Vec<String>>();
             self.matching_tags.sort();
         }
