@@ -1,13 +1,13 @@
 use color_eyre::{Result, eyre::bail};
 use std::{
     fs::{self, DirEntry},
-    path::{Path, PathBuf},
+    path::Path,
 };
 use tracing::{debug, info};
 
 use crate::{TasksConfig, parser::parser_file_entry::ParserFileEntry};
 
-use super::{task::Task, vault_data::VaultData};
+use super::vault_data::VaultData;
 
 pub struct VaultParser {
     config: TasksConfig,
@@ -25,39 +25,6 @@ impl VaultParser {
         info!("Scanning {:?}", self.config.core.vault_path);
         self.scan(&self.config.core.vault_path, &mut tasks)?;
         Ok(tasks)
-    }
-    pub fn parse_single_task(&self, task: &str, path: &Path) -> Result<Task> {
-        let mut parser = ParserFileEntry {
-            config: &self.config,
-            path: path.to_path_buf(),
-        };
-        debug!("{task}");
-        match parser.parse_file(&task) {
-            Some(VaultData::Task(_)) => {
-                bail!(
-                    "Got a Task from {task}, should have been a Header then the Task, but this should never happen"
-                )
-            }
-
-            Some(VaultData::Header(_, _, content)) => {
-                // Files are always parsed as Headers
-                if content.len() != 1 {
-                    bail!("Expected single task in header, got: {content:?}");
-                } else if let Some(VaultData::Task(t)) = content.first() {
-                    let res = Task {
-                        line_number: None, // Explicitly set to None, as it's not from a file
-                        ..t.clone()
-                    };
-                    Ok(res)
-                } else {
-                    bail!("Expected a single Task in Header, got: {content:?}");
-                }
-            }
-            Some(VaultData::Directory(_, _)) => bail!(
-                "Got a Directory from {task}, should have been a Header then the Task, but this should never happen"
-            ),
-            _ => bail!("Task is malformed: `{task}`"),
-        }
     }
 
     fn scan(&self, path: &Path, tasks: &mut VaultData) -> Result<()> {
