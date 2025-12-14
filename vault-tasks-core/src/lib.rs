@@ -1,7 +1,7 @@
 use color_eyre::{Result, eyre::bail};
 
 use std::{collections::HashSet, fmt::Display};
-use vault_data::NewVaultData;
+use vault_data::Vaults;
 
 use filter::Filter;
 use tracing::error;
@@ -9,7 +9,7 @@ use vault_parser::VaultParser;
 
 use crate::{
     config::TasksConfig,
-    vault_data::{NewFileEntry, NewNode},
+    vault_data::{FileEntryNode, VaultNode},
 };
 
 pub mod config;
@@ -23,15 +23,11 @@ pub mod tracker;
 pub mod vault_data;
 mod vault_parser;
 
-/// Temporary module for refactoring `VaultData` to the new structure.
-/// Contains conversion functions and tests. Will be removed after refactoring is complete.
-pub mod tmp_refactor;
-
 // Re-export logging functions for easier access
 pub use logging::init as init_logging;
 
 pub struct TaskManager {
-    pub tasks_refactored: NewVaultData,
+    pub tasks_refactored: Vaults,
     config: TasksConfig,
     pub tags: HashSet<String>,
     pub current_filter: Option<Filter>,
@@ -39,7 +35,7 @@ pub struct TaskManager {
 impl Default for TaskManager {
     fn default() -> Self {
         Self {
-            tasks_refactored: NewVaultData { root: vec![] }, // TODO: will replace tasks eventually
+            tasks_refactored: Vaults { root: vec![] }, // TODO: will replace tasks eventually
             tags: HashSet::new(),
             current_filter: None,
             config: TasksConfig::default(),
@@ -49,9 +45,9 @@ impl Default for TaskManager {
 // Helper enum to unify return types
 #[derive(Clone, Debug)]
 pub enum Found {
-    Root(NewVaultData),
-    Node(NewNode),
-    FileEntry(NewFileEntry),
+    Root(Vaults),
+    Node(VaultNode),
+    FileEntry(FileEntryNode),
 }
 impl TaskManager {
     /// Loads a vault from a `Config` and returns a `TaskManager`.
@@ -103,37 +99,37 @@ impl TaskManager {
     }
     /// Explores every `NewFileEntry` from the vault and applies the given function `f` on it.
     pub fn map_file_entries(
-        tasks: &NewVaultData,
-        f: &mut impl FnMut(&NewFileEntry) -> NewFileEntry,
-    ) -> NewVaultData {
+        tasks: &Vaults,
+        f: &mut impl FnMut(&FileEntryNode) -> FileEntryNode,
+    ) -> Vaults {
         fn explore_nodes(
-            node: &NewNode,
-            f: &mut impl FnMut(&NewFileEntry) -> NewFileEntry,
-        ) -> NewNode {
+            node: &VaultNode,
+            f: &mut impl FnMut(&FileEntryNode) -> FileEntryNode,
+        ) -> VaultNode {
             match node.clone() {
-                NewNode::Vault {
+                VaultNode::Vault {
                     name,
                     path,
                     content,
-                } => NewNode::Vault {
+                } => VaultNode::Vault {
                     name,
                     path,
                     content: content.iter().map(|v| explore_nodes(v, f)).collect(),
                 },
-                NewNode::Directory {
+                VaultNode::Directory {
                     name,
                     path,
                     content,
-                } => NewNode::Directory {
+                } => VaultNode::Directory {
                     name,
                     path,
                     content: content.iter().map(|v| explore_nodes(v, f)).collect(),
                 },
-                NewNode::File {
+                VaultNode::File {
                     name,
                     path,
                     content,
-                } => NewNode::File {
+                } => VaultNode::File {
                     name,
                     path,
                     content: content.iter().map(f).collect(),
@@ -141,30 +137,30 @@ impl TaskManager {
             }
         }
         let new_root = tasks.root.iter().map(|n| explore_nodes(n, f)).collect();
-        NewVaultData { root: new_root }
+        Vaults { root: new_root }
     }
 
     /// Explores the vault and fills a `&mut HashSet<String>` with every tags found.
-    pub fn collect_tags(tasks: &NewVaultData, tags: &mut HashSet<String>) {
-        fn gather_tags_from_file_entry(file_entry: &NewFileEntry, tags: &mut HashSet<String>) {
+    pub fn collect_tags(tasks: &Vaults, tags: &mut HashSet<String>) {
+        fn gather_tags_from_file_entry(file_entry: &FileEntryNode, tags: &mut HashSet<String>) {
             match file_entry {
-                NewFileEntry::Task(task) => {
+                FileEntryNode::Task(task) => {
                     task.tags.clone().unwrap_or_default().iter().for_each(|t| {
                         tags.insert(t.clone());
                     });
                     task.subtasks.iter().for_each(|subtask| {
-                        gather_tags_from_file_entry(&NewFileEntry::Task(subtask.clone()), tags);
+                        gather_tags_from_file_entry(&FileEntryNode::Task(subtask.clone()), tags);
                     });
                 }
-                NewFileEntry::Tracker(_tracker) => (),
-                NewFileEntry::Header { content, .. } => {
+                FileEntryNode::Tracker(_tracker) => (),
+                FileEntryNode::Header { content, .. } => {
                     for c in content {
                         gather_tags_from_file_entry(c, tags);
                     }
                 }
             }
         }
-        Self::map_file_entries(tasks, &mut |file_entry: &NewFileEntry| {
+        Self::map_file_entries(tasks, &mut |file_entry: &FileEntryNode| {
             gather_tags_from_file_entry(file_entry, tags);
             file_entry.clone()
         });
@@ -175,13 +171,13 @@ impl TaskManager {
     /// # Errors
     /// Will return an error if the vault is empty or the path cannot be resolved
     pub fn resolve_path(&self, path: &[String]) -> Result<Found> {
-        fn aux_node(node: &NewNode, path: &[String], path_index: usize) -> Option<Found> {
+        fn aux_node(node: &VaultNode, path: &[String], path_index: usize) -> Option<Found> {
             if path_index == path.len() {
                 return Some(Found::Node(node.clone()));
             }
 
             match node {
-                NewNode::Vault { name, content, .. } | NewNode::Directory { name, content, .. } => {
+                VaultNode::Vault { name, content, .. } | VaultNode::Directory { name, content, .. } => {
                     if *name == path[path_index] {
                         // Check if we're at the end of the path
                         if path_index + 1 == path.len() {
@@ -193,7 +189,7 @@ impl TaskManager {
                             .find_map(|child| aux_node(child, path, path_index + 1));
                     }
                 }
-                NewNode::File { name, content, .. } => {
+                VaultNode::File { name, content, .. } => {
                     if *name == path[path_index] {
                         // If we're at the end of the path, return file entries as nodes
                         if path_index + 1 == path.len() {
@@ -211,7 +207,7 @@ impl TaskManager {
         }
 
         fn aux_file_entry(
-            file_entry: &NewFileEntry,
+            file_entry: &FileEntryNode,
             path: &[String],
             path_index: usize,
         ) -> Option<Found> {
@@ -220,7 +216,7 @@ impl TaskManager {
             }
 
             match file_entry {
-                NewFileEntry::Header { name, content, .. } => {
+                FileEntryNode::Header { name, content, .. } => {
                     if *name == path[path_index] {
                         // Check if we're at the end of the path
                         if path_index + 1 == path.len() {
@@ -232,24 +228,24 @@ impl TaskManager {
                             .find_map(|child| aux_file_entry(child, path, path_index + 1));
                     }
                 }
-                NewFileEntry::Task(task) => {
+                FileEntryNode::Task(task) => {
                     if task.name == path[path_index] {
                         // Check if we're at the end of the path
                         if path_index + 1 == path.len() {
                             return Some(Found::FileEntry(file_entry.clone()));
                         }
                         // Otherwise, continue recursing into subtasks
-                        let subtask_entries: Vec<NewFileEntry> = task
+                        let subtask_entries: Vec<FileEntryNode> = task
                             .subtasks
                             .iter()
-                            .map(|t| NewFileEntry::Task(t.clone()))
+                            .map(|t| FileEntryNode::Task(t.clone()))
                             .collect();
                         return subtask_entries
                             .iter()
                             .find_map(|st| aux_file_entry(st, path, path_index + 1));
                     }
                 }
-                NewFileEntry::Tracker(tracker) => {
+                FileEntryNode::Tracker(tracker) => {
                     if tracker.name == path[path_index] {
                         // Check if we're at the end of the path
                         if path_index + 1 == path.len() {
@@ -283,20 +279,20 @@ impl TaskManager {
     }
 
     /// Recursively calls `Task.fix_task_attributes` on every task from the vault.
-    fn rewrite_vault_tasks(config: &TasksConfig, tasks: &NewVaultData) -> Result<()> {
-        fn explore_node(node: &NewNode, config: &TasksConfig) -> Result<()> {
+    fn rewrite_vault_tasks(config: &TasksConfig, tasks: &Vaults) -> Result<()> {
+        fn explore_node(node: &VaultNode, config: &TasksConfig) -> Result<()> {
             match node {
-                NewNode::Vault { content, .. } | NewNode::Directory { content, .. } => {
+                VaultNode::Vault { content, .. } | VaultNode::Directory { content, .. } => {
                     for c in content {
                         explore_node(c, config)?;
                     }
                 }
-                NewNode::File {
+                VaultNode::File {
                     name: _, content, ..
                 } => {
                     for file_entry in content {
                         match file_entry {
-                            NewFileEntry::Header { content, .. } => {
+                            FileEntryNode::Header { content, .. } => {
                                 for c in content {
                                     explore_file_entry(c, config)?;
                                 }
@@ -310,20 +306,20 @@ impl TaskManager {
             }
             Ok(())
         }
-        fn explore_file_entry(file_entry: &NewFileEntry, config: &TasksConfig) -> Result<()> {
+        fn explore_file_entry(file_entry: &FileEntryNode, config: &TasksConfig) -> Result<()> {
             match file_entry {
-                NewFileEntry::Header { content, .. } => {
+                FileEntryNode::Header { content, .. } => {
                     for c in content {
                         explore_file_entry(c, config)?;
                     }
                 }
-                NewFileEntry::Task(task) => {
+                FileEntryNode::Task(task) => {
                     task.fix_task_attributes(config)?;
                     for t in &task.subtasks {
                         t.fix_task_attributes(config)?;
                     }
                 }
-                NewFileEntry::Tracker(tracker) => {
+                FileEntryNode::Tracker(tracker) => {
                     tracker.fix_tracker_attributes(config)?;
                 }
             }
@@ -341,20 +337,20 @@ impl TaskManager {
     /// Directories, Headers and Tasks with subtasks can be entered.
     #[must_use]
     pub fn can_enter(&mut self, selected_header_path: &[String]) -> bool {
-        fn aux_node(node: &NewNode, selected_header_path: &[String], path_index: usize) -> bool {
+        fn aux_node(node: &VaultNode, selected_header_path: &[String], path_index: usize) -> bool {
             if path_index == selected_header_path.len() {
                 true
             } else {
                 match node {
-                    NewNode::Vault { name, content, .. }
-                    | NewNode::Directory { name, content, .. } => {
+                    VaultNode::Vault { name, content, .. }
+                    | VaultNode::Directory { name, content, .. } => {
                         if *name == selected_header_path[path_index] {
                             return content
                                 .iter()
                                 .any(|c| aux_node(c, selected_header_path, path_index + 1));
                         }
                     }
-                    NewNode::File { name, content, .. } => {
+                    VaultNode::File { name, content, .. } => {
                         if *name == selected_header_path[path_index] {
                             return content
                                 .iter()
@@ -367,7 +363,7 @@ impl TaskManager {
         }
 
         fn aux_file_entry(
-            file_entry: &NewFileEntry,
+            file_entry: &FileEntryNode,
             selected_header_path: &[String],
             path_index: usize,
         ) -> bool {
@@ -375,7 +371,7 @@ impl TaskManager {
                 true
             } else {
                 match file_entry {
-                    NewFileEntry::Header { name, content, .. } => {
+                    FileEntryNode::Header { name, content, .. } => {
                         if *name == selected_header_path[path_index] {
                             return content
                                 .iter()
@@ -383,11 +379,11 @@ impl TaskManager {
                         }
                         false
                     }
-                    NewFileEntry::Task(task) => {
+                    FileEntryNode::Task(task) => {
                         if task.name == selected_header_path[path_index] {
                             return task.subtasks.iter().any(|t| {
                                 aux_file_entry(
-                                    &NewFileEntry::Task(t.clone()),
+                                    &FileEntryNode::Task(t.clone()),
                                     selected_header_path,
                                     path_index + 1,
                                 )
@@ -395,7 +391,7 @@ impl TaskManager {
                         }
                         false
                     }
-                    NewFileEntry::Tracker(_tracker) => false, // Trackers can't be entered at the moment
+                    FileEntryNode::Tracker(_tracker) => false, // Trackers can't be entered at the moment
                                                               // I plan on giving access to its categories someday
                 }
             }
@@ -423,7 +419,7 @@ mod tests {
     use crate::{
         Found,
         task::Task,
-        vault_data::{NewFileEntry, NewNode, NewVaultData},
+        vault_data::{FileEntryNode, VaultNode, Vaults},
     };
 
     #[test]
@@ -451,50 +447,50 @@ mod tests {
 
         // Build a vault structure: Vault -> Directory -> File -> Headers -> Tasks
         let file_content = vec![
-            NewFileEntry::Header {
+            FileEntryNode::Header {
                 name: "1".to_string(),
                 heading_level: 1,
-                content: vec![NewFileEntry::Header {
+                content: vec![FileEntryNode::Header {
                     name: "2".to_string(),
                     heading_level: 2,
                     content: vec![],
                 }],
             },
-            NewFileEntry::Header {
+            FileEntryNode::Header {
                 name: "1.2".to_string(),
                 heading_level: 1,
                 content: vec![
-                    NewFileEntry::Header {
+                    FileEntryNode::Header {
                         name: "3".to_string(),
                         heading_level: 3,
                         content: vec![],
                     },
-                    NewFileEntry::Header {
+                    FileEntryNode::Header {
                         name: "4".to_string(),
                         heading_level: 2,
                         content: vec![
-                            NewFileEntry::Task(task1.clone()),
-                            NewFileEntry::Task(task2.clone()),
-                            NewFileEntry::Task(task3.clone()),
+                            FileEntryNode::Task(task1.clone()),
+                            FileEntryNode::Task(task2.clone()),
+                            FileEntryNode::Task(task3.clone()),
                         ],
                     },
                 ],
             },
         ];
 
-        let test_file = NewNode::File {
+        let test_file = VaultNode::File {
             name: "Test".to_string(),
             path: Path::new("test/Test.md").into(),
             content: file_content,
         };
 
-        let test_directory = NewNode::Directory {
+        let test_directory = VaultNode::Directory {
             name: "test".to_string(),
             path: Path::new("test").into(),
             content: vec![test_file],
         };
 
-        let vault_data = NewVaultData {
+        let vault_data = Vaults {
             root: vec![test_directory],
         };
 
@@ -512,7 +508,7 @@ mod tests {
             String::from("2"),
         ];
         let found = task_mgr.resolve_path(&path).unwrap();
-        let expected_header = NewFileEntry::Header {
+        let expected_header = FileEntryNode::Header {
             name: "2".to_string(),
             heading_level: 2,
             content: vec![],
@@ -530,13 +526,13 @@ mod tests {
             String::from("4"),
         ];
         let found = task_mgr.resolve_path(&path).unwrap();
-        let expected_header_with_tasks = NewFileEntry::Header {
+        let expected_header_with_tasks = FileEntryNode::Header {
             name: "4".to_string(),
             heading_level: 2,
             content: vec![
-                NewFileEntry::Task(task1),
-                NewFileEntry::Task(task2),
-                NewFileEntry::Task(task3),
+                FileEntryNode::Task(task1),
+                FileEntryNode::Task(task2),
+                FileEntryNode::Task(task3),
             ],
         };
         match found {

@@ -8,7 +8,7 @@ use tracing::{debug, info};
 use crate::{
     TasksConfig,
     parser::parser_file_entry::ParserFileEntry,
-    vault_data::{NewFileEntry, NewNode, NewVaultData},
+    vault_data::{FileEntryNode, VaultNode, Vaults},
 };
 
 pub struct VaultParser {
@@ -19,9 +19,9 @@ impl VaultParser {
     pub const fn new(config: TasksConfig) -> Self {
         Self { config }
     }
-    pub fn scan_vault(&self) -> Result<NewVaultData> {
+    pub fn scan_vault(&self) -> Result<Vaults> {
         // TODO : multiple vaults here
-        let mut tasks = NewNode::Vault {
+        let mut tasks = VaultNode::Vault {
             name: self
                 .config
                 .core
@@ -36,10 +36,10 @@ impl VaultParser {
         };
         info!("Scanning {:?}", self.config.core.vault_path);
         self.scan(&self.config.core.vault_path, &mut tasks)?;
-        Ok(NewVaultData { root: vec![tasks] })
+        Ok(Vaults { root: vec![tasks] })
     }
 
-    fn scan(&self, path: &Path, tasks: &mut NewNode) -> Result<()> {
+    fn scan(&self, path: &Path, tasks: &mut VaultNode) -> Result<()> {
         if self.config.core.ignored.contains(&path.to_path_buf()) {
             debug!("Ignoring {path:?} (ignored list)");
             return Ok(());
@@ -60,15 +60,15 @@ impl VaultParser {
             }
 
             let content = match tasks {
-                NewNode::Vault { content, .. } | NewNode::Directory { content, .. } => content,
-                NewNode::File { .. } => bail!(
+                VaultNode::Vault { content, .. } | VaultNode::Directory { content, .. } => content,
+                VaultNode::File { .. } => bail!(
                     "Error while scanning directories, FileEntry was not a Directory or Vault"
                 ),
             };
 
             if entry.file_type()?.is_dir() {
-                let new_content: Vec<NewNode> = vec![];
-                let mut new_child = NewNode::Directory {
+                let new_content: Vec<VaultNode> = vec![];
+                let mut new_child = VaultNode::Directory {
                     name: name.to_string(),
                     content: new_content,
                     path: entry_path.clone(),
@@ -77,7 +77,7 @@ impl VaultParser {
 
                 // Check if the directory has content
                 let has_content = match &new_child {
-                    NewNode::Directory { content, .. } => !content.is_empty(),
+                    VaultNode::Directory { content, .. } => !content.is_empty(),
                     _ => false,
                 };
                 if has_content {
@@ -90,7 +90,7 @@ impl VaultParser {
                     continue;
                 }
                 if let Some(file_tasks) = self.parse_file(&entry) {
-                    content.push(NewNode::File {
+                    content.push(VaultNode::File {
                         name: name.to_string(),
                         path: entry_path.clone(),
                         content: vec![file_tasks],
@@ -101,7 +101,7 @@ impl VaultParser {
         Ok(())
     }
 
-    fn parse_file(&self, entry: &DirEntry) -> Option<NewFileEntry> {
+    fn parse_file(&self, entry: &DirEntry) -> Option<FileEntryNode> {
         debug!("Parsing {:?}", entry.file_name());
         let content = fs::read_to_string(entry.path()).unwrap_or_default();
         let mut parser = ParserFileEntry {

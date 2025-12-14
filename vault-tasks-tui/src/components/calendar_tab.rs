@@ -25,7 +25,7 @@ use vault_tasks_core::{
     filter::{Filter, filter_tasks_to_vec},
     sorter::SortingMode,
     task::{State, Task},
-    vault_data::NewFileEntry,
+    vault_data::FileEntryNode,
 };
 
 use super::Component;
@@ -184,20 +184,20 @@ impl CalendarTab<'_> {
                     None => None,
                     Some(Date::Day(naive_date)) => {
                         if naive_date == previewed_date {
-                            Some(NewFileEntry::Task(t.clone()))
+                            Some(FileEntryNode::Task(t.clone()))
                         } else {
                             None
                         }
                     }
                     Some(Date::DayTime(naive_date_time)) => {
                         if naive_date_time.date() == previewed_date {
-                            Some(NewFileEntry::Task(t.clone()))
+                            Some(FileEntryNode::Task(t.clone()))
                         } else {
                             None
                         }
                     }
                 })
-                .collect::<Vec<NewFileEntry>>()
+                .collect::<Vec<FileEntryNode>>()
         } else {
             vec![]
         };

@@ -5,100 +5,39 @@ use format_utils::{write_indent, write_underline_with_indent};
 use super::{task::Task, tracker::Tracker};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum VaultData {
-    /// Name, Content
-    Directory(String, Vec<VaultData>),
-    /// Name, Content
-    Header(usize, String, Vec<VaultData>),
-    /// Task, Subtasks
-    Task(Task),
-    /// Tracker
-    Tracker(Tracker),
-}
-
-impl Display for VaultData {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        fn fmt_aux(
-            file_entry: &VaultData,
-            f: &mut std::fmt::Formatter,
-            depth: usize,
-        ) -> std::fmt::Result {
-            match file_entry {
-                VaultData::Header(_, header, entries) => {
-                    write_underline_with_indent(&header.to_string(), depth, f)?;
-                    for entry in entries {
-                        fmt_aux(entry, f, depth + 1)?;
-                    }
-                }
-                VaultData::Directory(name, entries) => {
-                    write_underline_with_indent(&name.to_string(), depth, f)?;
-                    for entry in entries {
-                        fmt_aux(entry, f, depth + 1)?;
-                    }
-                }
-                VaultData::Task(task) => {
-                    for line in task.to_string().replace('\r', "").split('\n') {
-                        write_indent(depth, f)?;
-                        writeln!(f, "{line}")?;
-                    }
-
-                    for subtask in &task.subtasks {
-                        for line in VaultData::Task(subtask.clone())
-                            .to_string()
-                            .replace('\r', "")
-                            .split('\n')
-                        {
-                            write_indent(depth + 1, f)?;
-                            writeln!(f, "{line}")?;
-                        }
-                    }
-                }
-                VaultData::Tracker(tracker) => {
-                    for line in tracker.to_string().replace('\r', "").split('\n') {
-                        write_indent(depth, f)?;
-                        writeln!(f, "{line}")?;
-                    }
-                }
-            }
-            Ok(())
-        }
-        fmt_aux(self, f, 0)
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
 /// A node in the vault data structure, representing either a vault, directory, or file.
-pub enum NewNode {
+pub enum VaultNode {
     Vault {
         name: String,
         path: PathBuf,
-        content: Vec<NewNode>,
+        content: Vec<VaultNode>,
     },
     Directory {
         name: String,
         path: PathBuf,
-        content: Vec<NewNode>,
+        content: Vec<VaultNode>,
     },
     File {
         name: String,
         path: PathBuf,
-        content: Vec<NewFileEntry>,
+        content: Vec<FileEntryNode>,
     },
 }
-impl Display for NewNode {
+impl Display for VaultNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         fn fmt_node_rec(
-            node: &NewNode,
+            node: &VaultNode,
             f: &mut std::fmt::Formatter,
             depth: usize,
         ) -> std::fmt::Result {
             match node {
-                NewNode::Vault { name, content, .. } | NewNode::Directory { name, content, .. } => {
+                VaultNode::Vault { name, content, .. } | VaultNode::Directory { name, content, .. } => {
                     write_underline_with_indent(&name.to_string(), depth, f)?;
                     for entry in content {
                         fmt_node_rec(entry, f, depth + 1)?;
                     }
                 }
-                NewNode::File { name, content, .. } => {
+                VaultNode::File { name, content, .. } => {
                     write_underline_with_indent(&name.to_string(), depth, f)?;
                     for entry in content {
                         // Use NewFileEntry's fmt_with_depth to format with proper indentation
@@ -114,24 +53,24 @@ impl Display for NewNode {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// An entry in a file, representing either a header, task, or tracker.
-pub enum NewFileEntry {
+pub enum FileEntryNode {
     Header {
         name: String,
         heading_level: usize,
-        content: Vec<NewFileEntry>,
+        content: Vec<FileEntryNode>,
     },
     Task(Task),
     Tracker(Tracker),
 }
 
-impl NewFileEntry {
+impl FileEntryNode {
     pub(crate) fn fmt_with_depth(
         &self,
         f: &mut std::fmt::Formatter,
         depth: usize,
     ) -> std::fmt::Result {
         match self {
-            NewFileEntry::Header {
+            FileEntryNode::Header {
                 name,
                 heading_level: _,
                 content,
@@ -141,13 +80,13 @@ impl NewFileEntry {
                     entry.fmt_with_depth(f, depth + 1)?;
                 }
             }
-            NewFileEntry::Task(task) => {
+            FileEntryNode::Task(task) => {
                 for line in task.to_string().replace('\r', "").split('\n') {
                     write_indent(depth, f)?;
                     writeln!(f, "{line}")?;
                 }
                 for subtask in &task.subtasks {
-                    for line in (NewFileEntry::Task(subtask.clone()))
+                    for line in (FileEntryNode::Task(subtask.clone()))
                         .to_string()
                         .split('\n')
                     {
@@ -156,7 +95,7 @@ impl NewFileEntry {
                     }
                 }
             }
-            NewFileEntry::Tracker(tracker) => {
+            FileEntryNode::Tracker(tracker) => {
                 for line in tracker.to_string().replace('\r', "").split('\n') {
                     write_indent(depth, f)?;
                     writeln!(f, "{line}")?;
@@ -167,19 +106,19 @@ impl NewFileEntry {
     }
 }
 
-impl Display for NewFileEntry {
+impl Display for FileEntryNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.fmt_with_depth(f, 0)
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NewVaultData {
-    pub root: Vec<NewNode>,
+pub struct Vaults {
+    pub root: Vec<VaultNode>,
 }
 
-impl NewVaultData {
+impl Vaults {
     #[must_use]
-    pub fn new(root: Vec<NewNode>) -> Self {
+    pub fn new(root: Vec<VaultNode>) -> Self {
         Self { root }
     }
     #[must_use]
@@ -188,7 +127,7 @@ impl NewVaultData {
     }
 }
 
-impl Display for NewVaultData {
+impl Display for Vaults {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for vault in &self.root {
             writeln!(f, "{vault}")?;

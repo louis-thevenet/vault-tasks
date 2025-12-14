@@ -1,6 +1,6 @@
 use ratatui::prelude::*;
 use tui_scrollview::{ScrollView, ScrollViewState};
-use vault_tasks_core::vault_data::NewFileEntry;
+use vault_tasks_core::vault_data::FileEntryNode;
 
 use crate::config::Config;
 
@@ -16,7 +16,7 @@ pub struct TaskList {
 impl TaskList {
     pub fn new(
         config: &Config,
-        file_content: &[NewFileEntry],
+        file_content: &[FileEntryNode],
         max_width: u16,
         display_filename: bool,
     ) -> Self {
@@ -100,7 +100,7 @@ mod tests {
     use vault_tasks_core::{
         date::Date,
         task::{State, Task},
-        vault_data::NewFileEntry,
+        vault_data::FileEntryNode,
     };
 
     use crate::{config::Config, widgets::task_list::TaskList};
@@ -109,11 +109,11 @@ mod tests {
     fn test_task_list() {
         // Create file entries that would come from a markdown file
         let file_content = vec![
-            NewFileEntry::Header {
+            FileEntryNode::Header {
                 name: "1".to_string(),
                 heading_level: 1,
                 content: vec![
-                    NewFileEntry::Task(Task {
+                    FileEntryNode::Task(Task {
                         name: "task 1".to_string(),
                         state: State::Done,
                         tags: Some(vec![String::from("tag"), String::from("tag2")]),
@@ -142,13 +142,13 @@ mod tests {
                         ],
                         ..Default::default()
                     }),
-                    NewFileEntry::Header {
+                    FileEntryNode::Header {
                         name: "1.1".to_string(),
                         heading_level: 2,
-                        content: vec![NewFileEntry::Header {
+                        content: vec![FileEntryNode::Header {
                             name: "1.1.1".to_string(),
                             heading_level: 3,
-                            content: vec![NewFileEntry::Task(Task {
+                            content: vec![FileEntryNode::Task(Task {
                                 name: "test 1.1.1".to_string(),
                                 description: Some("test\ndesc\n🥃".to_string()),
                                 ..Default::default()
@@ -157,19 +157,19 @@ mod tests {
                     },
                 ],
             },
-            NewFileEntry::Header {
+            FileEntryNode::Header {
                 name: "2".to_string(),
                 heading_level: 1,
                 content: vec![
-                    NewFileEntry::Header {
+                    FileEntryNode::Header {
                         name: "2.1".to_string(),
                         heading_level: 3,
                         content: vec![],
                     },
-                    NewFileEntry::Header {
+                    FileEntryNode::Header {
                         name: "2.2".to_string(),
                         heading_level: 2,
-                        content: vec![NewFileEntry::Task(Task {
+                        content: vec![FileEntryNode::Task(Task {
                             name: "test 2.2".to_string(),
                             description: Some("test\ndesc".to_string()),
                             subtasks: vec![Task {

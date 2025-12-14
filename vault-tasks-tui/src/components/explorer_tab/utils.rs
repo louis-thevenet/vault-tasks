@@ -3,7 +3,7 @@ use crate::tui::Tui;
 use vault_tasks_core::{
     Found,
     task::Task,
-    vault_data::{NewFileEntry, NewNode},
+    vault_data::{FileEntryNode, VaultNode},
 };
 
 use super::{DIRECTORY_EMOJI, ExplorerTab, FILE_EMOJI, TRACKER_EMOJI};
@@ -27,31 +27,31 @@ impl ExplorerTab<'_> {
                 unreachable!()
             }
             Found::Node(
-                NewNode::Vault {
+                VaultNode::Vault {
                     content: _content,
                     name,
                     path: _path,
                 }
-                | NewNode::Directory {
+                | VaultNode::Directory {
                     content: _content,
                     name,
                     path: _path,
                 },
             ) => (DIRECTORY_EMOJI.to_owned(), name.clone()),
-            Found::Node(NewNode::File {
+            Found::Node(VaultNode::File {
                 content: _content,
                 name,
                 path: _path,
             }) => (FILE_EMOJI.to_owned(), name.clone()),
-            Found::FileEntry(NewFileEntry::Header {
+            Found::FileEntry(FileEntryNode::Header {
                 content: _content,
                 name,
                 heading_level,
             }) => ("#".repeat(*heading_level).clone(), name.clone()),
-            Found::FileEntry(NewFileEntry::Task(task)) => {
+            Found::FileEntry(FileEntryNode::Task(task)) => {
                 (task.state.to_string(), task.name.clone())
             }
-            Found::FileEntry(NewFileEntry::Tracker(tracker)) => {
+            Found::FileEntry(FileEntryNode::Tracker(tracker)) => {
                 (TRACKER_EMOJI.to_owned(), tracker.name.clone())
             }
         }
@@ -150,7 +150,7 @@ impl ExplorerTab<'_> {
             return None;
         };
 
-        if let Found::FileEntry(NewFileEntry::Task(task)) = entry {
+        if let Found::FileEntry(FileEntryNode::Task(task)) = entry {
             Some(task.clone())
         } else {
             info!("Selected object is not a Task");

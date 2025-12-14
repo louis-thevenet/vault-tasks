@@ -14,7 +14,7 @@ use crate::{
     parser::tracker::{parse_entries, parse_header, parse_separator},
     task::Task,
     tracker::{NewTracker, Tracker},
-    vault_data::NewFileEntry,
+    vault_data::FileEntryNode,
 };
 
 use super::{task::parse_task, tracker::parse_tracker_definition};
@@ -113,13 +113,13 @@ impl ParserFileEntry<'_> {
         Ok(FileToken::EndOfCodeBlock)
     }
     fn insert_task_at(
-        file_entry: &mut NewFileEntry,
+        file_entry: &mut FileEntryNode,
         task: Task,
         header_depth: usize,
         indent_length: usize,
     ) -> color_eyre::Result<()> {
         fn append_task_aux(
-            file_entry: &mut NewFileEntry,
+            file_entry: &mut FileEntryNode,
             task_to_insert: Task,
             current_header_depth: usize,
             target_header_depth: usize,
@@ -127,7 +127,7 @@ impl ParserFileEntry<'_> {
             target_task_depth: usize,
         ) -> color_eyre::Result<()> {
             match file_entry {
-                NewFileEntry::Header {
+                FileEntryNode::Header {
                     content: header_children,
                     ..
                 } => {
@@ -138,11 +138,11 @@ impl ParserFileEntry<'_> {
                         std::cmp::Ordering::Equal => {
                             // Found correct header level
                             if current_task_depth == target_task_depth {
-                                header_children.push(NewFileEntry::Task(task_to_insert));
+                                header_children.push(FileEntryNode::Task(task_to_insert));
                                 Ok(())
                             } else {
                                 for child in header_children.iter_mut().rev() {
-                                    if let NewFileEntry::Task(_task) = child {
+                                    if let FileEntryNode::Task(_task) = child {
                                         return append_task_aux(
                                             child,
                                             task_to_insert,
@@ -162,7 +162,7 @@ impl ParserFileEntry<'_> {
                         std::cmp::Ordering::Less => {
                             // Going deeper in header levels
                             for child in header_children.iter_mut().rev() {
-                                if let NewFileEntry::Header { .. } = child {
+                                if let FileEntryNode::Header { .. } = child {
                                     return append_task_aux(
                                         child,
                                         task_to_insert,
@@ -180,7 +180,7 @@ impl ParserFileEntry<'_> {
                         }
                     }
                 }
-                NewFileEntry::Task(task) => {
+                FileEntryNode::Task(task) => {
                     let mut current_task_depth = current_task_depth;
                     let mut last_task = task;
                     while current_task_depth < target_task_depth {
@@ -197,7 +197,7 @@ impl ParserFileEntry<'_> {
                     last_task.subtasks.push(task_to_insert);
                     Ok(())
                 }
-                NewFileEntry::Tracker(_tracker) => {
+                FileEntryNode::Tracker(_tracker) => {
                     bail!("Failed to insert task: tried to insert into a tracker")
                 }
             }
@@ -205,18 +205,18 @@ impl ParserFileEntry<'_> {
         append_task_aux(file_entry, task, 0, header_depth, 0, indent_length)
     }
     fn insert_tracker_at(
-        file_entry: &mut NewFileEntry,
+        file_entry: &mut FileEntryNode,
         tracker: Tracker,
         header_depth: usize,
     ) -> color_eyre::Result<()> {
         fn append_tracker_aux(
-            file_entry: &mut NewFileEntry,
+            file_entry: &mut FileEntryNode,
             tracker_to_insert: Tracker,
             current_header_depth: usize,
             target_header_depth: usize,
         ) -> color_eyre::Result<()> {
             match file_entry {
-                NewFileEntry::Header {
+                FileEntryNode::Header {
                     content: header_children,
                     ..
                 } => {
@@ -228,13 +228,13 @@ impl ParserFileEntry<'_> {
                         }
                         std::cmp::Ordering::Equal => {
                             // Found correct header level
-                            header_children.push(NewFileEntry::Tracker(tracker_to_insert));
+                            header_children.push(FileEntryNode::Tracker(tracker_to_insert));
                             Ok(())
                         }
                         std::cmp::Ordering::Less => {
                             // Going deeper in header levels
                             for child in header_children.iter_mut().rev() {
-                                if let NewFileEntry::Header { .. } = child {
+                                if let FileEntryNode::Header { .. } = child {
                                     return append_tracker_aux(
                                         child,
                                         tracker_to_insert,
@@ -250,10 +250,10 @@ impl ParserFileEntry<'_> {
                         }
                     }
                 }
-                NewFileEntry::Task(_task) => {
+                FileEntryNode::Task(_task) => {
                     bail!("Tried to insert a Tracker in a task")
                 }
-                NewFileEntry::Tracker(_tracker) => {
+                FileEntryNode::Tracker(_tracker) => {
                     bail!("Tried to insert a Tracker in a tracker")
                 }
             }
@@ -262,14 +262,14 @@ impl ParserFileEntry<'_> {
     }
     /// Inserts a header at the specific depth in `file_entry`.
     fn insert_header_at(
-        file_entry: &mut NewFileEntry,
+        file_entry: &mut FileEntryNode,
         name: String,
         heading_level: usize,
         target_header_depth: usize,
         target_task_depth: usize,
     ) -> color_eyre::Result<()> {
         fn insert_at_aux(
-            file_entry: &mut NewFileEntry,
+            file_entry: &mut FileEntryNode,
             name: String,
             heading_level: usize,
             current_header_depth: usize,
@@ -278,7 +278,7 @@ impl ParserFileEntry<'_> {
             target_task_depth: usize,
         ) -> color_eyre::Result<()> {
             match file_entry {
-                NewFileEntry::Header {
+                FileEntryNode::Header {
                     content: header_children,
                     ..
                 } => {
@@ -291,7 +291,7 @@ impl ParserFileEntry<'_> {
                         std::cmp::Ordering::Equal => {
                             // Found correct header level
                             if current_task_depth == target_task_depth {
-                                header_children.push(NewFileEntry::Header {
+                                header_children.push(FileEntryNode::Header {
                                     name,
                                     heading_level,
                                     content: vec![],
@@ -299,7 +299,7 @@ impl ParserFileEntry<'_> {
                                 Ok(())
                             } else {
                                 for child in header_children.iter_mut().rev() {
-                                    if let NewFileEntry::Task(_) = child {
+                                    if let FileEntryNode::Task(_) = child {
                                         return insert_at_aux(
                                             child,
                                             name,
@@ -317,7 +317,7 @@ impl ParserFileEntry<'_> {
                         std::cmp::Ordering::Less => {
                             // Still haven't found correct header level, going deeper
                             for child in header_children.iter_mut().rev() {
-                                if let NewFileEntry::Header { .. } = child {
+                                if let FileEntryNode::Header { .. } = child {
                                     return insert_at_aux(
                                         child,
                                         name,
@@ -330,7 +330,7 @@ impl ParserFileEntry<'_> {
                                 }
                             }
                             // No child header found, append to current level
-                            header_children.push(NewFileEntry::Header {
+                            header_children.push(FileEntryNode::Header {
                                 name,
                                 heading_level,
                                 content: vec![],
@@ -339,7 +339,7 @@ impl ParserFileEntry<'_> {
                         }
                     }
                 }
-                NewFileEntry::Task(task) => {
+                FileEntryNode::Task(task) => {
                     let mut current_task_depth = current_task_depth;
                     let mut last_task = task;
                     while current_task_depth < target_task_depth {
@@ -353,7 +353,7 @@ impl ParserFileEntry<'_> {
                     }
                     bail!("Error: tried to insert a header into a task")
                 }
-                NewFileEntry::Tracker(_tracker) => {
+                FileEntryNode::Tracker(_tracker) => {
                     bail!("Error: tried to insert a header into a tracker")
                 }
             }
@@ -371,13 +371,13 @@ impl ParserFileEntry<'_> {
 
     /// Appends `desc` to the description of an existing `Task` in the `FileEntry`.
     fn append_description(
-        file_entry: &mut NewFileEntry,
+        file_entry: &mut FileEntryNode,
         desc: String,
         target_header_depth: usize,
         target_task_depth: usize,
     ) -> color_eyre::Result<()> {
         fn append_description_aux(
-            file_entry: &mut NewFileEntry,
+            file_entry: &mut FileEntryNode,
             desc: String,
             current_header_depth: usize,
             target_header_depth: usize,
@@ -385,7 +385,7 @@ impl ParserFileEntry<'_> {
             target_task_depth: usize,
         ) -> color_eyre::Result<()> {
             match file_entry {
-                NewFileEntry::Header {
+                FileEntryNode::Header {
                     content: header_children,
                     ..
                 } => {
@@ -398,7 +398,7 @@ impl ParserFileEntry<'_> {
                         std::cmp::Ordering::Equal => {
                             // Found correct header level
                             for child in header_children.iter_mut().rev() {
-                                if let NewFileEntry::Task(task) = child {
+                                if let FileEntryNode::Task(task) = child {
                                     if current_task_depth == target_task_depth {
                                         match &mut task.description {
                                             Some(d) => {
@@ -424,7 +424,7 @@ impl ParserFileEntry<'_> {
                         std::cmp::Ordering::Less => {
                             // Going deeper in header levels
                             for child in header_children.iter_mut().rev() {
-                                if let NewFileEntry::Header { .. } = child {
+                                if let FileEntryNode::Header { .. } = child {
                                     return append_description_aux(
                                         child,
                                         desc,
@@ -439,7 +439,7 @@ impl ParserFileEntry<'_> {
                         }
                     }
                 }
-                NewFileEntry::Task(task) => {
+                FileEntryNode::Task(task) => {
                     fn insert_desc_task(
                         description: String,
                         task: &mut Task,
@@ -474,7 +474,7 @@ impl ParserFileEntry<'_> {
                     }
                     insert_desc_task(desc, task, current_task_depth, target_task_depth)
                 }
-                NewFileEntry::Tracker(_tracker) => {
+                FileEntryNode::Tracker(_tracker) => {
                     bail!("Failed to insert description: tried to insert into a tracker")
                 }
             }
@@ -494,7 +494,7 @@ impl ParserFileEntry<'_> {
     fn parse_file_aux<'a, I>(
         &self,
         mut input: Peekable<I>,
-        file_entry: &mut Option<NewFileEntry>,
+        file_entry: &mut Option<FileEntryNode>,
         file_tags: &mut Vec<String>,
         header_depth: usize,
         comment_depth: usize,
@@ -582,7 +582,7 @@ impl ParserFileEntry<'_> {
                 Ok(FileToken::Task(mut task, indent_length)) => {
                     task.line_number = Some(line_number + 1); // line 1 was element 0 of iterator
                     if file_entry.is_none() {
-                        *file_entry = Some(NewFileEntry::Header {
+                        *file_entry = Some(FileEntryNode::Header {
                             name: self
                                 .path
                                 .file_name()
@@ -614,7 +614,7 @@ impl ParserFileEntry<'_> {
                 }
                 Ok(FileToken::Header((header, new_depth))) => {
                     if file_entry.is_none() {
-                        *file_entry = Some(NewFileEntry::Header {
+                        *file_entry = Some(FileEntryNode::Header {
                             name: self
                                 .path
                                 .file_name()
@@ -771,9 +771,9 @@ impl ParserFileEntry<'_> {
     }
 
     /// Removes any empty headers from a `FileEntry`
-    fn clean_file_entry(&self, file_entry: &mut NewFileEntry) -> Option<NewFileEntry> {
+    fn clean_file_entry(&self, file_entry: &mut FileEntryNode) -> Option<FileEntryNode> {
         match file_entry {
-            NewFileEntry::Header {
+            FileEntryNode::Header {
                 name,
                 heading_level: _,
                 content,
@@ -791,13 +791,13 @@ impl ParserFileEntry<'_> {
                     return None;
                 }
             }
-            NewFileEntry::Task(_task) => (),
-            NewFileEntry::Tracker(_tracker) => (),
+            FileEntryNode::Task(_task) => (),
+            FileEntryNode::Tracker(_tracker) => (),
         }
         Some(file_entry.to_owned())
     }
 
-    pub fn parse_file(&mut self, input: &&str) -> Option<NewFileEntry> {
+    pub fn parse_file(&mut self, input: &&str) -> Option<FileEntryNode> {
         let replaced = input.replace('\r', "");
         let lines = replaced.split('\n');
 
@@ -825,17 +825,17 @@ impl ParserFileEntry<'_> {
     }
 }
 
-fn add_global_tag(file_entry: &mut NewFileEntry, tag: &String) {
-    fn add_tag_aux(file_entry: &mut NewFileEntry, tag: &String) {
+fn add_global_tag(file_entry: &mut FileEntryNode, tag: &String) {
+    fn add_tag_aux(file_entry: &mut FileEntryNode, tag: &String) {
         match file_entry {
-            NewFileEntry::Header {
+            FileEntryNode::Header {
                 content: children, ..
             } => {
                 for child in children.iter_mut().rev() {
                     add_tag_aux(child, tag);
                 }
             }
-            NewFileEntry::Task(task) => {
+            FileEntryNode::Task(task) => {
                 fn insert_tag_task(task: &mut Task, tag: &String) {
                     match task.tags.clone() {
                         Some(mut tags) if !tags.contains(tag) => {
@@ -852,7 +852,7 @@ fn add_global_tag(file_entry: &mut NewFileEntry, tag: &String) {
                 }
                 insert_tag_task(task, tag);
             }
-            NewFileEntry::Tracker(tracker) => {
+            FileEntryNode::Tracker(tracker) => {
                 error!("Tried to add a tag to a tracker: {}", tracker.name);
             }
         }
@@ -868,7 +868,7 @@ mod tests {
 
     use super::ParserFileEntry;
 
-    use crate::{TasksConfig, task::Task, vault_data::NewFileEntry};
+    use crate::{TasksConfig, task::Task, vault_data::FileEntryNode};
     #[test]
     fn test_with_useless_headers() {
         let input = r"# 1 useless
@@ -889,7 +889,7 @@ mod tests {
         let config = TasksConfig {
             ..Default::default()
         };
-        let mut res = Some(NewFileEntry::Header {
+        let mut res = Some(FileEntryNode::Header {
             name: "Test".to_string(),
             heading_level: 0,
             content: vec![],
@@ -898,36 +898,36 @@ mod tests {
             config: &config,
             path: PathBuf::new(),
         };
-        let expected = Some(NewFileEntry::Header {
+        let expected = Some(FileEntryNode::Header {
             name: "Test".to_string(),
             heading_level: 0,
             content: vec![
-                NewFileEntry::Header {
+                FileEntryNode::Header {
                     name: "1 useless".to_string(),
                     heading_level: 1,
-                    content: vec![NewFileEntry::Header {
+                    content: vec![FileEntryNode::Header {
                         name: "2 useless".to_string(),
                         heading_level: 2,
-                        content: vec![NewFileEntry::Header {
+                        content: vec![FileEntryNode::Header {
                             name: "3 useless".to_string(),
                             heading_level: 3,
                             content: vec![],
                         }],
                     }],
                 },
-                NewFileEntry::Header {
+                FileEntryNode::Header {
                     name: "2 useful".to_string(),
                     heading_level: 1,
                     content: vec![
-                        NewFileEntry::Header {
+                        FileEntryNode::Header {
                             name: "3 useless".to_string(),
                             heading_level: 3,
                             content: vec![],
                         },
-                        NewFileEntry::Header {
+                        FileEntryNode::Header {
                             name: "4 useful".to_string(),
                             heading_level: 2,
-                            content: vec![NewFileEntry::Task(Task {
+                            content: vec![FileEntryNode::Task(Task {
                                 name: "test".to_string(),
                                 line_number: Some(8),
                                 description: Some("test\ndesc".to_string()),
@@ -941,16 +941,16 @@ mod tests {
         parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
         assert_eq!(res, expected);
 
-        let expected_after_cleaning = Some(NewFileEntry::Header {
+        let expected_after_cleaning = Some(FileEntryNode::Header {
             name: "Test".to_string(),
             heading_level: 0,
-            content: vec![NewFileEntry::Header {
+            content: vec![FileEntryNode::Header {
                 name: "2 useful".to_string(),
                 heading_level: 1,
-                content: vec![NewFileEntry::Header {
+                content: vec![FileEntryNode::Header {
                     name: "4 useful".to_string(),
                     heading_level: 2,
-                    content: vec![NewFileEntry::Task(Task {
+                    content: vec![FileEntryNode::Task(Task {
                         name: "test".to_string(),
                         line_number: Some(8),
                         description: Some("test\ndesc".to_string()),
@@ -987,7 +987,7 @@ mod tests {
         let config = TasksConfig {
             ..Default::default()
         };
-        let mut res = Some(NewFileEntry::Header {
+        let mut res = Some(FileEntryNode::Header {
             name: "Test".to_string(),
             heading_level: 0,
             content: vec![],
@@ -996,31 +996,31 @@ mod tests {
             config: &config,
             path: PathBuf::new(),
         };
-        let expected = Some(NewFileEntry::Header {
+        let expected = Some(FileEntryNode::Header {
             name: "Test".to_string(),
             heading_level: 0,
-            content: vec![NewFileEntry::Header {
+            content: vec![FileEntryNode::Header {
                 name: "1 Header".to_string(),
                 heading_level: 1,
                 content: vec![
-                    NewFileEntry::Task(Task {
+                    FileEntryNode::Task(Task {
                         name: "Task".to_string(),
                         line_number: Some(2),
                         ..Default::default()
                     }),
-                    NewFileEntry::Header {
+                    FileEntryNode::Header {
                         name: "2 Header".to_string(),
                         heading_level: 2,
-                        content: vec![NewFileEntry::Header {
+                        content: vec![FileEntryNode::Header {
                             name: "3 Header".to_string(),
                             heading_level: 3,
                             content: vec![
-                                NewFileEntry::Task(Task {
+                                FileEntryNode::Task(Task {
                                     name: "Task".to_string(),
                                     line_number: Some(6),
                                     ..Default::default()
                                 }),
-                                NewFileEntry::Task(Task {
+                                FileEntryNode::Task(Task {
                                     name: "Task 2".to_string(),
                                     line_number: Some(7),
                                     ..Default::default()
@@ -1028,10 +1028,10 @@ mod tests {
                             ],
                         }],
                     },
-                    NewFileEntry::Header {
+                    FileEntryNode::Header {
                         name: "2 Header 2".to_string(),
                         heading_level: 2,
-                        content: vec![NewFileEntry::Task(Task {
+                        content: vec![FileEntryNode::Task(Task {
                             name: "Task".to_string(),
                             line_number: Some(9),
                             description: Some("Description".to_string()),
@@ -1091,7 +1091,7 @@ mod tests {
         let config = TasksConfig {
             ..Default::default()
         };
-        let mut res = Some(NewFileEntry::Header {
+        let mut res = Some(FileEntryNode::Header {
             name: "Test".to_string(),
             heading_level: 0,
             content: vec![],
@@ -1100,19 +1100,19 @@ mod tests {
             config: &config,
             path: PathBuf::new(),
         };
-        let expected = Some(NewFileEntry::Header {
+        let expected = Some(FileEntryNode::Header {
             name: "Test".to_string(),
             heading_level: 0,
-            content: vec![NewFileEntry::Header {
+            content: vec![FileEntryNode::Header {
                 name: "1 Header".to_string(),
                 heading_level: 1,
                 content: vec![
-                    NewFileEntry::Task(Task {
+                    FileEntryNode::Task(Task {
                         name: "Task".to_string(),
                         line_number: Some(3),
                         ..Default::default()
                     }),
-                    NewFileEntry::Header {
+                    FileEntryNode::Header {
                         name: "2 Header".to_string(),
                         heading_level: 2,
                         content: vec![],
@@ -1138,7 +1138,7 @@ mod tests {
         let config = TasksConfig {
             ..Default::default()
         };
-        let mut res = Some(NewFileEntry::Header {
+        let mut res = Some(FileEntryNode::Header {
             name: "Test".to_string(),
             heading_level: 0,
             content: vec![],
@@ -1147,16 +1147,16 @@ mod tests {
             config: &config,
             path: PathBuf::new(),
         };
-        let expected = Some(NewFileEntry::Header {
+        let expected = Some(FileEntryNode::Header {
             name: "Test".to_string(),
             heading_level: 0,
-            content: vec![NewFileEntry::Header {
+            content: vec![FileEntryNode::Header {
                 name: "1 Header".to_string(),
                 heading_level: 1,
-                content: vec![NewFileEntry::Header {
+                content: vec![FileEntryNode::Header {
                     name: "Test".to_string(),
                     heading_level: 2,
-                    content: vec![NewFileEntry::Task(Task {
+                    content: vec![FileEntryNode::Task(Task {
                         name: "Test a".to_string(),
                         line_number: Some(3),
                         subtasks: vec![Task {
@@ -1206,7 +1206,7 @@ mod tests {
         let config = TasksConfig {
             ..Default::default()
         };
-        let mut res = Some(NewFileEntry::Header {
+        let mut res = Some(FileEntryNode::Header {
             name: "Test".to_string(),
             heading_level: 0,
             content: vec![],
@@ -1235,7 +1235,7 @@ mod tests {
         let config = TasksConfig {
             ..Default::default()
         };
-        let mut res = Some(NewFileEntry::Header {
+        let mut res = Some(FileEntryNode::Header {
             name: "Test".to_string(),
             heading_level: 0,
             content: vec![],
@@ -1262,7 +1262,7 @@ mod tests {
         let config = TasksConfig {
             ..Default::default()
         };
-        let mut res = Some(NewFileEntry::Header {
+        let mut res = Some(FileEntryNode::Header {
             name: "Test".to_string(),
             heading_level: 0,
             content: vec![],

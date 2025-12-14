@@ -22,7 +22,7 @@ use vault_tasks_core::TaskManager;
 use vault_tasks_core::filter::{self, filter_tasks_to_vec, parse_search_input};
 use vault_tasks_core::sorter::SortingMode;
 use vault_tasks_core::task::Task;
-use vault_tasks_core::vault_data::NewFileEntry;
+use vault_tasks_core::vault_data::FileEntryNode;
 
 /// Struct that helps with drawing the component
 struct FilterTabArea {
@@ -273,8 +273,8 @@ impl Component for FilterTab<'_> {
                 .matching_tasks
                 .clone()
                 .iter()
-                .map(|t| NewFileEntry::Task(t.clone()))
-                .collect::<Vec<NewFileEntry>>(),
+                .map(|t| FileEntryNode::Task(t.clone()))
+                .collect::<Vec<FileEntryNode>>(),
             areas.task_list.width,
             true,
         );

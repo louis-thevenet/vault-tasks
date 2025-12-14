@@ -25,7 +25,7 @@ use crate::widgets::input_bar::InputBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
 use vault_tasks_core::filter::parse_search_input;
-use vault_tasks_core::vault_data::{NewFileEntry, NewNode};
+use vault_tasks_core::vault_data::{FileEntryNode, VaultNode};
 use vault_tasks_core::{Found, TaskManager};
 
 mod entry_list;
@@ -73,23 +73,23 @@ impl ExplorerTab<'_> {
             Found::Root(new_vault_data) => {
                 new_vault_data.root.into_iter().map(Found::Node).collect()
             }
-            Found::Node(NewNode::Vault { content, .. } | NewNode::Directory { content, .. }) => {
+            Found::Node(VaultNode::Vault { content, .. } | VaultNode::Directory { content, .. }) => {
                 content.into_iter().map(Found::Node).collect()
             }
-            Found::Node(NewNode::File { content, .. }) => {
+            Found::Node(VaultNode::File { content, .. }) => {
                 content.into_iter().map(Found::FileEntry).collect()
             }
-            Found::FileEntry(NewFileEntry::Header { content, .. }) => {
+            Found::FileEntry(FileEntryNode::Header { content, .. }) => {
                 content.into_iter().map(Found::FileEntry).collect()
             }
-            Found::FileEntry(NewFileEntry::Task(t)) => t
+            Found::FileEntry(FileEntryNode::Task(t)) => t
                 .subtasks
                 .into_iter()
-                .map(NewFileEntry::Task)
+                .map(FileEntryNode::Task)
                 .map(Found::FileEntry)
                 .collect(),
-            Found::FileEntry(NewFileEntry::Tracker(t)) => {
-                vec![Found::FileEntry(NewFileEntry::Tracker(t))]
+            Found::FileEntry(FileEntryNode::Tracker(t)) => {
+                vec![Found::FileEntry(FileEntryNode::Tracker(t))]
             }
         }
     }
@@ -148,7 +148,7 @@ impl ExplorerTab<'_> {
 
         self.entries_right_view = match self.task_mgr.resolve_path(&path_to_preview) {
             Ok(res) => Self::get_children(res),
-            Err(e) => vec![Found::Node(NewNode::Directory {
+            Err(e) => vec![Found::Node(VaultNode::Directory {
                 name: e.to_string(),
                 content: vec![],
                 path: PathBuf::new(), // copy preview ?
@@ -283,7 +283,7 @@ impl ExplorerTab<'_> {
                                 panic!("Expected FileEntry");
                             }
                         })
-                        .collect::<Vec<NewFileEntry>>(),
+                        .collect::<Vec<FileEntryNode>>(),
                     area.width,
                     false,
                 )
@@ -425,7 +425,7 @@ impl Component for ExplorerTab<'_> {
             match action {
                 Action::Enter => {
                     // We're already sure it exists since we entered the task editing mode
-                    if let Found::FileEntry(NewFileEntry::Task(task)) = self
+                    if let Found::FileEntry(FileEntryNode::Task(task)) = self
                         .task_mgr
                         .resolve_path(&self.get_preview_path().unwrap_or(self.current_path.clone()))
                         .unwrap()
