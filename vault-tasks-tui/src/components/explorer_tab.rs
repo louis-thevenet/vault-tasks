@@ -145,6 +145,12 @@ impl ExplorerTab<'_> {
         };
 
         self.entries_right_view = match self.task_mgr.resolve_path(&path_to_preview) {
+            Ok(Found::FileEntry(FileEntryNode::Task(t))) => {
+                vec![Found::FileEntry(FileEntryNode::Task(t))]
+            }
+            Ok(Found::FileEntry(FileEntryNode::Tracker(t))) => {
+                vec![Found::FileEntry(FileEntryNode::Tracker(t))]
+            }
             Ok(res) => Self::get_children(res),
             Err(e) => vec![Found::Node(VaultNode::Directory {
                 name: e.to_string(),
