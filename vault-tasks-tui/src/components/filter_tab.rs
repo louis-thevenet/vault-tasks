@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::path::PathBuf;
 
 use color_eyre::Result;
 use crossterm::event::Event;
@@ -18,11 +19,11 @@ use crate::widgets::input_bar::InputBar;
 use crate::widgets::task_list::TaskList;
 use crate::{action::Action, config::Config};
 use tui_input::backend::crossterm::EventHandler;
-use vault_tasks_core::TaskManager;
 use vault_tasks_core::filter::{self, filter_tasks_to_vec, parse_search_input};
 use vault_tasks_core::sorter::SortingMode;
 use vault_tasks_core::task::Task;
 use vault_tasks_core::vault_data::VaultData;
+use vault_tasks_core::{TaskManager, tmp_refactor};
 
 /// Struct that helps with drawing the component
 struct FilterTabArea {
@@ -73,9 +74,10 @@ impl FilterTab<'_> {
             // We know that the vault will not be empty here
 
             let mut tags = HashSet::new();
+            let tasks = &filter::filter(&self.task_mgr.tasks_refactored, &Some(filter_task))
+                .expect("Entry list was not empty but vault was.");
             TaskManager::collect_tags(
-                &filter::filter(&self.task_mgr.tasks_refactored, &Some(filter_task))
-                    .expect("Entry list was not empty but vault was."),
+                &tmp_refactor::convert_legacy_to_new(vec![tasks.clone()], &PathBuf::new()), // TODO: refactor
                 &mut tags,
             );
             self.matching_tags = tags.iter().cloned().collect::<Vec<String>>();

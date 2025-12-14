@@ -12,7 +12,10 @@ use filter::{Filter, filter};
 use tracing::{debug, error};
 use vault_parser::VaultParser;
 
-use crate::config::TasksConfig;
+use crate::{
+    config::TasksConfig,
+    vault_data::{NewFileEntry, NewNode},
+};
 
 pub mod config;
 pub mod date;
@@ -91,11 +94,7 @@ impl TaskManager {
         Self::rewrite_vault_tasks(config, &tasks)
             .unwrap_or_else(|e| error!("Failed to fix tasks: {e}"));
 
-        let mut tags = HashSet::new();
-        Self::collect_tags(&tasks, &mut tags);
-
         self.tasks = tasks;
-        self.tags = tags;
 
         // TODO: until parsing is refactored
         self.tasks_refactored = tmp_refactor::convert_legacy_to_new(
@@ -103,25 +102,79 @@ impl TaskManager {
             &self.config.core.vault_path,
         );
 
+        let mut tags = HashSet::new();
+        Self::collect_tags(&self.tasks_refactored, &mut tags);
+        self.tags = tags;
+
         Ok(())
+    }
+    /// Explores every `NewFileEntry` from the vault and applies the given function `f` on it.
+    pub fn map_file_entries(
+        tasks: &NewVaultData,
+        f: &mut impl FnMut(&NewFileEntry) -> NewFileEntry,
+    ) -> NewVaultData {
+        fn explore_nodes(
+            node: &NewNode,
+            f: &mut impl FnMut(&NewFileEntry) -> NewFileEntry,
+        ) -> NewNode {
+            match node.clone() {
+                NewNode::Vault {
+                    name,
+                    path,
+                    content,
+                } => NewNode::Vault {
+                    name,
+                    path,
+                    content: content.iter().map(|v| explore_nodes(v, f)).collect(),
+                },
+                NewNode::Directory {
+                    name,
+                    path,
+                    content,
+                } => NewNode::Directory {
+                    name,
+                    path,
+                    content: content.iter().map(|v| explore_nodes(v, f)).collect(),
+                },
+                NewNode::File {
+                    name,
+                    path,
+                    content,
+                } => NewNode::File {
+                    name,
+                    path,
+                    content: content.iter().map(f).collect(),
+                },
+            }
+        }
+        let new_root = tasks.root.iter().map(|n| explore_nodes(n, f)).collect();
+        NewVaultData { root: new_root }
     }
 
     /// Explores the vault and fills a `&mut HashSet<String>` with every tags found.
-    pub fn collect_tags(tasks: &VaultData, tags: &mut HashSet<String>) {
-        match tasks {
-            VaultData::Directory(_, children) | VaultData::Header(_, _, children) => {
-                children.iter().for_each(|c| Self::collect_tags(c, tags));
+    pub fn collect_tags(tasks: &NewVaultData, tags: &mut HashSet<String>) {
+        fn gather_tags_from_file_entry(file_entry: &NewFileEntry, tags: &mut HashSet<String>) {
+            match file_entry {
+                NewFileEntry::Task(task) => {
+                    task.tags.clone().unwrap_or_default().iter().for_each(|t| {
+                        tags.insert(t.clone());
+                    });
+                    task.subtasks.iter().for_each(|subtask| {
+                        gather_tags_from_file_entry(&NewFileEntry::Task(subtask.clone()), tags);
+                    });
+                }
+                NewFileEntry::Tracker(_tracker) => (),
+                NewFileEntry::Header { content, .. } => {
+                    for c in content {
+                        gather_tags_from_file_entry(c, tags);
+                    }
+                }
             }
-            VaultData::Task(task) => {
-                task.tags.clone().unwrap_or_default().iter().for_each(|t| {
-                    tags.insert(t.clone());
-                });
-                task.subtasks
-                    .iter()
-                    .for_each(|task| Self::collect_tags(&VaultData::Task(task.clone()), tags));
-            }
-            VaultData::Tracker(_tracker) => (),
         }
+        Self::map_file_entries(tasks, &mut |file_entry: &NewFileEntry| {
+            gather_tags_from_file_entry(file_entry, tags);
+            file_entry.clone()
+        });
     }
 
     /// Follows the `selected_header_path` to retrieve the correct `VaultData`.
