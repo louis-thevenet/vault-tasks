@@ -404,24 +404,54 @@ impl TaskManager {
     /// Directories, Headers and Tasks with subtasks can be entered.
     #[must_use]
     pub fn can_enter(&mut self, selected_header_path: &[String]) -> bool {
-        fn aux(file_entry: VaultData, selected_header_path: &[String], path_index: usize) -> bool {
+        fn aux_node(node: &NewNode, selected_header_path: &[String], path_index: usize) -> bool {
+            if path_index == selected_header_path.len() {
+                true
+            } else {
+                match node {
+                    NewNode::Vault { name, content, .. }
+                    | NewNode::Directory { name, content, .. } => {
+                        if *name == selected_header_path[path_index] {
+                            return content
+                                .iter()
+                                .any(|c| aux_node(c, selected_header_path, path_index + 1));
+                        }
+                        true
+                    }
+                    NewNode::File { name, content, .. } => {
+                        if *name == selected_header_path[path_index] {
+                            return content
+                                .iter()
+                                .any(|c| aux_file_entry(c, selected_header_path, path_index + 1));
+                        }
+                        true
+                    }
+                }
+            }
+        }
+
+        fn aux_file_entry(
+            file_entry: &NewFileEntry,
+            selected_header_path: &[String],
+            path_index: usize,
+        ) -> bool {
             if path_index == selected_header_path.len() {
                 true
             } else {
                 match file_entry {
-                    VaultData::Directory(name, children) | VaultData::Header(_, name, children) => {
-                        if name == selected_header_path[path_index] {
-                            return children
+                    NewFileEntry::Header { name, content, .. } => {
+                        if *name == selected_header_path[path_index] {
+                            return content
                                 .iter()
-                                .any(|c| aux(c.clone(), selected_header_path, path_index + 1));
+                                .any(|c| aux_file_entry(c, selected_header_path, path_index + 1));
                         }
                         false
                     }
-                    VaultData::Task(task) => {
+                    NewFileEntry::Task(task) => {
                         if task.name == selected_header_path[path_index] {
                             return task.subtasks.iter().any(|t| {
-                                aux(
-                                    VaultData::Task(t.clone()),
+                                aux_file_entry(
+                                    &NewFileEntry::Task(t.clone()),
                                     selected_header_path,
                                     path_index + 1,
                                 )
@@ -429,19 +459,16 @@ impl TaskManager {
                         }
                         false
                     }
-                    VaultData::Tracker(_tracker) => false, // Trackers can't be entered at the moment
-                                                           // I plan on giving access to its categories someday
+                    NewFileEntry::Tracker(_tracker) => false, // Trackers can't be entered at the moment
+                                                              // I plan on giving access to its categories someday
                 }
             }
         }
 
-        let filtered_tasks = filter(&self.tasks_refactored, &self.current_filter);
-        let Some(VaultData::Directory(_, entries)) = filtered_tasks else {
-            return false;
-        };
-        entries
+        self.tasks_refactored
+            .root
             .iter()
-            .any(|e| aux(e.clone(), selected_header_path, 0))
+            .any(|node| aux_node(node, selected_header_path, 0))
     }
 }
 impl Display for TaskManager {
