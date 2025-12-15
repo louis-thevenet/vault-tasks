@@ -31,7 +31,10 @@ lazy_static! {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct AppConfig {}
+pub struct AppConfig {
+    #[serde(default)]
+    pub drop_file_path: Option<PathBuf>,
+}
 impl Default for AppConfig {
     fn default() -> Self {
         toml::from_str(CLI_CONFIG).unwrap()
@@ -46,7 +49,6 @@ pub struct Config {
 }
 impl Config {
     pub fn new(args: &Cli) -> Result<Self, config::ConfigError> {
-        let default_config: AppConfig = AppConfig::default();
         let data_dir = get_data_dir();
         let config_path = args.config_path.clone().unwrap_or_else(get_config_dir);
         debug!(
@@ -92,7 +94,6 @@ impl Config {
             builder
         };
         let cfg: AppConfig = builder.build()?.try_deserialize()?;
-
         let tasks_config = TasksConfig::new(&ProtoConfig {
             vault_path: args.vault_path.clone(),
             config_path: Some(config_path),

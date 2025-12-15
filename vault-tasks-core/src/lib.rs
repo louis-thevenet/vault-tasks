@@ -1,6 +1,6 @@
 use color_eyre::{Result, eyre::bail};
 
-use std::{collections::HashSet, fmt::Display};
+use std::{collections::HashSet, ffi::OsString, fmt::Display, iter::Peekable, path::Iter};
 use vault_data::Vaults;
 
 use filter::Filter;
@@ -9,6 +9,7 @@ use vault_parser::VaultParser;
 
 use crate::{
     config::TasksConfig,
+    task::Task,
     vault_data::{FileEntryNode, VaultNode},
 };
 
@@ -166,6 +167,10 @@ impl TaskManager {
         });
     }
 
+    pub fn add_task(&mut self, task: &Task) -> Result<()> {
+        task.fix_task_attributes(&self.config)?;
+        self.reload(&self.config.clone())
+    }
     /// Follows the `path` to retrieve the correct `VaultData`.
     ///
     /// # Errors

@@ -2,11 +2,13 @@ mod cli;
 mod config;
 mod errors;
 
+use std::path::{Path, PathBuf};
+
 use clap::Parser;
 use cli::Cli;
 use color_eyre::{Result, eyre::bail};
 use config::Config;
-use vault_tasks_core::{TaskManager, init_logging};
+use vault_tasks_core::{TaskManager, init_logging, parser};
 
 fn main() -> Result<()> {
     crate::errors::init()?;
@@ -14,14 +16,18 @@ fn main() -> Result<()> {
 
     let args = Cli::parse();
     let config = Config::new(&args)?;
-    println!("{config:#?}");
+    let mut task_manager = TaskManager::load_from_config(&config.core)?;
     match args.command {
         cli::Commands::List {
             file_selector_args,
             filter_args,
-        } => println!(
-            "Listing tasks with file selector args: {file_selector_args:?} and filter args: {filter_args:?}"
-        ),
+        } => {
+            println!(
+                "Listing tasks with file selector args: {file_selector_args:?} and filter args: {filter_args:?}"
+            );
+
+            println!("{}", task_manager.tasks_refactored);
+        }
         cli::Commands::Add { task, args } => {
             if args.path.len() > 1 {
                 bail!(
@@ -30,17 +36,15 @@ fn main() -> Result<()> {
                 );
             }
 
-            
-            
-            let mut task_manager = TaskManager::load_from_config(&config.core)?;
-            task_manager.add_task(
-                &task,
-                args.path.first().and_then(|path| {
-                    // TODO: refactor add_task to take paths
-                    path.file_name()
-                        .map(|filename| filename.to_string_lossy().into_owned())
-                }),
-            );
+            let mut task_input = task.as_str();
+            let Some(path) = config.cli.drop_file_path else {
+                bail!("No drop file configured, can't add task");
+            };
+            match parser::task::parse_task(&mut task_input, &path, &config.core) {
+                Ok(task) => task_manager.add_task(&task)?,
+
+                Err(e) => bail!("Failed to parse task input: {e}"),
+            }
         }
 
         cli::Commands::Mark {
