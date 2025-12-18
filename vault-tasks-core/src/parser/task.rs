@@ -152,7 +152,7 @@ mod test {
             due_date: Some(Date::Day(NaiveDate::from_ymd_opt(year, 10, 15).unwrap())),
             priority: 0,
             state: State::Done,
-            line_number: Some(1),
+            line_number: None,
             ..Default::default()
         };
         assert_eq!(res, expected);
@@ -173,7 +173,7 @@ mod test {
             due_date: None,
             priority: 0,
             state: State::ToDo,
-            line_number: Some(1),
+            line_number: None,
             path: PathBuf::new(),
             is_today: false,
             completion: None,
