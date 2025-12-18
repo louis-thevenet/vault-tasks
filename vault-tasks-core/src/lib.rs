@@ -4,7 +4,7 @@ use std::{collections::HashSet, ffi::OsString, fmt::Display, iter::Peekable, pat
 use vault_data::Vaults;
 
 use filter::Filter;
-use tracing::error;
+use tracing::{error, warn};
 use vault_parser::VaultParser;
 
 use crate::{
@@ -76,7 +76,11 @@ impl TaskManager {
             .to_str()
             .is_some_and(str::is_empty)
         {
-            bail!( "No vault path provided (use `--vault-path <PATH>`) and no default path set in config file".to_string(), );
+            self.config.core.vault_path = std::env::current_dir()?;
+            warn!(
+                "No vault path provided (use `--vault-path <PATH>`) and no default path set in config file. Using working directory instead: {:?}",
+                self.config.core.vault_path
+            );
         }
         if !self.config.core.vault_path.exists() && !cfg!(test) {
             bail!(
@@ -85,7 +89,7 @@ impl TaskManager {
             );
         }
 
-        let vault_parser = VaultParser::new(config.clone());
+        let vault_parser = VaultParser::new(self.config.clone());
         let tasks = vault_parser.scan_vault()?;
 
         self.tasks_refactored = tasks;
