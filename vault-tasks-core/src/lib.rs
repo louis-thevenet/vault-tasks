@@ -1,14 +1,15 @@
 use color_eyre::{Result, eyre::bail};
 
-use std::{collections::HashSet, fmt::Display};
+use std::{collections::HashSet, ffi::OsString, fmt::Display, iter::Peekable, path::Iter};
 use vault_data::Vaults;
 
 use filter::Filter;
-use tracing::error;
+use tracing::{error, warn};
 use vault_parser::VaultParser;
 
 use crate::{
     config::TasksConfig,
+    task::Task,
     vault_data::{FileEntryNode, VaultNode},
 };
 
@@ -75,7 +76,11 @@ impl TaskManager {
             .to_str()
             .is_some_and(str::is_empty)
         {
-            bail!( "No vault path provided (use `--vault-path <PATH>`) and no default path set in config file".to_string(), );
+            self.config.core.vault_path = std::env::current_dir()?;
+            warn!(
+                "No vault path provided (use `--vault-path <PATH>`) and no default path set in config file. Using working directory instead: {:?}",
+                self.config.core.vault_path
+            );
         }
         if !self.config.core.vault_path.exists() && !cfg!(test) {
             bail!(
@@ -84,7 +89,7 @@ impl TaskManager {
             );
         }
 
-        let vault_parser = VaultParser::new(config.clone());
+        let vault_parser = VaultParser::new(self.config.clone());
         let tasks = vault_parser.scan_vault()?;
 
         self.tasks_refactored = tasks;
@@ -166,6 +171,10 @@ impl TaskManager {
         });
     }
 
+    pub fn add_task(&mut self, task: &Task) -> Result<()> {
+        task.fix_task_attributes(&self.config)?;
+        self.reload(&self.config.clone())
+    }
     /// Follows the `path` to retrieve the correct `VaultData`.
     ///
     /// # Errors

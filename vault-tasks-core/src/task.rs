@@ -94,7 +94,7 @@ impl Default for Task {
             state: State::ToDo,
             tags: None,
             description: None,
-            line_number: Some(1),
+            line_number: None,
             subtasks: vec![],
             path: PathBuf::new(),
             is_today: false,
@@ -279,7 +279,14 @@ impl Task {
         res.trim_end().to_string()
     }
 
+    /// Rewrite a task in its file with current attributes.
+    /// # Errors
+    /// If the file cannot be read or written to.
     pub fn fix_task_attributes(&self, config: &TasksConfig) -> Result<()> {
+        if !self.path.exists() {
+            // Create it
+            File::create(self.path.clone())?;
+        }
         if !self.path.is_file() {
             bail!(
                 "Tried to fix tasks attributes but {:?} is not a file",
