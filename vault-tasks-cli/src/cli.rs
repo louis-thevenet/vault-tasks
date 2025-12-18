@@ -30,8 +30,6 @@ pub(crate) enum Commands {
         // #[arg(short, long, allow_hyphen_values = true)]
         #[arg(allow_hyphen_values = true)]
         task: String,
-        #[command(flatten)]
-        args: FileSelectorArgs,
     },
     /// Change a task's state
     Mark {
@@ -79,7 +77,7 @@ pub(crate) struct FileSelectorArgs {
     /// If no paths are provided, the default path from config file will be used.
     /// If no default path is set, current working directory will be used.
     // #[arg(short, long)]
-    pub path: Vec<PathBuf>,
+    pub path: Option<PathBuf>,
 }
 
 /// Possible states for a task.

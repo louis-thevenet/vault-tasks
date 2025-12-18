@@ -2,12 +2,13 @@ mod cli;
 mod config;
 mod errors;
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use clap::Parser;
 use cli::Cli;
 use color_eyre::{Result, eyre::bail};
 use config::Config;
+use tracing::warn;
 use vault_tasks_core::{TaskManager, init_logging, parser};
 
 fn main() -> Result<()> {
@@ -28,17 +29,15 @@ fn main() -> Result<()> {
 
             println!("{}", task_manager.tasks_refactored);
         }
-        cli::Commands::Add { task, args } => {
-            if args.path.len() > 1 {
-                bail!(
-                    "Can't decide where to add new task when multiple paths are provided: {:?}",
-                    args.path
-                );
-            }
-
+        cli::Commands::Add { task } => {
             let mut task_input = task.as_str();
-            let Some(path) = config.cli.drop_file_path else {
-                bail!("No drop file configured, can't add task");
+            let path = if let Some(path) = config.cli.drop_file_path {
+                path
+            } else {
+                const PATH: &str = "task_drop_file.md";
+                warn!("No drop file configured, using default drop file name: {PATH}");
+
+                config.core.core.vault_path.clone().join(PATH)
             };
             match parser::task::parse_task(&mut task_input, &path, &config.core) {
                 Ok(task) => task_manager.add_task(&task)?,
