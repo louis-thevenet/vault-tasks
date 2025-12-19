@@ -42,9 +42,9 @@ async fn main() -> Result<()> {
             filename: filename_opt,
         }) => {
             let mut task_mgr = TaskManager::load_from_config(&config.core)?;
-            tasks
-                .iter()
-                .for_each(|task| task_mgr.add_task(task, filename_opt.clone()));
+            for task in tasks {
+                task_mgr.add_task(&task, filename_opt.clone())?;
+            }
             Ok(())
         }
         Some(cli::Commands::GenerateCompletions { shell }) => {

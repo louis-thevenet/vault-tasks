@@ -4,7 +4,7 @@ use std::{collections::HashSet, fmt::Display};
 use vault_data::Vaults;
 
 use filter::Filter;
-use tracing::error;
+use tracing::{error, warn};
 use vault_parser::VaultParser;
 
 use crate::{
@@ -50,6 +50,8 @@ pub enum Found {
     FileEntry(FileEntryNode),
 }
 impl TaskManager {
+    const DROP_FILE_DEFAULT_PATH: &str = "task_drop_file.md";
+
     /// Loads a vault from a `Config` and returns a `TaskManager`.
     ///
     /// # Errors
@@ -402,6 +404,32 @@ impl TaskManager {
             .root
             .iter()
             .any(|node| aux_node(node, selected_header_path, 0))
+    }
+    /// Adds a new task to the vault from a raw task input string.
+    /// Task will be added to the drop file configured in the `TasksConfig` or to a default drop file if none is configured.
+    /// # Errors
+    /// Will return an error if the task cannot be parsed or if it cannot be written to the vault.
+    pub fn add_task(&mut self, mut task_input: &str, filename_opt: Option<String>) -> Result<()> {
+        let path = filename_opt
+            .map(|filename| self.config.core.vault_path.join(filename))
+            .or_else(|| self.config.core.tasks_drop_file.clone())
+            .unwrap_or_else(|| {
+                warn!(
+                    "No drop file configured, using default drop filename: {}",
+                    Self::DROP_FILE_DEFAULT_PATH
+                );
+                self.config
+                    .core
+                    .vault_path
+                    .join(Self::DROP_FILE_DEFAULT_PATH)
+            });
+        match parser::task::parse_task(&mut task_input, &path, &self.config) {
+            Ok(task) => {
+                task.fix_task_attributes(&self.config)?;
+                self.reload(&self.config.clone())
+            }
+            Err(e) => bail!("Failed to parse task input: {e}"),
+        }
     }
 }
 impl Display for TaskManager {
