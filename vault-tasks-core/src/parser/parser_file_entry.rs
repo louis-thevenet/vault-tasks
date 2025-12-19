@@ -771,23 +771,23 @@ impl ParserFileEntry<'_> {
     }
 
     /// Removes any empty headers from a `FileEntry`
-    fn clean_file_entry(&self, file_entry: &mut FileEntryNode) -> Option<FileEntryNode> {
+    fn clean_file_entry(file_entry: &mut FileEntryNode) -> Option<FileEntryNode> {
         match file_entry {
             FileEntryNode::Header {
-                name,
+                name: _,
                 heading_level: _,
                 content,
             } => {
                 let mut actual_content = vec![];
                 for child in content.iter_mut() {
                     let mut child_clone = child.clone();
-                    if self.clean_file_entry(&mut child_clone).is_some() {
+                    if Self::clean_file_entry(&mut child_clone).is_some() {
                         actual_content.push(child_clone);
                     }
                 }
                 *content = actual_content;
-                // If the `config.tasks_drop_file` happens to be empty, don't drop it
-                if content.is_empty() && name != &self.config.core.tasks_drop_file {
+                // If header is empty, remove it
+                if content.is_empty() {
                     return None;
                 }
             }
@@ -818,7 +818,7 @@ impl ParserFileEntry<'_> {
                     add_global_tag(&mut entry, t);
                 }
             }
-            self.clean_file_entry(&mut entry)
+            Self::clean_file_entry(&mut entry)
         } else {
             None
         }
@@ -960,7 +960,7 @@ mod tests {
             }],
         });
         if let Some(mut entry) = res {
-            parser.clean_file_entry(&mut entry);
+            ParserFileEntry::clean_file_entry(&mut entry);
             assert_eq!(Some(entry), expected_after_cleaning);
         } else {
             panic!("Expected Some(NewFileEntry), got None");
