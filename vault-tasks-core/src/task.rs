@@ -94,7 +94,7 @@ impl Default for Task {
             state: State::ToDo,
             tags: None,
             description: None,
-            line_number: Some(1),
+            line_number: None,
             subtasks: vec![],
             path: PathBuf::new(),
             is_today: false,
