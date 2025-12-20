@@ -183,15 +183,80 @@ mod tests {
         let mut input = "tue";
         assert_eq!(parse_literal_day(&mut input), Ok("tue"));
 
-        let mut input = "Invalid day";
-        assert!(parse_literal_day(&mut input).is_err());
+        let mut input = "wed";
+        assert_eq!(parse_literal_day(&mut input), Ok("wed"));
+
+        let mut input = "thu";
+        assert_eq!(parse_literal_day(&mut input), Ok("thu"));
+
+        let mut input = "fri";
+        assert_eq!(parse_literal_day(&mut input), Ok("fri"));
+
+        let mut input = "sat";
+        assert_eq!(parse_literal_day(&mut input), Ok("sat"));
+
+        let mut input = "sun";
+        assert_eq!(parse_literal_day(&mut input), Ok("sun"));
 
         // Test with non-abbreviated day names
         let mut input = "monday";
         assert_eq!(parse_literal_day(&mut input), Ok("monday"));
 
+        let mut input = "tuesday";
+        assert_eq!(parse_literal_day(&mut input), Ok("tuesday"));
+
+        let mut input = "wednesday";
+        assert_eq!(parse_literal_day(&mut input), Ok("wednesday"));
+
+        let mut input = "thursday";
+        assert_eq!(parse_literal_day(&mut input), Ok("thursday"));
+
+        let mut input = "friday";
+        assert_eq!(parse_literal_day(&mut input), Ok("friday"));
+
+        let mut input = "saturday";
+        assert_eq!(parse_literal_day(&mut input), Ok("saturday"));
+
         let mut input = "sunday";
         assert_eq!(parse_literal_day(&mut input), Ok("sunday"));
+
+        // Test with invalid input
+        let mut input = "Invalid day";
+        assert!(parse_literal_day(&mut input).is_err());
+
+        let mut input = "xyz";
+        assert!(parse_literal_day(&mut input).is_err());
+
+        let mut input = "";
+        assert!(parse_literal_day(&mut input).is_err());
+
+        let mut input = "123";
+        assert!(parse_literal_day(&mut input).is_err());
+    }
+
+    #[test]
+    fn test_parse_literal_day_with_extra_text() {
+        // Test that parser only consumes the day name and leaves the rest
+        let mut input = "monday extra text";
+        assert_eq!(parse_literal_day(&mut input), Ok("monday"));
+        assert_eq!(input, " extra text");
+
+        let mut input = "fri-something";
+        assert_eq!(parse_literal_day(&mut input), Ok("fri"));
+        assert_eq!(input, "-something");
+    }
+
+    #[test]
+    fn test_parse_literal_day_case_sensitivity() {
+        // Test that parser is case-sensitive (should fail on uppercase)
+        let mut input = "Monday";
+        assert!(parse_literal_day(&mut input).is_err());
+
+        let mut input = "MON";
+        assert!(parse_literal_day(&mut input).is_err());
+
+        let mut input = "FRIDAY";
+        assert!(parse_literal_day(&mut input).is_err());
     }
 
     #[test]
