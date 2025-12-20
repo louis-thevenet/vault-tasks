@@ -277,7 +277,6 @@ impl ParserFileEntry<'_> {
         name: String,
         heading_level: usize,
         target_header_depth: usize,
-        target_task_depth: usize,
     ) -> color_eyre::Result<()> {
         fn insert_at_aux(
             file_entry: &mut FileEntryNode,
@@ -285,8 +284,6 @@ impl ParserFileEntry<'_> {
             heading_level: usize,
             current_header_depth: usize,
             target_header_depth: usize,
-            current_task_depth: usize,
-            target_task_depth: usize,
         ) -> color_eyre::Result<()> {
             match file_entry {
                 FileEntryNode::Header {
@@ -301,29 +298,12 @@ impl ParserFileEntry<'_> {
                         }
                         std::cmp::Ordering::Equal => {
                             // Found correct header level
-                            if current_task_depth == target_task_depth {
-                                header_children.push(FileEntryNode::Header {
-                                    name,
-                                    heading_level,
-                                    content: vec![],
-                                });
-                                Ok(())
-                            } else {
-                                for child in header_children.iter_mut().rev() {
-                                    if let FileEntryNode::Task(_) = child {
-                                        return insert_at_aux(
-                                            child,
-                                            name,
-                                            heading_level,
-                                            current_header_depth,
-                                            target_header_depth,
-                                            current_task_depth + 1,
-                                            target_task_depth,
-                                        );
-                                    }
-                                }
-                                bail!("Couldn't find correct parent task to insert header")
-                            }
+                            header_children.push(FileEntryNode::Header {
+                                name,
+                                heading_level,
+                                content: vec![],
+                            });
+                            Ok(())
                         }
                         std::cmp::Ordering::Less => {
                             // Still haven't found correct header level, going deeper
@@ -335,8 +315,6 @@ impl ParserFileEntry<'_> {
                                         heading_level,
                                         current_header_depth + 1,
                                         target_header_depth,
-                                        current_task_depth,
-                                        target_task_depth,
                                     );
                                 }
                             }
@@ -350,18 +328,7 @@ impl ParserFileEntry<'_> {
                         }
                     }
                 }
-                FileEntryNode::Task(task) => {
-                    let mut current_task_depth = current_task_depth;
-                    let mut last_task = task;
-                    while current_task_depth < target_task_depth {
-                        if last_task.subtasks.is_empty() {
-                            bail!(
-                                "Could not find parent task to insert header, indenting may be wrong"
-                            )
-                        }
-                        last_task = last_task.subtasks.last_mut().unwrap();
-                        current_task_depth += 1;
-                    }
+                FileEntryNode::Task(_task) => {
                     bail!("Error: tried to insert a header into a task")
                 }
                 FileEntryNode::Tracker(_tracker) => {
@@ -372,15 +339,7 @@ impl ParserFileEntry<'_> {
         if let Some(file_entry) = file_entry.last_mut()
             && target_header_depth > 0
         {
-            insert_at_aux(
-                file_entry,
-                name,
-                heading_level,
-                1,
-                target_header_depth,
-                0,
-                target_task_depth,
-            )
+            insert_at_aux(file_entry, name, heading_level, 1, target_header_depth)
         } else {
             file_entry.push(FileEntryNode::Header {
                 name,
@@ -627,14 +586,8 @@ impl ParserFileEntry<'_> {
                     );
                 }
                 Ok(FileToken::Header((header, new_depth))) => {
-                    if Self::insert_header_at(
-                        file_entry,
-                        header.clone(),
-                        new_depth,
-                        new_depth - 1,
-                        0,
-                    )
-                    .is_err()
+                    if Self::insert_header_at(file_entry, header.clone(), new_depth, new_depth - 1)
+                        .is_err()
                     {
                         error!("Failed to insert header {}", header);
                     }
