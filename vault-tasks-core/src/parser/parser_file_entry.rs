@@ -113,7 +113,7 @@ impl ParserFileEntry<'_> {
         Ok(FileToken::EndOfCodeBlock)
     }
     fn insert_task_at(
-        file_entry: &mut FileEntryNode,
+        file_entry: &mut Vec<FileEntryNode>,
         task: Task,
         header_depth: usize,
         indent_length: usize,
@@ -202,10 +202,15 @@ impl ParserFileEntry<'_> {
                 }
             }
         }
-        append_task_aux(file_entry, task, 0, header_depth, 0, indent_length)
+        if let Some(file_entry) = file_entry.last_mut() {
+            append_task_aux(file_entry, task, 1, header_depth, 0, indent_length)
+        } else {
+            file_entry.push(FileEntryNode::Task(task));
+            Ok(())
+        }
     }
     fn insert_tracker_at(
-        file_entry: &mut FileEntryNode,
+        file_entry: &mut Vec<FileEntryNode>,
         tracker: Tracker,
         header_depth: usize,
     ) -> color_eyre::Result<()> {
@@ -258,11 +263,17 @@ impl ParserFileEntry<'_> {
                 }
             }
         }
-        append_tracker_aux(file_entry, tracker, 0, header_depth)
+        if let Some(file_entry) = file_entry.last_mut() {
+            append_tracker_aux(file_entry, tracker, 1, header_depth)
+        } else {
+            file_entry.push(FileEntryNode::Tracker(tracker));
+            Ok(())
+        }
     }
     /// Inserts a header at the specific depth in `file_entry`.
+    #[allow(clippy::too_many_lines)]
     fn insert_header_at(
-        file_entry: &mut FileEntryNode,
+        file_entry: &mut Vec<FileEntryNode>,
         name: String,
         heading_level: usize,
         target_header_depth: usize,
@@ -358,20 +369,31 @@ impl ParserFileEntry<'_> {
                 }
             }
         }
-        insert_at_aux(
-            file_entry,
-            name,
-            heading_level,
-            0,
-            target_header_depth,
-            0,
-            target_task_depth,
-        )
+        if let Some(file_entry) = file_entry.last_mut()
+            && target_header_depth > 0
+        {
+            insert_at_aux(
+                file_entry,
+                name,
+                heading_level,
+                1,
+                target_header_depth,
+                0,
+                target_task_depth,
+            )
+        } else {
+            file_entry.push(FileEntryNode::Header {
+                name,
+                heading_level,
+                content: vec![],
+            });
+            Ok(())
+        }
     }
 
     /// Appends `desc` to the description of an existing `Task` in the `FileEntry`.
     fn append_description(
-        file_entry: &mut FileEntryNode,
+        file_entry: &mut [FileEntryNode],
         desc: String,
         target_header_depth: usize,
         target_task_depth: usize,
@@ -479,14 +501,17 @@ impl ParserFileEntry<'_> {
                 }
             }
         }
-        append_description_aux(
-            file_entry,
-            desc,
-            0,
-            target_header_depth,
-            0,
-            target_task_depth,
-        )
+        match file_entry.last_mut() {
+            Some(file_entry) => append_description_aux(
+                file_entry,
+                desc,
+                1,
+                target_header_depth,
+                0,
+                target_task_depth,
+            ),
+            None => bail!("Failed to insert description: no file entry"),
+        }
     }
 
     /// Recursively parses the input file passed as a string.
@@ -494,7 +519,7 @@ impl ParserFileEntry<'_> {
     fn parse_file_aux<'a, I>(
         &self,
         mut input: Peekable<I>,
-        file_entry: &mut Option<FileEntryNode>,
+        file_entry: &mut Vec<FileEntryNode>,
         file_tags: &mut Vec<String>,
         header_depth: usize,
         comment_depth: usize,
@@ -581,20 +606,9 @@ impl ParserFileEntry<'_> {
             match parser.parse_next(&mut line) {
                 Ok(FileToken::Task(mut task, indent_length)) => {
                     task.line_number = Some(line_number + 1); // line 1 was element 0 of iterator
-                    if file_entry.is_none() {
-                        *file_entry = Some(FileEntryNode::Header {
-                            name: self
-                                .path
-                                .file_name()
-                                .unwrap_or_default()
-                                .to_string_lossy()
-                                .to_string(),
-                            heading_level: 0,
-                            content: vec![],
-                        });
-                    }
+
                     if Self::insert_task_at(
-                        file_entry.as_mut().unwrap(), // we ensured it's Some above
+                        file_entry,
                         task,
                         header_depth,
                         indent_length / self.config.core.indent_length,
@@ -613,20 +627,8 @@ impl ParserFileEntry<'_> {
                     );
                 }
                 Ok(FileToken::Header((header, new_depth))) => {
-                    if file_entry.is_none() {
-                        *file_entry = Some(FileEntryNode::Header {
-                            name: self
-                                .path
-                                .file_name()
-                                .unwrap_or_default()
-                                .to_string_lossy()
-                                .to_string(),
-                            heading_level: 0,
-                            content: vec![],
-                        });
-                    }
                     if Self::insert_header_at(
-                        file_entry.as_mut().unwrap(), // we ensured it's Some above
+                        file_entry,
                         header.clone(),
                         new_depth,
                         new_depth - 1,
@@ -646,14 +648,13 @@ impl ParserFileEntry<'_> {
                     );
                 }
                 Ok(FileToken::Description(description, indent_length)) => {
-                    if let Some(entry) = file_entry.as_mut()
-                        && Self::append_description(
-                            entry,
-                            description.clone(),
-                            header_depth,
-                            indent_length / self.config.core.indent_length,
-                        )
-                        .is_err()
+                    if Self::append_description(
+                        file_entry,
+                        description.clone(),
+                        header_depth,
+                        indent_length / self.config.core.indent_length,
+                    )
+                    .is_err()
                     {
                         error!("Failed to insert description {description}");
                     }
@@ -701,16 +702,12 @@ impl ParserFileEntry<'_> {
                                     input.next();
                                 }
                                 let fixed_tracker = tracker.add_blanks(self.config);
-                                if let Some(entry) = file_entry.as_mut() {
-                                    if Self::insert_tracker_at(entry, fixed_tracker, header_depth)
-                                        .is_ok()
-                                    {
-                                        info!("Successfully inserted Tracker");
-                                    } else {
-                                        error!("Failed to insert tracker");
-                                    }
+                                if Self::insert_tracker_at(file_entry, fixed_tracker, header_depth)
+                                    .is_ok()
+                                {
+                                    info!("Successfully inserted Tracker");
                                 } else {
-                                    error!("Failed to insert tracker: no file entry");
+                                    error!("Failed to insert tracker");
                                 }
                             } else {
                                 error!("Failed to parse tracker separator");
@@ -771,37 +768,42 @@ impl ParserFileEntry<'_> {
     }
 
     /// Removes any empty headers from a `FileEntry`
-    fn clean_file_entry(file_entry: &mut FileEntryNode) -> Option<FileEntryNode> {
-        match file_entry {
+    /// Returns `true` if the `file_entry` is not empty after cleaning, `false` otherwise.
+    fn clean_file_entry(file_entry: &FileEntryNode) -> Option<FileEntryNode> {
+        match &file_entry {
             FileEntryNode::Header {
-                name: _,
-                heading_level: _,
+                name,
+                heading_level,
                 content,
             } => {
                 let mut actual_content = vec![];
-                for child in content.iter_mut() {
-                    let mut child_clone = child.clone();
-                    if Self::clean_file_entry(&mut child_clone).is_some() {
+                for child in content {
+                    let child_clone = child.clone();
+                    if Self::clean_file_entry(&child_clone).is_some() {
                         actual_content.push(child_clone);
                     }
                 }
-                *content = actual_content;
-                // If header is empty, remove it
-                if content.is_empty() {
+                // If header is empty, discard it, else replace children with new ones
+                if actual_content.is_empty() {
                     return None;
                 }
+                return Some(FileEntryNode::Header {
+                    content: actual_content,
+                    name: name.to_string(),
+                    heading_level: *heading_level,
+                });
             }
             FileEntryNode::Task(_task) => (),
             FileEntryNode::Tracker(_tracker) => (),
         }
-        Some(file_entry.to_owned())
+        Some(file_entry.clone())
     }
 
-    pub fn parse_file(&mut self, input: &&str) -> Option<FileEntryNode> {
+    pub fn parse_file(&mut self, input: &&str) -> Vec<FileEntryNode> {
         let replaced = input.replace('\r', "");
         let lines = replaced.split('\n');
 
-        let mut res = None;
+        let mut res = vec![];
         let mut file_tags = vec![];
         self.parse_file_aux(
             lines.enumerate().peekable(),
@@ -811,17 +813,19 @@ impl ParserFileEntry<'_> {
             0,
             false,
         );
+        res = res
+            .iter()
+            .filter_map(ParserFileEntry::clean_file_entry)
+            .collect();
 
-        if let Some(mut entry) = res {
+        for entry in &mut res {
             if self.config.core.file_tags_propagation {
                 for t in &file_tags {
-                    add_global_tag(&mut entry, t);
+                    add_global_tag(entry, t);
                 }
             }
-            Self::clean_file_entry(&mut entry)
-        } else {
-            None
         }
+        res
     }
 }
 
@@ -889,82 +893,69 @@ mod tests {
         let config = TasksConfig {
             ..Default::default()
         };
-        let mut res = Some(FileEntryNode::Header {
-            name: "Test".to_string(),
-            heading_level: 0,
-            content: vec![],
-        });
+        let mut res = vec![];
         let parser = ParserFileEntry {
             config: &config,
             path: PathBuf::new(),
         };
-        let expected = Some(FileEntryNode::Header {
-            name: "Test".to_string(),
-            heading_level: 0,
-            content: vec![
-                FileEntryNode::Header {
-                    name: "1 useless".to_string(),
-                    heading_level: 1,
-                    content: vec![FileEntryNode::Header {
-                        name: "2 useless".to_string(),
-                        heading_level: 2,
-                        content: vec![FileEntryNode::Header {
-                            name: "3 useless".to_string(),
-                            heading_level: 3,
-                            content: vec![],
-                        }],
-                    }],
-                },
-                FileEntryNode::Header {
-                    name: "2 useful".to_string(),
-                    heading_level: 1,
-                    content: vec![
-                        FileEntryNode::Header {
-                            name: "3 useless".to_string(),
-                            heading_level: 3,
-                            content: vec![],
-                        },
-                        FileEntryNode::Header {
-                            name: "4 useful".to_string(),
-                            heading_level: 2,
-                            content: vec![FileEntryNode::Task(Task {
-                                name: "test".to_string(),
-                                line_number: Some(8),
-                                description: Some("test\ndesc".to_string()),
-                                ..Default::default()
-                            })],
-                        },
-                    ],
-                },
-            ],
-        });
-        parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
-        assert_eq!(res, expected);
-
-        let expected_after_cleaning = Some(FileEntryNode::Header {
-            name: "Test".to_string(),
-            heading_level: 0,
-            content: vec![FileEntryNode::Header {
-                name: "2 useful".to_string(),
+        let expected = vec![
+            FileEntryNode::Header {
+                name: "1 useless".to_string(),
                 heading_level: 1,
                 content: vec![FileEntryNode::Header {
-                    name: "4 useful".to_string(),
+                    name: "2 useless".to_string(),
                     heading_level: 2,
-                    content: vec![FileEntryNode::Task(Task {
-                        name: "test".to_string(),
-                        line_number: Some(8),
-                        description: Some("test\ndesc".to_string()),
-                        ..Default::default()
-                    })],
+                    content: vec![FileEntryNode::Header {
+                        name: "3 useless".to_string(),
+                        heading_level: 3,
+                        content: vec![],
+                    }],
                 }],
+            },
+            FileEntryNode::Header {
+                name: "2 useful".to_string(),
+                heading_level: 1,
+                content: vec![
+                    FileEntryNode::Header {
+                        name: "3 useless".to_string(),
+                        heading_level: 3,
+                        content: vec![],
+                    },
+                    FileEntryNode::Header {
+                        name: "4 useful".to_string(),
+                        heading_level: 2,
+                        content: vec![FileEntryNode::Task(Task {
+                            name: "test".to_string(),
+                            line_number: Some(8),
+                            description: Some("test\ndesc".to_string()),
+                            ..Default::default()
+                        })],
+                    },
+                ],
+            },
+        ];
+        parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
+        pretty_assertions::assert_eq!(res, expected);
+
+        let expected_after_cleaning = vec![FileEntryNode::Header {
+            name: "2 useful".to_string(),
+            heading_level: 1,
+            content: vec![FileEntryNode::Header {
+                name: "4 useful".to_string(),
+                heading_level: 2,
+                content: vec![FileEntryNode::Task(Task {
+                    name: "test".to_string(),
+                    line_number: Some(8),
+                    description: Some("test\ndesc".to_string()),
+                    ..Default::default()
+                })],
             }],
-        });
-        if let Some(mut entry) = res {
-            ParserFileEntry::clean_file_entry(&mut entry);
-            assert_eq!(Some(entry), expected_after_cleaning);
-        } else {
-            panic!("Expected Some(NewFileEntry), got None");
-        }
+        }];
+        res = res
+            .iter()
+            .filter_map(ParserFileEntry::clean_file_entry)
+            .collect();
+        pretty_assertions::assert_eq!(res, expected_after_cleaning);
     }
     #[test]
     fn test_simple_input() {
@@ -987,64 +978,55 @@ mod tests {
         let config = TasksConfig {
             ..Default::default()
         };
-        let mut res = Some(FileEntryNode::Header {
-            name: "Test".to_string(),
-            heading_level: 0,
-            content: vec![],
-        });
+        let mut res = vec![];
         let parser = ParserFileEntry {
             config: &config,
             path: PathBuf::new(),
         };
-        let expected = Some(FileEntryNode::Header {
-            name: "Test".to_string(),
-            heading_level: 0,
-            content: vec![FileEntryNode::Header {
-                name: "1 Header".to_string(),
-                heading_level: 1,
-                content: vec![
-                    FileEntryNode::Task(Task {
+        let expected = vec![FileEntryNode::Header {
+            name: "1 Header".to_string(),
+            heading_level: 1,
+            content: vec![
+                FileEntryNode::Task(Task {
+                    name: "Task".to_string(),
+                    line_number: Some(2),
+                    ..Default::default()
+                }),
+                FileEntryNode::Header {
+                    name: "2 Header".to_string(),
+                    heading_level: 2,
+                    content: vec![FileEntryNode::Header {
+                        name: "3 Header".to_string(),
+                        heading_level: 3,
+                        content: vec![
+                            FileEntryNode::Task(Task {
+                                name: "Task".to_string(),
+                                line_number: Some(6),
+                                ..Default::default()
+                            }),
+                            FileEntryNode::Task(Task {
+                                name: "Task 2".to_string(),
+                                line_number: Some(7),
+                                ..Default::default()
+                            }),
+                        ],
+                    }],
+                },
+                FileEntryNode::Header {
+                    name: "2 Header 2".to_string(),
+                    heading_level: 2,
+                    content: vec![FileEntryNode::Task(Task {
                         name: "Task".to_string(),
-                        line_number: Some(2),
+                        line_number: Some(9),
+                        description: Some("Description".to_string()),
                         ..Default::default()
-                    }),
-                    FileEntryNode::Header {
-                        name: "2 Header".to_string(),
-                        heading_level: 2,
-                        content: vec![FileEntryNode::Header {
-                            name: "3 Header".to_string(),
-                            heading_level: 3,
-                            content: vec![
-                                FileEntryNode::Task(Task {
-                                    name: "Task".to_string(),
-                                    line_number: Some(6),
-                                    ..Default::default()
-                                }),
-                                FileEntryNode::Task(Task {
-                                    name: "Task 2".to_string(),
-                                    line_number: Some(7),
-                                    ..Default::default()
-                                }),
-                            ],
-                        }],
-                    },
-                    FileEntryNode::Header {
-                        name: "2 Header 2".to_string(),
-                        heading_level: 2,
-                        content: vec![FileEntryNode::Task(Task {
-                            name: "Task".to_string(),
-                            line_number: Some(9),
-                            description: Some("Description".to_string()),
-                            ..Default::default()
-                        })],
-                    },
-                ],
-            }],
-        });
+                    })],
+                },
+            ],
+        }];
         parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
         assert_eq!(res, expected);
     }
-    // TODO: Refactor this test after add_global_tag is refactored to use NewFileEntry
     // #[test]
     // fn test_insert_global_tag() {
     //     let input = r"# 1 Header
@@ -1052,7 +1034,7 @@ mod tests {
 
     // ## 2 Header
     // ### 3 Header
-    // - [ ] Task
+    // - [ ] Task 1
     // - [ ] Task 2
     // ## 2 Header 2
     // - [ ] Task
@@ -1066,14 +1048,16 @@ mod tests {
     //     let config = TasksConfig {
     //         ..Default::default()
     //     };
-    //     let mut res = VaultData::Header(0, "Test".to_string(), vec![]);
+    //     let mut res = vec![];
     //     let parser = ParserFileEntry {
     //         config: &config,
     //         path: PathBuf::new(),
     //     };
     //     parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
-    //     add_global_tag(&mut res, &String::from("test"));
-    //     assert_snapshot!(res);
+    //     for entry in &mut res {
+    //         add_global_tag(entry, &String::from("test"));
+    //     }
+    //     assert_snapshot!(res.first().unwrap());
     // }
     #[test]
     fn test_fake_description() {
@@ -1091,35 +1075,27 @@ mod tests {
         let config = TasksConfig {
             ..Default::default()
         };
-        let mut res = Some(FileEntryNode::Header {
-            name: "Test".to_string(),
-            heading_level: 0,
-            content: vec![],
-        });
+        let mut res = vec![];
         let parser = ParserFileEntry {
             config: &config,
             path: PathBuf::new(),
         };
-        let expected = Some(FileEntryNode::Header {
-            name: "Test".to_string(),
-            heading_level: 0,
-            content: vec![FileEntryNode::Header {
-                name: "1 Header".to_string(),
-                heading_level: 1,
-                content: vec![
-                    FileEntryNode::Task(Task {
-                        name: "Task".to_string(),
-                        line_number: Some(3),
-                        ..Default::default()
-                    }),
-                    FileEntryNode::Header {
-                        name: "2 Header".to_string(),
-                        heading_level: 2,
-                        content: vec![],
-                    },
-                ],
-            }],
-        });
+        let expected = vec![FileEntryNode::Header {
+            name: "1 Header".to_string(),
+            heading_level: 1,
+            content: vec![
+                FileEntryNode::Task(Task {
+                    name: "Task".to_string(),
+                    line_number: Some(3),
+                    ..Default::default()
+                }),
+                FileEntryNode::Header {
+                    name: "2 Header".to_string(),
+                    heading_level: 2,
+                    content: vec![],
+                },
+            ],
+        }];
         parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
         assert_eq!(res, expected);
     }
@@ -1138,42 +1114,34 @@ mod tests {
         let config = TasksConfig {
             ..Default::default()
         };
-        let mut res = Some(FileEntryNode::Header {
-            name: "Test".to_string(),
-            heading_level: 0,
-            content: vec![],
-        });
+        let mut res = vec![];
         let parser = ParserFileEntry {
             config: &config,
             path: PathBuf::new(),
         };
-        let expected = Some(FileEntryNode::Header {
-            name: "Test".to_string(),
-            heading_level: 0,
+        let expected = vec![FileEntryNode::Header {
+            name: "1 Header".to_string(),
+            heading_level: 1,
             content: vec![FileEntryNode::Header {
-                name: "1 Header".to_string(),
-                heading_level: 1,
-                content: vec![FileEntryNode::Header {
-                    name: "Test".to_string(),
-                    heading_level: 2,
-                    content: vec![FileEntryNode::Task(Task {
-                        name: "Test a".to_string(),
-                        line_number: Some(3),
+                name: "Test".to_string(),
+                heading_level: 2,
+                content: vec![FileEntryNode::Task(Task {
+                    name: "Test a".to_string(),
+                    line_number: Some(3),
+                    subtasks: vec![Task {
+                        name: "Test b".to_string(),
+                        line_number: Some(4),
                         subtasks: vec![Task {
-                            name: "Test b".to_string(),
-                            line_number: Some(4),
-                            subtasks: vec![Task {
-                                name: "Test c".to_string(),
-                                line_number: Some(5),
-                                ..Default::default()
-                            }],
+                            name: "Test c".to_string(),
+                            line_number: Some(5),
                             ..Default::default()
                         }],
                         ..Default::default()
-                    })],
-                }],
+                    }],
+                    ..Default::default()
+                })],
             }],
-        });
+        }];
         parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
         println!("{res:#?}");
         assert_eq!(res, expected);
@@ -1206,17 +1174,13 @@ mod tests {
         let config = TasksConfig {
             ..Default::default()
         };
-        let mut res = Some(FileEntryNode::Header {
-            name: "Test".to_string(),
-            heading_level: 0,
-            content: vec![],
-        });
+        let mut res = vec![];
         let parser = ParserFileEntry {
             config: &config,
             path: PathBuf::new(),
         };
         parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
-        assert_snapshot!(res.unwrap());
+        assert_snapshot!(res.first().unwrap());
     }
     #[test]
     fn test_commented_task() {
@@ -1235,17 +1199,13 @@ mod tests {
         let config = TasksConfig {
             ..Default::default()
         };
-        let mut res = Some(FileEntryNode::Header {
-            name: "Test".to_string(),
-            heading_level: 0,
-            content: vec![],
-        });
+        let mut res = vec![];
         let parser = ParserFileEntry {
             config: &config,
             path: PathBuf::new(),
         };
         parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
-        assert_snapshot!(res.unwrap());
+        assert_snapshot!(res.first().unwrap());
     }
     #[test]
     fn test_code_block_task() {
@@ -1262,16 +1222,12 @@ mod tests {
         let config = TasksConfig {
             ..Default::default()
         };
-        let mut res = Some(FileEntryNode::Header {
-            name: "Test".to_string(),
-            heading_level: 0,
-            content: vec![],
-        });
+        let mut res = vec![];
         let parser = ParserFileEntry {
             config: &config,
             path: PathBuf::new(),
         };
         parser.parse_file_aux(input, &mut res, &mut vec![], 0, 0, false);
-        assert_snapshot!(res.unwrap());
+        assert_snapshot!(res.first().unwrap());
     }
 }

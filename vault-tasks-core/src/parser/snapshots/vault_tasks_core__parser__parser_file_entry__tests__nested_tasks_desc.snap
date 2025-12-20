@@ -1,27 +1,25 @@
 ---
 source: vault-tasks-core/src/parser/parser_file_entry.rs
-expression: res
+expression: res.first().unwrap()
 ---
-Test
-‾‾‾‾
-	1 Header
-	‾‾‾‾‾‾‾‾
-		❌ t1
-		t1
-		t1
-		t1
-		t1
+1 Header
+‾‾‾‾‾‾‾‾
+	❌ t1
+	t1
+	t1
+	t1
+	t1
+	
+		❌ t2
+		t2
+		t2
+		t2
+		t2
 		
-			❌ t2
-			t2
-			t2
-			t2
-			t2
+			❌ t3
+			t3
+			t3
 			
-				❌ t3
-				t3
-				t3
-				
-					❌ t4
-					t4
-					t4
+				❌ t4
+				t4
+				t4

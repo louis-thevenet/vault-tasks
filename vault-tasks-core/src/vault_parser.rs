@@ -89,11 +89,13 @@ impl VaultParser {
                     debug!("Ignoring {name:?} (not a .md file)");
                     continue;
                 }
-                if let Some(file_tasks) = self.parse_file(&entry) {
+                let inner_content = self.parse_file(&entry);
+                // filter out empty files
+                if !inner_content.is_empty() {
                     content.push(VaultNode::File {
                         name: name.to_string(),
                         path: entry_path.clone(),
-                        content: vec![file_tasks],
+                        content: inner_content,
                     });
                 }
             }
@@ -101,7 +103,7 @@ impl VaultParser {
         Ok(())
     }
 
-    fn parse_file(&self, entry: &DirEntry) -> Option<FileEntryNode> {
+    fn parse_file(&self, entry: &DirEntry) -> Vec<FileEntryNode> {
         debug!("Parsing {:?}", entry.file_name());
         let content = fs::read_to_string(entry.path()).unwrap_or_default();
         let mut parser = ParserFileEntry {
