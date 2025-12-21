@@ -147,9 +147,6 @@ pub fn filter_tasks_to_vec(vault_data: &Vaults, filter: &Filter) -> Vec<Task> {
                     filter_tasks_from_file_entry(FileEntryNode::Task(t.clone()), filter, res);
                 });
             }
-            FileEntryNode::Tracker(_tracker) => {} // Don't collect trackers in the result
-                                                   // It's only used by the Filter and Calendar
-                                                   // tabs and we don't want to display trackers there
         }
     }
     fn filter_tasks_from_node(node: &VaultNode, filter: &Filter, res: &mut Vec<Task>) {
@@ -225,17 +222,6 @@ pub fn filter(vault_data: &Vaults, task_filter: &Option<Filter>) -> Option<Vault
                     }))
                 }
             }
-            FileEntryNode::Tracker(tracker) => {
-                // We keep the tracker if its name matches the filter task's name
-                // But we don't look at the task's state
-                // I might want to refactor the Filter to allow parsing a Tracker from
-                // the input string later.
-                if names_match(&tracker.name, &task_filter.task.name) {
-                    Some(FileEntryNode::Tracker(tracker.clone()))
-                } else {
-                    None
-                }
-            }
         }
     }
     fn filter_node(node: &VaultNode, filter: &Filter) -> Option<VaultNode> {
@@ -256,7 +242,7 @@ pub fn filter(vault_data: &Vaults, task_filter: &Option<Filter>) -> Option<Vault
                     None
                 } else {
                     Some(VaultNode::Vault {
-                        name: name.to_string(),
+                        name: name.clone(),
                         content: actual_children,
                         path: path.clone(),
                     })

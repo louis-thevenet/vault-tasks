@@ -87,8 +87,6 @@ pub struct CoreConfig {
     pub(crate) indent_length: usize,
     #[serde(default)]
     pub(crate) tasks_drop_file: Option<PathBuf>,
-    #[serde(default)]
-    pub(crate) tracker_extra_blanks: usize,
 }
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct DisplayConfig {
@@ -207,11 +205,6 @@ impl TasksConfig {
                     default_config.core.tasks_drop_file
                 } else {
                     user_config.core.tasks_drop_file
-                },
-                tracker_extra_blanks: if user_config.core.tracker_extra_blanks == 0 {
-                    default_config.core.tracker_extra_blanks
-                } else {
-                    user_config.core.tracker_extra_blanks
                 },
             },
 

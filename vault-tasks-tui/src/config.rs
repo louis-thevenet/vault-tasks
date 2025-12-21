@@ -34,8 +34,6 @@ pub struct Settings {
     pub explorer_default_search_string: String,
     #[serde(default)]
     pub filter_default_search_string: String,
-    #[serde(default)]
-    pub invert_tracker_entries: bool,
 }
 
 #[derive(Clone, Debug, Deserialize)]

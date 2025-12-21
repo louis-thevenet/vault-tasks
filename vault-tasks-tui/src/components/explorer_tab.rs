@@ -32,7 +32,6 @@ mod utils;
 pub const FILE_EMOJI: &str = "📄";
 pub const DIRECTORY_EMOJI: &str = "📁";
 pub const WARNING_EMOJI: &str = "⚠️";
-pub const TRACKER_EMOJI: &str = "📊";
 
 /// Struct that helps with drawing the component
 struct ExplorerArea {
@@ -86,9 +85,6 @@ impl ExplorerTab<'_> {
                 .map(FileEntryNode::Task)
                 .map(Found::FileEntry)
                 .collect(),
-            Found::FileEntry(FileEntryNode::Tracker(t)) => {
-                vec![Found::FileEntry(FileEntryNode::Tracker(t))]
-            }
         }
     }
     pub(super) fn update_left_entries(&mut self) -> Result<()> {
@@ -153,9 +149,6 @@ impl ExplorerTab<'_> {
         self.entries_right_view = match self.task_mgr.resolve_path(&path_to_preview) {
             Ok(Found::FileEntry(FileEntryNode::Task(t))) => {
                 vec![Found::FileEntry(FileEntryNode::Task(t))]
-            }
-            Ok(Found::FileEntry(FileEntryNode::Tracker(t))) => {
-                vec![Found::FileEntry(FileEntryNode::Tracker(t))]
             }
             Ok(res) => Self::get_children(res),
             Err(_e) => vec![],

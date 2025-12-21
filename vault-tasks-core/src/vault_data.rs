@@ -2,7 +2,7 @@ use std::{fmt::Display, path::PathBuf};
 
 use format_utils::{write_indent, write_underline_with_indent};
 
-use super::{task::Task, tracker::Tracker};
+use super::task::Task;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// A node in the vault data structure, representing either a vault, directory, or file.
@@ -53,7 +53,7 @@ impl Display for VaultNode {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// An entry in a file, representing either a header, task, or tracker.
+/// An entry in a file, representing either a header or task.
 pub enum FileEntryNode {
     Header {
         name: String,
@@ -61,7 +61,6 @@ pub enum FileEntryNode {
         content: Vec<FileEntryNode>,
     },
     Task(Task),
-    Tracker(Tracker),
 }
 
 impl FileEntryNode {
@@ -94,12 +93,6 @@ impl FileEntryNode {
                         write_indent(depth + 1, f)?;
                         writeln!(f, "{line}")?;
                     }
-                }
-            }
-            FileEntryNode::Tracker(tracker) => {
-                for line in tracker.to_string().replace('\r', "").split('\n') {
-                    write_indent(depth, f)?;
-                    writeln!(f, "{line}")?;
                 }
             }
         }

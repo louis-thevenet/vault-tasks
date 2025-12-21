@@ -3,4 +3,3 @@ mod parser_date;
 pub(crate) mod parser_file_entry;
 mod parser_time;
 pub mod task;
-mod tracker;
