@@ -21,7 +21,7 @@ winnow = "0.7.14"
 tabled = "0.20.0"
 
 [dev-dependencies]
-insta = {version = "1.44.3", features = ["yaml"]}
+insta = {version = "1.45.0", features = ["yaml"]}
 
 [package]
 name = "vault-tasks-core"
