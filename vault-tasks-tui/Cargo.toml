@@ -48,7 +48,7 @@ clap_complete = "4.5.61"
 vault-tasks-core = {path = "../vault-tasks-core"}
 
 [dev-dependencies]
-insta = {version = "1.44.3", features = ["yaml"]}
+insta = {version = "1.45.0", features = ["yaml"]}
 
 [package]
 name = "vault-tasks-tui"
