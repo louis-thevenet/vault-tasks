@@ -6,7 +6,7 @@ use vault_tasks_core::{
     vault_data::{FileEntryNode, VaultNode},
 };
 
-use super::{DIRECTORY_EMOJI, ExplorerTab, FILE_EMOJI, TRACKER_EMOJI};
+use super::{DIRECTORY_EMOJI, ExplorerTab, FILE_EMOJI};
 use color_eyre::Result;
 use color_eyre::eyre::bail;
 use std::cmp::Ordering;
@@ -50,9 +50,6 @@ impl ExplorerTab<'_> {
             }) => ("#".repeat(*heading_level).clone(), name.clone()),
             Found::FileEntry(FileEntryNode::Task(task)) => {
                 (task.state.to_string(), task.name.clone())
-            }
-            Found::FileEntry(FileEntryNode::Tracker(tracker)) => {
-                (TRACKER_EMOJI.to_owned(), tracker.name.clone())
             }
         }
     }

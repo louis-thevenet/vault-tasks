@@ -2,13 +2,11 @@ use std::rc::Rc;
 
 use ratatui::{
     prelude::*,
-    widgets::{Block, Borders, Cell, Paragraph, Row, Table},
+    widgets::{Block, Borders, Paragraph},
 };
 use ratskin::RatSkin;
 use tracing::error;
-use vault_tasks_core::{
-    config::TasksConfig, task::Task, tracker::Tracker, vault_data::FileEntryNode,
-};
+use vault_tasks_core::{config::TasksConfig, task::Task, vault_data::FileEntryNode};
 
 use crate::config::Settings;
 
@@ -170,102 +168,6 @@ impl TaskListItem {
             },
         )
     }
-    fn tracker_to_table(&self, tracker: &Tracker) -> Table<'_> {
-        let header = [
-            vec!["Dates".to_owned()],
-            tracker.categories.iter().map(|c| c.name.clone()).collect(),
-        ]
-        .concat()
-        .into_iter()
-        .map(Cell::from)
-        .collect::<Row>()
-        .style(self.header_style)
-        .height(1);
-
-        let mut date = tracker.start_date.clone();
-        let rat_skin = RatSkin::default();
-        let mut rows = (0..tracker.length)
-            .map(|n| {
-                let res = Row::new(
-                    [
-                        vec![Cell::from(
-                            Span::raw(
-                                date.to_string_format(self.config.core.use_american_format)
-                                    .to_string(),
-                            ) + if self.config.display.show_relative_due_dates {
-                                Span::raw(format!(" ({})", date.get_relative_str())).dim()
-                            } else {
-                                Span::raw("")
-                            },
-                        )],
-                        tracker
-                            .categories
-                            .iter()
-                            .map(|c| {
-                                Cell::from(Text::from(
-                                    rat_skin.parse(
-                                        RatSkin::parse_text(
-                                            &c.entries
-                                                .get(n)
-                                                .unwrap()
-                                                .pretty_fmt(&self.config.pretty_symbols),
-                                        ),
-                                        self.max_width,
-                                    ),
-                                ))
-                            })
-                            .collect(),
-                    ]
-                    .concat(),
-                );
-                date = tracker.frequency.next_date(&date);
-                res
-            })
-            .collect::<Vec<Row>>();
-        if self.settings.invert_tracker_entries {
-            rows.reverse();
-        }
-        let mut date = tracker.start_date.clone();
-        let widths = [
-            vec![
-                (0..tracker.length)
-                    .map(|_n| {
-                        let res = if self.config.display.show_relative_due_dates {
-                            format!(
-                                "{} ({})",
-                                date.to_string_format(self.config.core.use_american_format),
-                                date.get_relative_str()
-                            )
-                        } else {
-                            date.to_string_format(self.config.core.use_american_format)
-                                .to_string()
-                        }
-                        .len() as u16;
-                        date = tracker.frequency.next_date(&date);
-                        res
-                    })
-                    .max()
-                    .unwrap_or_default(),
-            ],
-            tracker
-                .categories
-                .iter()
-                .map(|cat| {
-                    (cat.entries
-                        .iter()
-                        .map(|ent| ent.to_string().len())
-                        .max()
-                        .unwrap_or_default())
-                    .max(cat.name.len()) as u16
-                })
-                .collect::<Vec<u16>>(),
-        ]
-        .concat();
-        Table::new(rows, widths)
-            .header(header)
-            .column_spacing(2)
-            .block(Block::bordered().title(tracker.name.clone()))
-    }
     fn compute_height(item: &FileEntryNode, max_width: u16) -> u16 {
         let rat_skin = RatSkin::default();
         match &item {
@@ -307,14 +209,6 @@ impl TaskListItem {
                 }
                 count.max(3) // If count == 2 then task name will go directly inside a block
                 // Else task name will be the block's title and content will go inside
-            }
-            FileEntryNode::Tracker(tracker) => {
-                2 // block
-                    + 1 // header
-                    + tracker
-                    .categories
-                    .first()
-                    .map_or(0, |c| c.entries.len() as u16) // number of entries
             }
         }
     }
@@ -390,9 +284,6 @@ impl Widget for TaskListItem {
 
                     sb_widget.render(layout[i + 1], buf);
                 }
-            }
-            FileEntryNode::Tracker(tracker) => {
-                Widget::render(self.tracker_to_table(tracker), area, buf);
             }
         }
     }

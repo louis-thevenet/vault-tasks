@@ -21,8 +21,6 @@ Ctrl+J
 Ctrl+J
 Ctrl+J
 Ctrl+J
-Ctrl+J
 Sleep 2
-Screenshot demo_readme_tracker.png
 
 Type "aaa" # so that the screenshot is actually produced

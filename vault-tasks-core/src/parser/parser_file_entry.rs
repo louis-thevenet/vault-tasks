@@ -1,7 +1,7 @@
 use std::{iter::Peekable, path::PathBuf};
 
 use color_eyre::eyre::bail;
-use tracing::{debug, error, info};
+use tracing::{debug, error};
 use winnow::{
     Parser, Result,
     ascii::{space0, space1},
@@ -9,15 +9,9 @@ use winnow::{
     token::{any, take_till, take_until, take_while},
 };
 
-use crate::{
-    TasksConfig,
-    parser::tracker::{parse_entries, parse_header, parse_separator},
-    task::Task,
-    tracker::{NewTracker, Tracker},
-    vault_data::FileEntryNode,
-};
+use crate::{TasksConfig, task::Task, vault_data::FileEntryNode};
 
-use super::{task::parse_task, tracker::parse_tracker_definition};
+use super::task::parse_task;
 
 enum FileToken {
     /// Name, Heading level
@@ -38,8 +32,6 @@ enum FileToken {
     StartOfCodeBlock,
     /// A code block was closed
     EndOfCodeBlock,
-    /// Tracker Definition
-    TrackerDefinition(NewTracker),
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -59,12 +51,6 @@ impl ParserFileEntry<'_> {
         let mut task_parser = |input: &mut &str| parse_task(input, &self.path, self.config);
         let task_res = task_parser.parse_next(input)?;
         Ok(FileToken::Task(task_res, indent_length))
-    }
-    fn parse_tracker_def(&self, input: &mut &str) -> Result<FileToken> {
-        Ok(FileToken::TrackerDefinition(parse_tracker_definition(
-            input,
-            self.config,
-        )?))
     }
     fn parse_header(input: &mut &str) -> Result<FileToken> {
         let header_depth: String = repeat(1.., "#").parse_next(input)?;
@@ -197,9 +183,6 @@ impl ParserFileEntry<'_> {
                     last_task.subtasks.push(task_to_insert);
                     Ok(())
                 }
-                FileEntryNode::Tracker(_tracker) => {
-                    bail!("Failed to insert task: tried to insert into a tracker")
-                }
             }
         }
         if let Some(file_entry) = file_entry.last_mut() {
@@ -209,67 +192,7 @@ impl ParserFileEntry<'_> {
             Ok(())
         }
     }
-    fn insert_tracker_at(
-        file_entry: &mut Vec<FileEntryNode>,
-        tracker: Tracker,
-        header_depth: usize,
-    ) -> color_eyre::Result<()> {
-        fn append_tracker_aux(
-            file_entry: &mut FileEntryNode,
-            tracker_to_insert: Tracker,
-            current_header_depth: usize,
-            target_header_depth: usize,
-        ) -> color_eyre::Result<()> {
-            match file_entry {
-                FileEntryNode::Header {
-                    content: header_children,
-                    ..
-                } => {
-                    match current_header_depth.cmp(&target_header_depth) {
-                        std::cmp::Ordering::Greater => {
-                            bail!(
-                                "Target header level was greater than current level which is impossible"
-                            )
-                        }
-                        std::cmp::Ordering::Equal => {
-                            // Found correct header level
-                            header_children.push(FileEntryNode::Tracker(tracker_to_insert));
-                            Ok(())
-                        }
-                        std::cmp::Ordering::Less => {
-                            // Going deeper in header levels
-                            for child in header_children.iter_mut().rev() {
-                                if let FileEntryNode::Header { .. } = child {
-                                    return append_tracker_aux(
-                                        child,
-                                        tracker_to_insert,
-                                        current_header_depth + 1,
-                                        target_header_depth,
-                                    );
-                                }
-                            }
-                            bail!(
-                                "Couldn't find correct parent header to insert tracker {}",
-                                tracker_to_insert.name
-                            )
-                        }
-                    }
-                }
-                FileEntryNode::Task(_task) => {
-                    bail!("Tried to insert a Tracker in a task")
-                }
-                FileEntryNode::Tracker(_tracker) => {
-                    bail!("Tried to insert a Tracker in a tracker")
-                }
-            }
-        }
-        if let Some(file_entry) = file_entry.last_mut() {
-            append_tracker_aux(file_entry, tracker, 1, header_depth)
-        } else {
-            file_entry.push(FileEntryNode::Tracker(tracker));
-            Ok(())
-        }
-    }
+
     /// Inserts a header at the specific depth in `file_entry`.
     #[allow(clippy::too_many_lines)]
     fn insert_header_at(
@@ -330,9 +253,6 @@ impl ParserFileEntry<'_> {
                 }
                 FileEntryNode::Task(_task) => {
                     bail!("Error: tried to insert a header into a task")
-                }
-                FileEntryNode::Tracker(_tracker) => {
-                    bail!("Error: tried to insert a header into a tracker")
                 }
             }
         }
@@ -455,9 +375,6 @@ impl ParserFileEntry<'_> {
                     }
                     insert_desc_task(desc, task, current_task_depth, target_task_depth)
                 }
-                FileEntryNode::Tracker(_tracker) => {
-                    bail!("Failed to insert description: tried to insert into a tracker")
-                }
             }
         }
         match file_entry.last_mut() {
@@ -493,7 +410,6 @@ impl ParserFileEntry<'_> {
             Self::parse_start_of_code_block,
             Self::parse_end_of_code_block,
             Self::parse_file_tag,
-            |input: &mut &str| self.parse_tracker_def(input),
             Self::parse_header,
             |input: &mut &str| self.parse_task(input),
             Self::parse_description,
@@ -620,67 +536,6 @@ impl ParserFileEntry<'_> {
                         false,
                     );
                 }
-                Ok(FileToken::TrackerDefinition(tracker_def)) => {
-                    debug!("Parsed a Tracker Definition");
-
-                    // Skip empty lines
-                    while input.peek().is_some_and(|(_, l)| l.is_empty()) {
-                        input.next();
-                    }
-
-                    if let Some((_next_line_number, mut next_line)) = input.peek().copied() {
-                        // Parse header line
-                        if let Ok(mut tracker) =
-                            parse_header(&tracker_def, &self.path, line_number, &mut next_line)
-                        {
-                            input.next();
-                            // Parse separator |---|---|
-                            if input.peek().copied().is_some_and(|(_, mut next_line)| {
-                                let _ = parse_separator(&mut next_line); // useful when we want vault-tasks to create our table
-                                true
-                            }) {
-                                input.next();
-
-                                while input.peek().is_some() {
-                                    let (_, mut next_line) = input.peek().copied().unwrap();
-                                    if let Ok((date, entries)) =
-                                        parse_entries(&tracker, self.config, &mut next_line)
-                                    {
-                                        debug!("inserting {entries:?}");
-                                        tracker.add_event(&date, &entries);
-                                    } else {
-                                        error!("Failed to parse tracker entry (could be finished)");
-                                        break;
-                                    }
-                                    input.next();
-                                }
-                                let fixed_tracker = tracker.add_blanks(self.config);
-                                if Self::insert_tracker_at(file_entry, fixed_tracker, header_depth)
-                                    .is_ok()
-                                {
-                                    info!("Successfully inserted Tracker");
-                                } else {
-                                    error!("Failed to insert tracker");
-                                }
-                            } else {
-                                error!("Failed to parse tracker separator");
-                            }
-                        } else {
-                            error!("Failed to parse tracker header");
-                        }
-                    } else {
-                        error!("No line after tracker definition");
-                    }
-
-                    self.parse_file_aux(
-                        input,
-                        file_entry,
-                        file_tags,
-                        header_depth,
-                        comment_depth,
-                        false,
-                    );
-                }
                 Ok(FileToken::FileTag(tag)) => {
                     if !file_tags.contains(&tag) {
                         file_tags.push(tag);
@@ -747,7 +602,6 @@ impl ParserFileEntry<'_> {
                 });
             }
             FileEntryNode::Task(_task) => (),
-            FileEntryNode::Tracker(_tracker) => (),
         }
         Some(file_entry.clone())
     }
@@ -808,9 +662,6 @@ fn add_global_tag(file_entry: &mut FileEntryNode, tag: &String) {
                     }
                 }
                 insert_tag_task(task, tag);
-            }
-            FileEntryNode::Tracker(tracker) => {
-                error!("Tried to add a tag to a tracker: {}", tracker.name);
             }
         }
     }

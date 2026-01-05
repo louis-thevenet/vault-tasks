@@ -19,7 +19,6 @@ pub mod logging;
 pub mod parser;
 pub mod sorter;
 pub mod task;
-pub mod tracker;
 pub mod vault_data;
 mod vault_parser;
 
@@ -154,7 +153,6 @@ impl TaskManager {
                         gather_tags_from_file_entry(&FileEntryNode::Task(subtask.clone()), tags);
                     });
                 }
-                FileEntryNode::Tracker(_tracker) => (),
                 FileEntryNode::Header { content, .. } => {
                     for c in content {
                         gather_tags_from_file_entry(c, tags);
@@ -248,16 +246,6 @@ impl TaskManager {
                             .find_map(|st| aux_file_entry(st, path, path_index + 1));
                     }
                 }
-                FileEntryNode::Tracker(tracker) => {
-                    if tracker.name == path[path_index] {
-                        // Check if we're at the end of the path
-                        if path_index + 1 == path.len() {
-                            return Some(Found::FileEntry(file_entry.clone()));
-                        }
-                        // Trackers can't be entered, so return None
-                        return None;
-                    }
-                }
             }
             None
         }
@@ -300,7 +288,7 @@ impl TaskManager {
                                     explore_file_entry(c, config)?;
                                 }
                             }
-                            _ => {
+                            FileEntryNode::Task(_) => {
                                 explore_file_entry(file_entry, config)?;
                             }
                         }
@@ -321,9 +309,6 @@ impl TaskManager {
                     for t in &task.subtasks {
                         t.fix_task_attributes(config)?;
                     }
-                }
-                FileEntryNode::Tracker(tracker) => {
-                    tracker.fix_tracker_attributes(config)?;
                 }
             }
             Ok(())
@@ -394,8 +379,6 @@ impl TaskManager {
                         }
                         false
                     }
-                    FileEntryNode::Tracker(_tracker) => false, // Trackers can't be entered at the moment
-                                                               // I plan on giving access to its categories someday
                 }
             }
         }
