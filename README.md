@@ -28,8 +28,6 @@ I made this tool because I wanted to integrate my task system directly inside my
 
 Markdown tasks are very easy to integrate with knowledge/projects and are source-control-friendly.
 
-I wrote a [blog post](https://louis-thevenet.github.io/blog/pkms/2025/04/12/personal-knowledge-management-and-tasks.html) explaining my workflow and how I use vault-tasks if you're interested. (It's dated, I introduced new features since then (trackers))
-
 I also spend most of my writing time in the terminal (Helix) and do not rely on heavy external software.
 
 ## Features
@@ -39,16 +37,11 @@ I also spend most of my writing time in the terminal (Helix) and do not rely on 
   - Supports relative dates
   - special _today_ tag and regular tags
   - descriptions, priority, completion percentage
-- Trackers (or recurrent tasks)
 - Navigate vault
 - Edit tasks or open in default editor
 - Search through tasks (sort and filter)
 - Calendar view
 - Time Management tab (Pomodoro & Flowtime)
-
-## Planned Features
-
-I plan on adding a new tab about Trackers where you'll be able to see nice statistics about your trackers. For now, you can see your trackers in the Explorer tab.
 
 ## Installation
 
@@ -60,7 +53,7 @@ cargo install vault-tasks
 
 ### Nix
 
-You can get it from nixpkgs 25.05 or directly from this repo's flake:
+You can get it from nixpkgs or directly from this repo's flake:
 
 ```nix
 vault-tasks = {
@@ -107,7 +100,7 @@ See `vault-tasks --help` for basic usage.
 | `23/10` (`2024/23/10`)                     | sets the due date with a literal date                             |
 | `today` (`tdy`)                            | sets the due date to today                                        |
 | `tomorrow` (`tmr`)                         | sets the due date to tomorrow                                     |
-| a day of the week (`monday` or `mon`, etc) | sets the due date to the next occurence of that day               |
+| a day of the week (`monday` or `mon`, etc) | sets the due date to the next occurrence of that day              |
 | `3d` (`3m, 3w, 3y`, ...)                   | means "in 3 days" and will set the due date accordingly           |
 
 - Task states are **Done** (`x`), **To-Do** (` `), **Incomplete** (`/`) and **Canceled** (`-`)
@@ -126,71 +119,6 @@ This is what you will see in the preview of this `README.md` in `vault-tasks`:
 
 <!-- Or when filtering for `@today` tasks: -->
 <!-- ![](./examples/demo_filter.png) -->
-
-### Writing Trackers (or recurrent tasks)
-
-```md
-<!-- An example tracker in your markdown file -->
-
-Tracker: Arts Enjoyment (2025-06-08)
-
-| Every day  | inspiration | medium   | cost | social | notes                      |
-| ---------- | ----------- | -------- | ---- | ------ | -------------------------- |
-| 2025-06-08 | 8           | painting | 15   | [ ]    | watercolor landscape       |
-| 2025-06-09 | 6           | music    | 0    | [x]    | street musician downtown   |
-| 2025-06-10 | 9           | theater  | 45   | [x]    | incredible Shakespeare     |
-| 2025-06-11 | 7           | digital  | 12   | [ ]    | new photography exhibition |
-| 2025-06-12 | 5           | craft    | 8    | [ ]    | pottery wheel attempt      |
-| 2025-06-13 | 8           | film     | 10   | [x]    | foreign cinema festival    |
-| 2025-06-14 | 9           | dance    | 20   | [x]    | salsa class breakthrough!  |
-| 2025-06-15 |             |          |      |        |                            |
-| 2025-06-16 |             |          |      |        |                            |
-| 2025-06-17 |             |          |      |        |                            |
-| 2025-06-18 |             |          |      |        |                            |
-```
-
-You start by writing `Tracker:` followed by your tracker's name. You add a starting date such as an ISO date or a relative date.
-
-Then you can start vault-tasks, so it creates blank entries for you. By default, it will fill the entries until the current date + 3 blank entries. This is also useful to reformat your table if you don't have a Markdown formatter.
-
-Here is a basic template:
-
-```md
-Tracker: Name (today)
-
-| daily | notes |
-```
-
-Vault-tasks would reformat it to:
-
-```md
-Tracker: Name (2025-06-15)
-
-| Every day  | notes |
-| ---------- | ----- |
-| 2025-06-15 |       |
-| 2025-06-16 |       |
-| 2025-06-17 |       |
-| 2025-06-18 |       |
-```
-
-Frequencies can be:
-
-- `Every <hour|day|week|month|year>`
-- `hourly`, `daily`, `weekly`, `monthly`, `yearly`
-
-Data types are:
-
-- Boolean type: `[ ]` or `[x]`
-- Score type: any integer
-- Note type: any text
-- Blank
-
-Be careful not to change type within a column, vault-tasks will replace the wrong type with a blank entry.
-
-This is what you will see in the preview of this `README.md` in `vault-tasks`:
-
-![](./examples/demo_readme_tracker.png)
 
 ### Default Key Map
 
@@ -336,25 +264,6 @@ README.md
 
 
                                 🚫 This one is canceled
-
-
-                Writing Trackers (or recurrent tasks)
-                ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-                        Tracker: Arts Enjoyment (2025-06-08)
-
-                        | Every day  | inspiration | medium   | cost | social | notes                      |
-                        |------------|-------------|----------|------|--------|----------------------------|
-                        | 2025-06-08 | 8           | painting | 15   | [ ]    | watercolor landscape       |
-                        | 2025-06-09 | 6           | music    | 0    | [x]    | street musician downtown   |
-                        | 2025-06-10 | 9           | theater  | 45   | [x]    | incredible Shakespeare     |
-                        | 2025-06-11 | 7           | digital  | 12   | [ ]    | new photography exhibition |
-                        | 2025-06-12 | 5           | craft    | 8    | [ ]    | pottery wheel attempt      |
-                        | 2025-06-13 | 8           | film     | 10   | [x]    | foreign cinema festival    |
-                        | 2025-06-14 | 9           | dance    | 20   | [x]    | salsa class breakthrough!  |
-                        | 2025-06-15 |             |          |      |        |                            |
-                        | 2025-06-16 |             |          |      |        |                            |
-                        | 2025-06-17 |             |          |      |        |                            |
-                        | 2025-06-18 |             |          |      |        |                            |
 ```
 
 ## Configuration
