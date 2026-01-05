@@ -16,8 +16,8 @@ lexical-sort = "0.3.1"
 serde = {version = "1.0.228", features = ["derive"]}
 strum = {version = "0.27.2", features = ["derive"]}
 strum_macros = "0.27.2"
-toml = "0.9.8"
-tracing = "0.1.43"
+toml = "0.9.10"
+tracing = "0.1.44"
 tracing-error = "0.2.1"
 tracing-subscriber = {version = "0.3.22", features = ["env-filter", "serde"]}
 winnow = "0.7.14"
@@ -27,7 +27,7 @@ anyhow = "1.0.100"
 vergen-gix = {version = "1.0.9", features = ["build", "cargo"]}
 
 # Dev dependencies
-insta = {version = "1.44.3", features = ["yaml"]}
+insta = {version = "1.46.0", features = ["yaml"]}
 pretty_assertions = "1.4.1"
 
 [profile.dev]
