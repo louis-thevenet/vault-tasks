@@ -44,7 +44,7 @@ toml.workspace = true
 tracing.workspace = true
 tui-input = "0.14.0"
 tui-scrollview = "=0.5.3"
-tui-widget-list = "0.13.3"
+tui-widget-list = "0.15.0"
 vault-tasks-core = {path = "../vault-tasks-core"}
 
 [dev-dependencies]
