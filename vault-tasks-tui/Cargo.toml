@@ -33,7 +33,7 @@ pretty_assertions.workspace = true
 ratatui = {version = "0.29.0", features = ["serde", "macros", "widget-calendar"]}
 ratskin = "0.2.0"
 serde.workspace = true
-signal-hook = "0.3.18"
+signal-hook = "0.4.1"
 strip-ansi-escapes = "0.2.1"
 strum.workspace = true
 strum_macros.workspace = true
