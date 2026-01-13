@@ -16,7 +16,7 @@ clap = {version = "4.5.54", features = [
   "string",
   "unstable-styles"
 ]}
-clap_complete = "4.5.64"
+clap_complete = "4.5.65"
 chrono.workspace = true
 color-eyre.workspace = true
 config.workspace = true
