@@ -174,6 +174,7 @@ impl TaskListItem {
             FileEntryNode::Header {
                 name: _,
                 heading_level: _,
+                line_number: _,
                 content,
             } => {
                 content
@@ -223,6 +224,7 @@ impl Widget for TaskListItem {
             FileEntryNode::Header {
                 name,
                 heading_level: _,
+                line_number: _,
                 content: children,
             } => {
                 let surrounding_block = Block::default().borders(Borders::TOP).title(
