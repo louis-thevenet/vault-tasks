@@ -7,7 +7,7 @@ license = "MIT"
 
 [workspace.dependencies]
 # Shared dependencies across crates
-chrono = "0.4.42"
+chrono = "0.4.43"
 color-eyre = "0.6.5"
 config = "0.15.19"
 directories = "6.0.0"
