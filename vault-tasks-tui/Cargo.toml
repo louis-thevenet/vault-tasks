@@ -43,7 +43,7 @@ tokio-util = "0.7.18"
 toml.workspace = true
 tracing.workspace = true
 tui-input = "0.14.0"
-tui-scrollview = "=0.5.3"
+tui-scrollview = "=0.6.2"
 tui-widget-list = "0.13.3"
 vault-tasks-core = {path = "../vault-tasks-core"}
 
