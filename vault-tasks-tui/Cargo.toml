@@ -37,7 +37,7 @@ signal-hook = "0.4.1"
 strip-ansi-escapes = "0.2.1"
 strum.workspace = true
 strum_macros.workspace = true
-time = "0.3.46"
+time = "0.3.47"
 tokio = {version = "1.49.0", features = ["full"]}
 tokio-util = "0.7.18"
 toml.workspace = true
