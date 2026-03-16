@@ -58,6 +58,7 @@ pub enum FileEntryNode {
     Header {
         name: String,
         heading_level: usize,
+        line_number: usize,
         content: Vec<FileEntryNode>,
     },
     Task(Task),
@@ -74,6 +75,7 @@ impl FileEntryNode {
                 name,
                 heading_level: _,
                 content,
+                line_number: _,
             } => {
                 write_underline_with_indent(name, depth, f)?;
                 for entry in content {
