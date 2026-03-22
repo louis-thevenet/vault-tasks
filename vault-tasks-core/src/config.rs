@@ -14,6 +14,7 @@ use tracing::{debug, info};
 
 const CONFIG: &str = include_str!("../../.config/core.toml");
 const CONFIG_FILE_NAME: &str = "core";
+const APP_NAME: &str = "vault-tasks";
 
 lazy_static! {
     pub(crate) static ref PROJECT_NAME: String = env!("CARGO_CRATE_NAME").to_uppercase();
@@ -316,5 +317,5 @@ pub(crate) fn get_config_dir() -> PathBuf {
 
 // TODO: change this
 fn project_directory() -> Option<ProjectDirs> {
-    ProjectDirs::from("com", "kdheepak", env!("CARGO_PKG_NAME"))
+    ProjectDirs::from("com", "kdheepak", APP_NAME)
 }

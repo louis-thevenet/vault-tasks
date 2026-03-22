@@ -25,6 +25,7 @@ use tracing::{debug, info};
 
 const TUI_CONFIG: &str = include_str!("../../.config/tui.toml");
 const CONFIG_FILE_NAME: &str = "tui";
+const APP_NAME: &str = "vault-tasks";
 
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct Settings {
@@ -223,7 +224,7 @@ pub fn get_config_dir() -> PathBuf {
 }
 
 fn project_directory() -> Option<ProjectDirs> {
-    ProjectDirs::from("com", "kdheepak", env!("CARGO_PKG_NAME"))
+    ProjectDirs::from("com", "kdheepak", APP_NAME)
 }
 
 #[derive(Clone, Debug, Default, Deref, DerefMut)]
