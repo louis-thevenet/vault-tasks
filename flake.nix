@@ -12,28 +12,30 @@
         { system, ... }:
         let
           pkgs = import inputs.nixpkgs { inherit system; };
-          cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
           buildInputs = [ ];
           nativeBuildInputs = with pkgs; [ installShellFiles ];
         in
         {
           # Rust package
-          packages.default = pkgs.rustPlatform.buildRustPackage {
-            inherit (cargoToml.package) name version;
-            src = ./.;
-            cargoLock.lockFile = ./Cargo.lock;
-            RUST_BACKTRACE = "full";
-            nativeBuildInputs = nativeBuildInputs;
-            buildInputs = buildInputs;
-            postInstall = ''install -Dm444 desktop/vault-tasks.desktop -t $out/share/applications '' + ''
-              # vault-tasks tries to load a config file from ~/.config/ before generating completions
-              export HOME="$(mktemp -d)"
-              installShellCompletion --cmd vault-tasks \
-                --bash <($out/bin/vault-tasks generate-completions bash) \
-                --fish <($out/bin/vault-tasks generate-completions fish) \
-                --zsh <($out/bin/vault-tasks generate-completions zsh)
-            '';
-          };
+          packages.default =
+            let
+              cargoToml = fromTOML (builtins.readFile ./vault-tasks-tui/Cargo.toml);
+            in
+            pkgs.rustPlatform.buildRustPackage {
+              inherit (cargoToml.package) name version;
+              src = ./.;
+              cargoLock.lockFile = ./Cargo.lock;
+              nativeBuildInputs = nativeBuildInputs;
+              buildInputs = buildInputs;
+              postInstall = "install -Dm444 desktop/vault-tasks.desktop -t $out/share/applications " + ''
+                # vault-tasks tries to load a config file from ~/.config/ before generating completions
+                export HOME="$(mktemp -d)"
+                installShellCompletion --cmd vault-tasks-tui \
+                  --bash <($out/bin/vault-tasks-tui generate-completions bash) \
+                  --fish <($out/bin/vault-tasks-tui generate-completions fish) \
+                  --zsh <($out/bin/vault-tasks-tui generate-completions zsh)
+              '';
+            };
 
           # Rust dev environment
           devShells.default = pkgs.mkShell {

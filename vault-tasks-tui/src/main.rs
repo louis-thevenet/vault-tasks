@@ -48,7 +48,12 @@ async fn main() -> Result<()> {
             Ok(())
         }
         Some(cli::Commands::GenerateCompletions { shell }) => {
-            generate(shell, &mut Cli::command(), "vault-tasks", &mut io::stdout());
+            generate(
+                shell,
+                &mut Cli::command(),
+                "vault-tasks-tui",
+                &mut io::stdout(),
+            );
             Ok(())
         }
         Some(cli::Commands::Fix) => {
