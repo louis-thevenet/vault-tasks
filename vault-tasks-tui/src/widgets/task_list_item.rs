@@ -25,44 +25,6 @@ pub struct TaskListItem {
 }
 
 impl TaskListItem {
-    fn parse_text_lines(text: &str, width: u16) -> Vec<Line<'static>> {
-        let max_width = usize::from(width.max(1));
-        let mut out = Vec::new();
-
-        for raw_line in text.lines() {
-            let mut current = String::new();
-            for word in raw_line.split_whitespace() {
-                let next_len = if current.is_empty() {
-                    word.len()
-                } else {
-                    current.len() + 1 + word.len()
-                };
-
-                if next_len > max_width && !current.is_empty() {
-                    out.push(Line::from(current.clone()));
-                    current.clear();
-                }
-
-                if !current.is_empty() {
-                    current.push(' ');
-                }
-                current.push_str(word);
-            }
-
-            if current.is_empty() {
-                out.push(Line::from(raw_line.to_string()));
-            } else {
-                out.push(Line::from(current));
-            }
-        }
-
-        if out.is_empty() {
-            out.push(Line::from(String::new()));
-        }
-
-        out
-    }
-
     fn parse_markdown_lines(text: &str, width: u16) -> Vec<Line<'static>> {
         let rat_skin = RatSkin::default();
         let lines: Vec<Line<'static>> = rat_skin.parse(RatSkin::parse_text(text), width);
@@ -103,7 +65,7 @@ impl TaskListItem {
 
         let state = task.state.display(&self.config.pretty_symbols);
         let title = state.clone() + " " + &task.name;
-        let title_parsed = Self::parse_text_lines(&title, self.max_width);
+        let title_parsed = Self::parse_markdown_lines(&title, self.max_width);
         let binding = Line::raw(state);
         let title = match title_parsed.first() {
             Some(t) => {
@@ -254,7 +216,7 @@ impl TaskListItem {
                     count += Self::compute_height(&FileEntryNode::Task(sb.clone()), max_width - 2);
                 }
                 count.max(3) // If count == 2 then task name will go directly inside a block
-                // Else task name will be the block's title and content will go inside
+                             // Else task name will be the block's title and content will go inside
             }
         }
     }
@@ -270,7 +232,7 @@ impl Widget for TaskListItem {
                 heading_level: _,
                 content: children,
             } => {
-                let header_line = Self::parse_text_lines(name, area.width)
+                let header_line = Self::parse_markdown_lines(name, area.width)
                     .first()
                     .cloned()
                     .unwrap_or_else(|| Line::from(name.clone()))
@@ -336,7 +298,7 @@ impl Widget for TaskListItem {
 mod tests {
     use chrono::NaiveDate;
     use insta::assert_snapshot;
-    use ratatui::{Terminal, backend::TestBackend};
+    use ratatui::{backend::TestBackend, Terminal};
     use vault_tasks_core::{
         date::Date,
         task::{State, Task},
