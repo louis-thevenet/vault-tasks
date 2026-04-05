@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
-use crossterm::event::KeyModifiers;
 use layout::Flex;
 use ratatui::{
+    crossterm::event::KeyModifiers,
     prelude::*,
     widgets::{Block, Cell, Clear, Row, Table},
 };

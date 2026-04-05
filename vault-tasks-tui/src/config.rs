@@ -16,7 +16,6 @@ use crate::widgets::timer::TimerWidget;
 use crate::{action::Action, app::Mode, cli::Cli};
 use color_eyre::{Result, eyre::bail};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use derive_deref::{Deref, DerefMut};
 use directories::ProjectDirs;
 use lazy_static::lazy_static;
 use ratatui::style::{Color, Modifier, Style};
@@ -227,8 +226,27 @@ fn project_directory() -> Option<ProjectDirs> {
     ProjectDirs::from("com", "kdheepak", APP_NAME)
 }
 
-#[derive(Clone, Debug, Default, Deref, DerefMut)]
+#[derive(Clone, Debug, Default)]
 pub struct KeyBindings(pub HashMap<Mode, HashMap<Vec<KeyEvent>, Action>>);
+impl KeyBindings {
+    pub(crate) fn get(&self, app_mode: &Mode) -> Option<&HashMap<Vec<KeyEvent>, Action>> {
+        self.0.get(app_mode)
+    }
+}
+
+impl std::ops::Deref for KeyBindings {
+    type Target = HashMap<Mode, HashMap<Vec<KeyEvent>, Action>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl std::ops::DerefMut for KeyBindings {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
 
 impl<'de> Deserialize<'de> for KeyBindings {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -414,8 +432,22 @@ pub fn parse_key_sequence(raw: &str) -> Result<Vec<KeyEvent>, String> {
         .collect()
 }
 
-#[derive(Clone, Debug, Default, Deref, DerefMut)]
+#[derive(Clone, Debug, Default)]
 pub struct Styles(pub HashMap<Mode, HashMap<String, Style>>);
+
+impl std::ops::Deref for Styles {
+    type Target = HashMap<Mode, HashMap<String, Style>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl std::ops::DerefMut for Styles {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
 
 impl<'de> Deserialize<'de> for Styles {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

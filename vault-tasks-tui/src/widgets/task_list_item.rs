@@ -25,6 +25,17 @@ pub struct TaskListItem {
 }
 
 impl TaskListItem {
+    fn parse_markdown_lines(text: &str, width: u16) -> Vec<Line<'static>> {
+        let rat_skin = RatSkin::default();
+        let lines: Vec<Line<'static>> = rat_skin.parse(RatSkin::parse_text(text), width);
+
+        if lines.is_empty() {
+            vec![Line::from(String::new())]
+        } else {
+            lines
+        }
+    }
+
     pub fn header_style(mut self, style: Style) -> Self {
         self.header_style = style;
         self
@@ -52,11 +63,9 @@ impl TaskListItem {
         let mut lines = vec![];
         let mut data_line = vec![];
 
-        let rat_skin = RatSkin::default();
-
         let state = task.state.display(&self.config.pretty_symbols);
         let title = state.clone() + " " + &task.name;
-        let title_parsed = rat_skin.parse(RatSkin::parse_text(&title), self.max_width);
+        let title_parsed = Self::parse_markdown_lines(&title, self.max_width);
         let binding = Line::raw(state);
         let title = match title_parsed.first() {
             Some(t) => {
@@ -142,7 +151,7 @@ impl TaskListItem {
             lines.push(Line::from(Span::styled(tag_line, Color::DarkGray)));
         }
         if let Some(description) = task.description.clone() {
-            let text = rat_skin.parse(RatSkin::parse_text(&description), self.max_width);
+            let text = Self::parse_markdown_lines(&description, self.max_width);
             lines = [lines, text].concat();
         }
         let mut constraints = vec![Constraint::Length((lines.len()).try_into().unwrap())];
@@ -169,7 +178,6 @@ impl TaskListItem {
         )
     }
     fn compute_height(item: &FileEntryNode, max_width: u16) -> u16 {
-        let rat_skin = RatSkin::default();
         match &item {
             FileEntryNode::Header {
                 name: _,
@@ -188,7 +196,7 @@ impl TaskListItem {
                     count += (2 + task.name.len() as u16) / max_width;
                 }
                 if let Some(d) = &task.description {
-                    let parsed_desc = rat_skin.parse(RatSkin::parse_text(d), max_width);
+                    let parsed_desc = Self::parse_markdown_lines(d, max_width);
                     count += u16::try_from(parsed_desc.len()).unwrap_or_else(|e| {
                         error!("Could not convert description length to u16 :{e}");
                         0
@@ -218,21 +226,18 @@ impl Widget for TaskListItem {
     where
         Self: Sized,
     {
-        let rat_skin = RatSkin::default();
         match &self.item {
             FileEntryNode::Header {
                 name,
                 heading_level: _,
                 content: children,
             } => {
-                let surrounding_block = Block::default().borders(Borders::TOP).title(
-                    rat_skin
-                        .parse(RatSkin::parse_text(name), area.width)
-                        .first()
-                        .unwrap()
-                        .clone()
-                        .style(self.header_style),
-                );
+                let header_line = Self::parse_markdown_lines(name, area.width)
+                    .first()
+                    .cloned()
+                    .unwrap_or_else(|| Line::from(name.clone()))
+                    .style(self.header_style);
+                let surrounding_block = Block::default().borders(Borders::TOP).title(header_line);
 
                 let indent = Layout::new(
                     Direction::Horizontal,
