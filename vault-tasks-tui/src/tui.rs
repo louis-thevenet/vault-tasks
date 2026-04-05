@@ -6,17 +6,18 @@ use std::{
     time::Duration,
 };
 
+use ::crossterm::event::EventStream;
 use color_eyre::Result;
 use crossterm::{
     cursor,
     event::{
         DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
-        Event as CrosstermEvent, EventStream, KeyEvent, KeyEventKind, MouseEvent,
+        Event as CrosstermEvent, KeyEvent, KeyEventKind, MouseEvent,
     },
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
 use futures::{FutureExt, StreamExt};
-use ratatui::backend::CrosstermBackend as Backend;
+use ratatui::{backend::CrosstermBackend as Backend, crossterm};
 use serde::{Deserialize, Serialize};
 use tokio::{
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
