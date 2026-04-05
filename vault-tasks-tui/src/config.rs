@@ -23,7 +23,7 @@ use ratatui::style::{Color, Modifier, Style};
 use serde::{Deserialize, de::Deserializer};
 use tracing::{debug, info};
 
-const TUI_CONFIG: &str = include_str!("../../.config/tui.toml");
+const TUI_CONFIG: &str = include_str!("../.config/tui.toml");
 const CONFIG_FILE_NAME: &str = "tui";
 const APP_NAME: &str = "vault-tasks";
 

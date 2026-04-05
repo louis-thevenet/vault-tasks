@@ -12,7 +12,7 @@ use lazy_static::lazy_static;
 use serde::Deserialize;
 use tracing::{debug, info};
 
-const CONFIG: &str = include_str!("../../.config/core.toml");
+const CONFIG: &str = include_str!("../.config/core.toml");
 const CONFIG_FILE_NAME: &str = "core";
 const APP_NAME: &str = "vault-tasks";
 
