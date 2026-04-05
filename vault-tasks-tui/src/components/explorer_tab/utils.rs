@@ -47,6 +47,7 @@ impl ExplorerTab<'_> {
                 content: _content,
                 name,
                 heading_level,
+                line_number: _line_number,
             }) => ("#".repeat(*heading_level).clone(), name.clone()),
             Found::FileEntry(FileEntryNode::Task(task)) => {
                 (task.state.to_string(), task.name.clone())
@@ -101,11 +102,31 @@ impl ExplorerTab<'_> {
         let Some(tui) = tui_opt else {
             bail!("Could not open current entry, Tui was None")
         };
-        let path = self.get_current_path_to_file();
-        info!("Opening {:?} in default editor.", path);
+        let path_to_file = self.get_current_path_to_file();
+        let item = self
+            .task_mgr
+            .resolve_path(&self.get_preview_path().unwrap_or(self.current_path.clone()))?;
+        info!(
+            "Opening file {:?} in default editor on object {:?}.",
+            path_to_file, item
+        );
         if let Some(tx) = &self.command_tx {
             tui.exit()?;
-            edit::edit_file(path)?;
+            match item {
+                Found::Root(_) | Found::Node(_) => open_editor::EditorCallBuilder::new(),
+                Found::FileEntry(file_entry_node) => {
+                    open_editor::EditorCallBuilder::new().at_line(match file_entry_node {
+                        FileEntryNode::Header {
+                            name: _name,
+                            heading_level: _heading_level,
+                            content: _content,
+                            line_number,
+                        } => line_number,
+                        FileEntryNode::Task(task) => task.line_number.unwrap_or_default(),
+                    })
+                }
+            }
+            .open_file(&path_to_file)?;
             tui.enter()?;
             tx.send(Action::ClearScreen)?;
         } else {

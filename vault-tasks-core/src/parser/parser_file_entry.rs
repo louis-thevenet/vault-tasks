@@ -198,12 +198,14 @@ impl ParserFileEntry<'_> {
     fn insert_header_at(
         file_entry: &mut Vec<FileEntryNode>,
         name: String,
+        line_number: usize,
         heading_level: usize,
         target_header_depth: usize,
     ) -> color_eyre::Result<()> {
         fn insert_at_aux(
             file_entry: &mut FileEntryNode,
             name: String,
+            line_number: usize,
             heading_level: usize,
             current_header_depth: usize,
             target_header_depth: usize,
@@ -223,6 +225,7 @@ impl ParserFileEntry<'_> {
                             // Found correct header level
                             header_children.push(FileEntryNode::Header {
                                 name,
+                                line_number,
                                 heading_level,
                                 content: vec![],
                             });
@@ -235,6 +238,7 @@ impl ParserFileEntry<'_> {
                                     return insert_at_aux(
                                         child,
                                         name,
+                                        line_number,
                                         heading_level,
                                         current_header_depth + 1,
                                         target_header_depth,
@@ -244,6 +248,7 @@ impl ParserFileEntry<'_> {
                             // No child header found, append to current level
                             header_children.push(FileEntryNode::Header {
                                 name,
+                                line_number,
                                 heading_level,
                                 content: vec![],
                             });
@@ -259,10 +264,18 @@ impl ParserFileEntry<'_> {
         if let Some(file_entry) = file_entry.last_mut()
             && target_header_depth > 0
         {
-            insert_at_aux(file_entry, name, heading_level, 1, target_header_depth)
+            insert_at_aux(
+                file_entry,
+                name,
+                line_number,
+                heading_level,
+                1,
+                target_header_depth,
+            )
         } else {
             file_entry.push(FileEntryNode::Header {
                 name,
+                line_number,
                 heading_level,
                 content: vec![],
             });
@@ -502,8 +515,14 @@ impl ParserFileEntry<'_> {
                     );
                 }
                 Ok(FileToken::Header((header, new_depth))) => {
-                    if Self::insert_header_at(file_entry, header.clone(), new_depth, new_depth - 1)
-                        .is_err()
+                    if Self::insert_header_at(
+                        file_entry,
+                        header.clone(),
+                        line_number + 1,
+                        new_depth,
+                        new_depth - 1,
+                    )
+                    .is_err()
                     {
                         error!("Failed to insert header {}", header);
                     }
@@ -582,6 +601,7 @@ impl ParserFileEntry<'_> {
             FileEntryNode::Header {
                 name,
                 heading_level,
+                line_number,
                 content,
             } => {
                 let mut actual_content = vec![];
@@ -597,8 +617,9 @@ impl ParserFileEntry<'_> {
                 }
                 return Some(FileEntryNode::Header {
                     content: actual_content,
-                    name: name.to_string(),
+                    name: name.clone(),
                     heading_level: *heading_level,
+                    line_number: *line_number,
                 });
             }
             FileEntryNode::Task(_task) => (),
