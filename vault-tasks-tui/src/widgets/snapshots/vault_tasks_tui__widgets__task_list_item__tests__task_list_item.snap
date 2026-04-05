@@ -2,8 +2,8 @@
 source: vault-tasks-tui/src/widgets/task_list_item.rs
 expression: terminal.backend()
 ---
-"┌✅ task with a very long title that should wrap ┐" Hidden by multi-width symbols: [(2, " ")]
-"│the next line                                   │"
+"┌✅ task with a very long title that should wrap─┐" Hidden by multi-width symbols: [(2, " ")]
+"│to the next line                                │"
 "│📅 2016-07-08 09:10:11 [🟩🟩🟩⬜️⬜️ 60%] ❗5     │" Hidden by multi-width symbols: [(2, " "), (26, " "), (28, " "), (30, " "), (32, " "), (34, " "), (42, " ")]
 "│#tag #tag2                                      │"
 "│┌❌ subtask with another long title that should┐│" Hidden by multi-width symbols: [(3, " ")]
