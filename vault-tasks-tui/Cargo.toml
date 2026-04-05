@@ -44,7 +44,7 @@ tracing.workspace = true
 tui-input = "0.14.0"
 tui-scrollview = "=0.5.3"
 tui-widget-list = "0.13.3"
-vault-tasks-core = {path = "../vault-tasks-core"}
+vault-tasks-core = {path = "../vault-tasks-core", version = "2.0.0"}
 ratskin = "0.2.0"
 coolor = "=1.0.0"
 crokey = "=1.1.1"
