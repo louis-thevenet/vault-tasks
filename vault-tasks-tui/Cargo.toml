@@ -46,6 +46,9 @@ tui-scrollview = "=0.5.3"
 tui-widget-list = "0.13.3"
 vault-tasks-core = {path = "../vault-tasks-core"}
 ratskin = "0.2.0"
+coolor = "=1.0.0"
+crokey = "=1.1.1"
+crokey-proc_macros = "=1.1.1"
 
 [dev-dependencies]
 insta.workspace = true
