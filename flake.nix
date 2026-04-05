@@ -27,10 +27,10 @@
               cargoLock.lockFile = ./Cargo.lock;
               nativeBuildInputs = nativeBuildInputs;
               buildInputs = buildInputs;
-              postInstall = "install -Dm444 desktop/vault-tasks.desktop -t $out/share/applications " + ''
+              postInstall = "install -Dm444 desktop/vault-tasks-tui.desktop -t $out/share/applications " + ''
                 # vault-tasks tries to load a config file from ~/.config/ before generating completions
                 export HOME="$(mktemp -d)"
-                installShellCompletion --cmd vault-tasks \
+                installShellCompletion --cmd vault-tasks-tui \
                   --bash <($out/bin/vault-tasks-tui generate-completions bash) \
                   --fish <($out/bin/vault-tasks-tui generate-completions fish) \
                   --zsh <($out/bin/vault-tasks-tui generate-completions zsh)
