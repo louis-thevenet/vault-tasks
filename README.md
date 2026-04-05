@@ -62,7 +62,7 @@ vault-tasks = {
 };
 ```
 
-And use the package in your configuration: `inputs.vault-tasks.packages.${pkgs.system}.default`
+And use the package in your configuration: `inputs.vault-tasks.packages.${pkgs.stdenv.hostPlatform.system}.default`
 
 ### Build From Source
 
