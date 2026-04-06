@@ -101,44 +101,48 @@ impl TaskManager {
     /// Explores every `NewFileEntry` from the vault and applies the given function `f` on it.
     pub fn map_file_entries(
         tasks: &Vaults,
-        f: &mut impl FnMut(&FileEntryNode) -> FileEntryNode,
-    ) -> Vaults {
+        f: &mut impl FnMut(&FileEntryNode) -> Result<FileEntryNode>,
+    ) -> Result<Vaults> {
         fn explore_nodes(
             node: &VaultNode,
-            f: &mut impl FnMut(&FileEntryNode) -> FileEntryNode,
-        ) -> VaultNode {
+            f: &mut impl FnMut(&FileEntryNode) -> Result<FileEntryNode>,
+        ) -> Result<VaultNode> {
             match node.clone() {
                 VaultNode::Vault {
                     name,
                     path,
                     content,
-                } => VaultNode::Vault {
+                } => Ok(VaultNode::Vault {
                     name,
                     path,
-                    content: content.iter().map(|v| explore_nodes(v, f)).collect(),
-                },
+                    content: content
+                        .iter()
+                        .map(|v| explore_nodes(v, f))
+                        .into_iter()
+                        .collect()?,
+                }),
                 VaultNode::Directory {
                     name,
                     path,
                     content,
-                } => VaultNode::Directory {
+                } => Ok(VaultNode::Directory {
                     name,
                     path,
-                    content: content.iter().map(|v| explore_nodes(v, f)).collect(),
-                },
+                    content: content.iter().map(|v| explore_nodes(v, f)).collect()?,
+                }),
                 VaultNode::File {
                     name,
                     path,
                     content,
-                } => VaultNode::File {
+                } => Ok(VaultNode::File {
                     name,
                     path,
-                    content: content.iter().map(f).collect(),
-                },
+                    content: content.iter().map(f).into_iter().collect()?,
+                }),
             }
         }
-        let new_root = tasks.root.iter().map(|n| explore_nodes(n, f)).collect();
-        Vaults { root: new_root }
+        let root: Result<Vec<VaultNode>> = tasks.root.iter().map(|n| explore_nodes(n, f)).collect();
+        Ok(Vaults { root: root? })
     }
 
     /// Explores the vault and fills a `&mut HashSet<String>` with every tags found.
@@ -318,6 +322,13 @@ impl TaskManager {
             .root
             .iter()
             .try_for_each(|node| explore_node(node, config))?;
+        Self::map_file_entries(tasks, &mut |file_entry_node| {
+            match file_entry_node {
+                FileEntryNode::Task(t) => t.fix_task_attributes(config),
+                _ => Ok(()),
+            }
+            *file_entry_node
+        });
         Ok(())
     }
 
