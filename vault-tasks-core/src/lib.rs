@@ -4,7 +4,7 @@ use std::{collections::HashSet, fmt::Display, path::PathBuf};
 use vault_data::Vaults;
 
 use filter::Filter;
-use tracing::{error, warn};
+use tracing::error;
 use vault_parser::VaultParser;
 
 use crate::{
