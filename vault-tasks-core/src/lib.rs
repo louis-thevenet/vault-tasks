@@ -59,6 +59,13 @@ impl TaskManager {
         res.reload(config)?;
         Ok(res)
     }
+    #[must_use]
+    pub fn new_without_loading(config: &TasksConfig) -> Self {
+        Self {
+            config: config.clone(),
+            ..Default::default()
+        }
+    }
 
     /// Reloads the `VaultData` from file system.
     ///

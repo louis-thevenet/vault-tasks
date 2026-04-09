@@ -45,7 +45,7 @@ async fn main() -> Result<()> {
             let mut task_mgr = if in_vault {
                 TaskManager::load_from_config(&config.core)?
             } else {
-                TaskManager::default()
+                TaskManager::new_without_loading(&config.core)
             };
             for task in tasks {
                 task_mgr.add_task(&task, filepath.clone().map(|f| (in_vault, f)))?;
