@@ -39,11 +39,16 @@ async fn main() -> Result<()> {
         }
         Some(cli::Commands::NewTask {
             tasks,
-            filename: filename_opt,
+            filepath,
+            in_vault,
         }) => {
-            let mut task_mgr = TaskManager::load_from_config(&config.core)?;
+            let mut task_mgr = if in_vault {
+                TaskManager::load_from_config(&config.core)?
+            } else {
+                TaskManager::default()
+            };
             for task in tasks {
-                task_mgr.add_task(&task, filename_opt.clone())?;
+                task_mgr.add_task(&task, filepath.clone().map(|f| (in_vault, f)))?;
             }
             Ok(())
         }

@@ -51,8 +51,11 @@ pub enum Commands {
     #[command(alias = "task")]
     NewTask {
         #[arg(short, long, value_name = "FILENAME")]
-        /// Filename to append the new tasks to
-        filename: Option<String>,
+        /// File to append the new tasks to
+        filepath: Option<PathBuf>,
+        /// If set to true, the file path will be be prefixed with the vault path
+        #[arg( long, action = ArgAction::SetTrue)]
+        in_vault: bool,
         #[arg(
             trailing_var_arg = true,
             allow_hyphen_values = true,

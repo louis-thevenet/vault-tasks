@@ -87,7 +87,7 @@ pub struct CoreConfig {
     #[serde(default)]
     pub(crate) indent_length: usize,
     #[serde(default)]
-    pub(crate) tasks_drop_file: Option<PathBuf>,
+    pub(crate) tasks_drop_file: PathBuf,
 }
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct DisplayConfig {
@@ -202,7 +202,7 @@ impl TasksConfig {
                 } else {
                     user_config.core.vault_path
                 },
-                tasks_drop_file: if user_config.core.tasks_drop_file.is_none() {
+                tasks_drop_file: if user_config.core.tasks_drop_file.as_os_str().is_empty() {
                     default_config.core.tasks_drop_file
                 } else {
                     user_config.core.tasks_drop_file
