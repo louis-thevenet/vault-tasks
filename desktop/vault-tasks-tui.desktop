@@ -2,7 +2,7 @@
 Name=vault-tasks-tui
 Version=2.0.1
 GenericName=Markdown Tasks Manager
-Exec=vault-tasks
+Exec=vault-tasks-tui
 Terminal=true
 Type=Application
 Categories=Utility;Productivity;ConsoleOnly;
