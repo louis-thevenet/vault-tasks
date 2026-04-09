@@ -1,6 +1,6 @@
 use color_eyre::{Result, eyre::bail};
 
-use std::{collections::HashSet, fmt::Display};
+use std::{collections::HashSet, fmt::Display, path::PathBuf};
 use vault_data::Vaults;
 
 use filter::Filter;
@@ -49,8 +49,6 @@ pub enum Found {
     FileEntry(FileEntryNode),
 }
 impl TaskManager {
-    const DROP_FILE_DEFAULT_PATH: &str = "task_drop_file.md";
-
     /// Loads a vault from a `Config` and returns a `TaskManager`.
     ///
     /// # Errors
@@ -389,29 +387,41 @@ impl TaskManager {
             .any(|node| aux_node(node, selected_header_path, 0))
     }
     /// Adds a new task to the vault from a raw task input string.
-    /// Task will be added to the drop file configured in the `TasksConfig` or to a default drop file if none is configured.
+    /// Task will be added to the specified file or the default file configured in the `TasksConfig` .
     /// # Errors
     /// Will return an error if the task cannot be parsed or if it cannot be written to the vault.
-    pub fn add_task(&mut self, mut task_input: &str, filename_opt: Option<String>) -> Result<()> {
-        let path = filename_opt
-            .map(|filename| self.config.core.vault_path.join(filename))
-            .or_else(|| self.config.core.tasks_drop_file.clone())
-            .unwrap_or_else(|| {
-                warn!(
-                    "No drop file configured, using default drop filename: {}",
-                    Self::DROP_FILE_DEFAULT_PATH
-                );
-                self.config
-                    .core
-                    .vault_path
-                    .join(Self::DROP_FILE_DEFAULT_PATH)
-            });
+    pub fn add_task(
+        &mut self,
+        mut task_input: &str,
+        filepath_opt: Option<(bool, PathBuf)>,
+    ) -> Result<()> {
+        let path = match filepath_opt {
+            Some((in_vault, filepath)) => {
+                if in_vault {
+                    self.config.core.vault_path.join(filepath)
+                } else {
+                    filepath
+                }
+            }
+            None => {
+                if self.config.core.tasks_drop_file.is_absolute() {
+                    self.config.core.tasks_drop_file.clone()
+                } else {
+                    self.config
+                        .core
+                        .vault_path
+                        .join(self.config.core.tasks_drop_file.clone())
+                }
+            }
+        };
         match parser::task::parse_task(&mut task_input, &path, &self.config) {
             Ok(task) => {
-                task.fix_task_attributes(&self.config)?;
-                self.reload(&self.config.clone())
+                let res = task.fix_task_attributes(&self.config);
+
+                println!("Task successfully added to {}", path.display());
+                res
             }
-            Err(e) => bail!("Failed to parse task input: {e}"),
+            Err(e) => bail!("Failed to parse task input '{task_input}': {e}"),
         }
     }
 }

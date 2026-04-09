@@ -6,6 +6,7 @@ ignored = []
 use_american_format = true
 indent_length = 2
 tracker_extra_blanks = 3
+tasks_drop_file = "tasks_drop_file.md"
 
 [display]
 show_relative_due_dates = true
