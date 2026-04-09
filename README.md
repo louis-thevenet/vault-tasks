@@ -1,6 +1,6 @@
 # Vault-tasks
 
-`vault-tasks` is a TUI Markdown task manager.
+`vault-tasks-tui` is a TUI Markdown task manager.
 
 It will parse any Markdown file or vault and display the tasks it contains.
 
@@ -48,7 +48,7 @@ I also spend most of my writing time in the terminal (Helix) and do not rely on 
 ### Cargo
 
 ```
-cargo install vault-tasks
+cargo install vault-tasks-tui
 ```
 
 ### Nix
@@ -74,7 +74,7 @@ cargo build --release
 
 ## Usage
 
-See `vault-tasks --help` for basic usage.
+See `vault-tasks-tui --help` for basic usage.
 
 ### Writing tasks
 
@@ -105,15 +105,15 @@ See `vault-tasks --help` for basic usage.
 
 - Task states are **Done** (`x`), **To-Do** (` `), **Incomplete** (`/`) and **Canceled** (`-`)
 
-- `@today` allows you mark a task for today while keeping a due date. It will show up with a ☀️ in `vault-tasks`.
+- `@today` allows you mark a task for today while keeping a due date. It will show up with a ☀️ in `vault-tasks-tui`.
 
-- Relative dates are always replaced by literal dates once `vault-tasks` is run. Thanks to this, `vault-tasks` does not store any data except its config file.
+- Relative dates are always replaced by literal dates once `vault-tasks-tui` is run. Thanks to this, `vault-tasks-tui` does not store any data except its config file.
 
 - Other tokens will be part of the title of that task
 
 - Descriptions and subtasks are declared using indents (see configuration)
 
-This is what you will see in the preview of this `README.md` in `vault-tasks`:
+This is what you will see in the preview of this `README.md` in `vault-tasks-tui`:
 
 ![](./examples/demo_readme_explorer.png)
 
@@ -223,23 +223,23 @@ Check the key map within the app with `?`
 You can start already focused on a tab by using one of the CLI subcommands:
 
 ```bash
-vault-tasks explorer # is the default
+vault-tasks-tui explorer # is the default
 # Or
-vault-tasks filter
-vault-tasks time
-vault-tasks calendar
+vault-tasks-tui filter
+vault-tasks-tui time
+vault-tasks-tui calendar
 ```
 
 You can also output the content of a vault in standard output using
 
 ```bash
-vault-tasks stdout
+vault-tasks-tui stdout
 ```
 
 Example output:
 
 ```
-vault-tasks -v ./README.md stdout
+vault-tasks-tui -v ./README.md stdout
 README.md
 ‾‾‾‾‾‾‾‾‾
   Vault-tasks
@@ -268,11 +268,12 @@ README.md
 
 ## Configuration
 
-The [`config.toml`](./.config/config.toml) contains the default configuration which can be generated using `vault-tasks generate-config`.
-
-In `$HOME/.config/vault-tasks/config.toml`, you can override the default settings, keybindings and colorscheme.
+Configuration is split in two files: `core.toml` and `tui.toml` which can be generated with `vault-tasks-tui --generate-config`.
+You can override the default settings, keybindings and colorscheme.
 
 In particular, you can set a default vault path.
+
+Default configuration files can be found in `./vault-tasks-core/.config/core.toml` and `./vault-tasks-tui/.config/`.
 
 ## Contributing
 
