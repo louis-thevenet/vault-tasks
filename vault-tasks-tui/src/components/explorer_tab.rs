@@ -493,30 +493,24 @@ impl Component for ExplorerTab<'_> {
                 Action::Search => {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
                 }
-                Action::IncreaseCompletion | Action::DecreaseCompletion => {
-                    if self.edit_selected_task_completion(&action).is_ok() {
-                        return Ok(Some(Action::ReloadVault));
-                    }
+                Action::IncreaseCompletion | Action::DecreaseCompletion
+                    if self.edit_selected_task_completion(&action).is_ok() =>
+                {
+                    return Ok(Some(Action::ReloadVault));
                 }
-                Action::MarkDone => {
-                    if self.edit_selected_task_state(State::Done).is_ok() {
-                        return Ok(Some(Action::ReloadVault));
-                    }
+                Action::MarkDone if self.edit_selected_task_state(State::Done).is_ok() => {
+                    return Ok(Some(Action::ReloadVault));
                 }
-                Action::MarkCancel => {
-                    if self.edit_selected_task_state(State::Canceled).is_ok() {
-                        return Ok(Some(Action::ReloadVault));
-                    }
+                Action::MarkCancel if self.edit_selected_task_state(State::Canceled).is_ok() => {
+                    return Ok(Some(Action::ReloadVault));
                 }
-                Action::MarkToDo => {
-                    if self.edit_selected_task_state(State::ToDo).is_ok() {
-                        return Ok(Some(Action::ReloadVault));
-                    }
+                Action::MarkToDo if self.edit_selected_task_state(State::ToDo).is_ok() => {
+                    return Ok(Some(Action::ReloadVault));
                 }
-                Action::MarkIncomplete => {
-                    if self.edit_selected_task_state(State::Incomplete).is_ok() {
-                        return Ok(Some(Action::ReloadVault));
-                    }
+                Action::MarkIncomplete
+                    if self.edit_selected_task_state(State::Incomplete).is_ok() =>
+                {
+                    return Ok(Some(Action::ReloadVault));
                 }
                 Action::Edit => {
                     if let Some(task) = self.get_selected_task() {
