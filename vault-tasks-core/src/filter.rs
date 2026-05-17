@@ -181,6 +181,7 @@ pub fn filter(vault_data: &Vaults, task_filter: &Option<Filter>) -> Option<Vault
         match &file_entry {
             FileEntryNode::Header {
                 content,
+                path,
                 heading_level,
                 name,
             } => {
@@ -197,6 +198,7 @@ pub fn filter(vault_data: &Vaults, task_filter: &Option<Filter>) -> Option<Vault
                     Some(FileEntryNode::Header {
                         heading_level: *heading_level,
                         name: name.clone(),
+                        path: path.clone(),
                         content: actual_content,
                     })
                 }
@@ -428,6 +430,7 @@ mod tests {
                                 description: Some("test\ndesc".to_string()),
                                 ..Default::default()
                             })],
+                            path: Path
                         }],
                     },
                     FileEntryNode::Header {

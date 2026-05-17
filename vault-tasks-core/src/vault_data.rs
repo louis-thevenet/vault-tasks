@@ -56,8 +56,13 @@ impl Display for VaultNode {
 /// An entry in a file, representing either a header or task.
 pub enum FileEntryNode {
     Header {
+        /// Content of the header
         name: String,
+        /// Path to the file it belongs to
+        path: PathBuf,
+        /// Heading levels (###)
         heading_level: usize,
+        /// Children
         content: Vec<FileEntryNode>,
     },
     Task(Task),
@@ -73,6 +78,7 @@ impl FileEntryNode {
             FileEntryNode::Header {
                 name,
                 heading_level: _,
+                path: _,
                 content,
             } => {
                 write_underline_with_indent(name, depth, f)?;

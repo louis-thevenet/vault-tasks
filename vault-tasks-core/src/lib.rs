@@ -71,7 +71,15 @@ impl Found {
                 } => path,
             }
             .clone(),
-            Found::FileEntry(_file_entry_node) => PathBuf::new(),
+            Found::FileEntry(file_entry_node) => match file_entry_node {
+                FileEntryNode::Header {
+                    name: _,
+                    path,
+                    heading_level: _,
+                    content: _,
+                } => path.to_path_buf(),
+                FileEntryNode::Task(task) => task.path.clone(),
+            }
         }
     }
 
@@ -100,6 +108,7 @@ impl Found {
             Found::FileEntry(file_entry_node) => match file_entry_node {
                 FileEntryNode::Header {
                     name,
+                    path: _,
                     heading_level: _,
                     content: _,
                 } => name.clone(),

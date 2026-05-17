@@ -182,6 +182,7 @@ impl TaskListItem {
             FileEntryNode::Header {
                 name: _,
                 heading_level: _,
+                path: _,
                 content,
             } => {
                 content
@@ -230,6 +231,7 @@ impl Widget for TaskListItem {
             FileEntryNode::Header {
                 name,
                 heading_level: _,
+                path: _,
                 content: children,
             } => {
                 let header_line = Self::parse_markdown_lines(name, area.width)
