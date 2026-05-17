@@ -696,12 +696,15 @@ mod tests {
         let expected = vec![
             FileEntryNode::Header {
                 name: "1 useless".to_string(),
+                path: PathBuf::new(),
                 heading_level: 1,
                 content: vec![FileEntryNode::Header {
                     name: "2 useless".to_string(),
+                    path: PathBuf::new(),
                     heading_level: 2,
                     content: vec![FileEntryNode::Header {
                         name: "3 useless".to_string(),
+                        path: PathBuf::new(),
                         heading_level: 3,
                         content: vec![],
                     }],
@@ -709,15 +712,18 @@ mod tests {
             },
             FileEntryNode::Header {
                 name: "2 useful".to_string(),
+                path: PathBuf::new(),
                 heading_level: 1,
                 content: vec![
                     FileEntryNode::Header {
                         name: "3 useless".to_string(),
+                        path: PathBuf::new(),
                         heading_level: 3,
                         content: vec![],
                     },
                     FileEntryNode::Header {
                         name: "4 useful".to_string(),
+                        path: PathBuf::new(),
                         heading_level: 2,
                         content: vec![FileEntryNode::Task(Task {
                             name: "test".to_string(),
@@ -734,9 +740,11 @@ mod tests {
 
         let expected_after_cleaning = vec![FileEntryNode::Header {
             name: "2 useful".to_string(),
+            path: PathBuf::new(),
             heading_level: 1,
             content: vec![FileEntryNode::Header {
                 name: "4 useful".to_string(),
+                path: PathBuf::new(),
                 heading_level: 2,
                 content: vec![FileEntryNode::Task(Task {
                     name: "test".to_string(),
@@ -780,6 +788,7 @@ mod tests {
         };
         let expected = vec![FileEntryNode::Header {
             name: "1 Header".to_string(),
+            path: PathBuf::new(),
             heading_level: 1,
             content: vec![
                 FileEntryNode::Task(Task {
@@ -789,9 +798,11 @@ mod tests {
                 }),
                 FileEntryNode::Header {
                     name: "2 Header".to_string(),
+                    path: PathBuf::new(),
                     heading_level: 2,
                     content: vec![FileEntryNode::Header {
                         name: "3 Header".to_string(),
+                        path: PathBuf::new(),
                         heading_level: 3,
                         content: vec![
                             FileEntryNode::Task(Task {
@@ -809,6 +820,7 @@ mod tests {
                 },
                 FileEntryNode::Header {
                     name: "2 Header 2".to_string(),
+                    path: PathBuf::new(),
                     heading_level: 2,
                     content: vec![FileEntryNode::Task(Task {
                         name: "Task".to_string(),
@@ -877,6 +889,7 @@ mod tests {
         };
         let expected = vec![FileEntryNode::Header {
             name: "1 Header".to_string(),
+            path: PathBuf::new(),
             heading_level: 1,
             content: vec![
                 FileEntryNode::Task(Task {
@@ -886,6 +899,7 @@ mod tests {
                 }),
                 FileEntryNode::Header {
                     name: "2 Header".to_string(),
+                    path: PathBuf::new(),
                     heading_level: 2,
                     content: vec![],
                 },
@@ -916,9 +930,11 @@ mod tests {
         };
         let expected = vec![FileEntryNode::Header {
             name: "1 Header".to_string(),
+            path: PathBuf::new(),
             heading_level: 1,
             content: vec![FileEntryNode::Header {
                 name: "Test".to_string(),
+                path: PathBuf::new(),
                 heading_level: 2,
                 content: vec![FileEntryNode::Task(Task {
                     name: "Test a".to_string(),

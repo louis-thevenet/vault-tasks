@@ -79,7 +79,7 @@ impl Found {
                     content: _,
                 } => path.to_path_buf(),
                 FileEntryNode::Task(task) => task.path.clone(),
-            }
+            },
         }
     }
 
@@ -547,24 +547,29 @@ mod tests {
         let file_content = vec![
             FileEntryNode::Header {
                 name: "1".to_string(),
+                path: Path::new("test/Test.md").into(),
                 heading_level: 1,
                 content: vec![FileEntryNode::Header {
                     name: "2".to_string(),
+                    path: Path::new("test/Test.md").into(),
                     heading_level: 2,
                     content: vec![],
                 }],
             },
             FileEntryNode::Header {
                 name: "1.2".to_string(),
+                path: Path::new("test/Test.md").into(),
                 heading_level: 1,
                 content: vec![
                     FileEntryNode::Header {
                         name: "3".to_string(),
+                        path: Path::new("test/Test.md").into(),
                         heading_level: 3,
                         content: vec![],
                     },
                     FileEntryNode::Header {
                         name: "4".to_string(),
+                        path: Path::new("test/Test.md").into(),
                         heading_level: 2,
                         content: vec![
                             FileEntryNode::Task(task1.clone()),
@@ -608,6 +613,7 @@ mod tests {
         let found = task_mgr.resolve_path(&path).unwrap();
         let expected_header = FileEntryNode::Header {
             name: "2".to_string(),
+            path: Path::new("test/Test.md").into(),
             heading_level: 2,
             content: vec![],
         };
@@ -626,6 +632,7 @@ mod tests {
         let found = task_mgr.resolve_path(&path).unwrap();
         let expected_header_with_tasks = FileEntryNode::Header {
             name: "4".to_string(),
+            path: Path::new("test/Test.md").into(),
             heading_level: 2,
             content: vec![
                 FileEntryNode::Task(task1),
