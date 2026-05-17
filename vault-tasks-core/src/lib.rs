@@ -48,6 +48,75 @@ pub enum Found {
     Node(VaultNode),
     FileEntry(FileEntryNode),
 }
+impl Found {
+    #[must_use]
+    pub fn get_path(&self) -> PathBuf {
+        match self {
+            Found::Root(_vaults) => PathBuf::new(),
+            Found::Node(vault_node) => match vault_node {
+                VaultNode::Vault {
+                    name: _,
+                    path,
+                    content: _,
+                }
+                | VaultNode::Directory {
+                    name: _,
+                    path,
+                    content: _,
+                }
+                | VaultNode::File {
+                    name: _,
+                    path,
+                    content: _,
+                } => path,
+            }
+            .clone(),
+            Found::FileEntry(file_entry_node) => match file_entry_node {
+                FileEntryNode::Header {
+                    name: _,
+                    path,
+                    heading_level: _,
+                    content: _,
+                } => path.to_path_buf(),
+                FileEntryNode::Task(task) => task.path.clone(),
+            },
+        }
+    }
+
+    /// Returns the entry's name in path.
+    #[must_use]
+    pub fn get_name(&self) -> String {
+        match self {
+            Found::Root(_vaults) => String::new(),
+            Found::Node(vault_node) => match vault_node {
+                VaultNode::Vault {
+                    name,
+                    path: _,
+                    content: _,
+                }
+                | VaultNode::Directory {
+                    name,
+                    path: _,
+                    content: _,
+                }
+                | VaultNode::File {
+                    name,
+                    path: _,
+                    content: _,
+                } => name.clone(),
+            },
+            Found::FileEntry(file_entry_node) => match file_entry_node {
+                FileEntryNode::Header {
+                    name,
+                    path: _,
+                    heading_level: _,
+                    content: _,
+                } => name.clone(),
+                FileEntryNode::Task(task) => task.name.clone(),
+            },
+        }
+    }
+}
 impl TaskManager {
     /// Loads a vault from a `Config` and returns a `TaskManager`.
     ///
@@ -478,24 +547,29 @@ mod tests {
         let file_content = vec![
             FileEntryNode::Header {
                 name: "1".to_string(),
+                path: Path::new("test/Test.md").into(),
                 heading_level: 1,
                 content: vec![FileEntryNode::Header {
                     name: "2".to_string(),
+                    path: Path::new("test/Test.md").into(),
                     heading_level: 2,
                     content: vec![],
                 }],
             },
             FileEntryNode::Header {
                 name: "1.2".to_string(),
+                path: Path::new("test/Test.md").into(),
                 heading_level: 1,
                 content: vec![
                     FileEntryNode::Header {
                         name: "3".to_string(),
+                        path: Path::new("test/Test.md").into(),
                         heading_level: 3,
                         content: vec![],
                     },
                     FileEntryNode::Header {
                         name: "4".to_string(),
+                        path: Path::new("test/Test.md").into(),
                         heading_level: 2,
                         content: vec![
                             FileEntryNode::Task(task1.clone()),
@@ -539,6 +613,7 @@ mod tests {
         let found = task_mgr.resolve_path(&path).unwrap();
         let expected_header = FileEntryNode::Header {
             name: "2".to_string(),
+            path: Path::new("test/Test.md").into(),
             heading_level: 2,
             content: vec![],
         };
@@ -557,6 +632,7 @@ mod tests {
         let found = task_mgr.resolve_path(&path).unwrap();
         let expected_header_with_tasks = FileEntryNode::Header {
             name: "4".to_string(),
+            path: Path::new("test/Test.md").into(),
             heading_level: 2,
             content: vec![
                 FileEntryNode::Task(task1),

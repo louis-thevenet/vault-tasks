@@ -46,6 +46,7 @@ impl ExplorerTab<'_> {
             Found::FileEntry(FileEntryNode::Header {
                 content: _content,
                 name,
+                path: _,
                 heading_level,
             }) => ("#".repeat(*heading_level).clone(), name.clone()),
             Found::FileEntry(FileEntryNode::Task(task)) => {
@@ -79,6 +80,7 @@ impl ExplorerTab<'_> {
         }
         res
     }
+
     pub(super) fn get_preview_path(&self) -> Result<Vec<String>> {
         let mut path_to_preview = self.current_path.clone();
         if self.entries_center_view.is_empty() {
@@ -88,7 +90,7 @@ impl ExplorerTab<'_> {
             .entries_center_view
             .get(self.state_center_view.selected.unwrap_or_default())
         {
-            Some(res) => path_to_preview.push(res.clone().1),
+            Some(res) => path_to_preview.push(res.get_name()),
             None => bail!(
                 "Index ({:?}) of selected entry out of range {:?}",
                 self.state_center_view.selected,
@@ -101,7 +103,7 @@ impl ExplorerTab<'_> {
         let Some(tui) = tui_opt else {
             bail!("Could not open current entry, Tui was None")
         };
-        let path = self.get_current_path_to_file();
+        let path = self.get_real_path_of_selected_item()?;
         info!("Opening {:?} in default editor.", path);
         if let Some(tx) = &self.command_tx {
             tui.exit()?;
@@ -116,21 +118,15 @@ impl ExplorerTab<'_> {
         }
         Ok(())
     }
-    pub(super) fn get_current_path_to_file(&self) -> PathBuf {
-        let mut path = PathBuf::new();
-        for e in &self
+    pub(super) fn get_real_path_of_selected_item(&self) -> Result<PathBuf> {
+        // Get internal path
+        let path = self
             .get_preview_path()
-            .unwrap_or_else(|_| self.current_path.clone())
-        {
-            if path
-                .extension()
-                .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
-            {
-                break;
-            }
-            path.push(e);
-        }
-        path
+            .unwrap_or_else(|_| self.current_path.clone());
+
+        self.task_mgr
+            .resolve_path(&path)
+            .map(|entry| entry.get_path())
     }
     pub(super) fn get_selected_task(&self) -> Option<Task> {
         let path = match self.get_preview_path() {

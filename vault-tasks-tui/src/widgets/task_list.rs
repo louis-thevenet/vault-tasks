@@ -111,6 +111,7 @@ mod tests {
         let file_content = vec![
             FileEntryNode::Header {
                 name: "1".to_string(),
+                path: std::path::PathBuf::new(),
                 heading_level: 1,
                 content: vec![
                     FileEntryNode::Task(Task {
@@ -144,9 +145,11 @@ mod tests {
                     }),
                     FileEntryNode::Header {
                         name: "1.1".to_string(),
+                        path: std::path::PathBuf::new(),
                         heading_level: 2,
                         content: vec![FileEntryNode::Header {
                             name: "1.1.1".to_string(),
+                            path: std::path::PathBuf::new(),
                             heading_level: 3,
                             content: vec![FileEntryNode::Task(Task {
                                 name: "test 1.1.1".to_string(),
@@ -159,15 +162,18 @@ mod tests {
             },
             FileEntryNode::Header {
                 name: "2".to_string(),
+                path: std::path::PathBuf::new(),
                 heading_level: 1,
                 content: vec![
                     FileEntryNode::Header {
                         name: "2.1".to_string(),
+                        path: std::path::PathBuf::new(),
                         heading_level: 3,
                         content: vec![],
                     },
                     FileEntryNode::Header {
                         name: "2.2".to_string(),
+                        path: std::path::PathBuf::new(),
                         heading_level: 2,
                         content: vec![FileEntryNode::Task(Task {
                             name: "test 2.2".to_string(),

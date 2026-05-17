@@ -31,7 +31,6 @@ mod utils;
 
 pub const FILE_EMOJI: &str = "📄";
 pub const DIRECTORY_EMOJI: &str = "📁";
-pub const WARNING_EMOJI: &str = "⚠️";
 
 /// Struct that helps with drawing the component
 struct ExplorerArea {
@@ -52,7 +51,7 @@ pub struct ExplorerTab<'a> {
     state_left_view: ListState,
     entries_left_view: Vec<(String, String)>,
     state_center_view: ListState,
-    entries_center_view: Vec<(String, String)>,
+    entries_center_view: Vec<Found>,
     entries_right_view: Vec<Found>,
     search_bar_widget: InputBar<'a>,
     task_list_widget_state: ScrollViewState,
@@ -73,10 +72,8 @@ impl ExplorerTab<'_> {
             Found::Node(
                 VaultNode::Vault { content, .. } | VaultNode::Directory { content, .. },
             ) => content.into_iter().map(Found::Node).collect(),
-            Found::Node(VaultNode::File { content, .. }) => {
-                content.into_iter().map(Found::FileEntry).collect()
-            }
-            Found::FileEntry(FileEntryNode::Header { content, .. }) => {
+            Found::Node(VaultNode::File { content, .. })
+            | Found::FileEntry(FileEntryNode::Header { content, .. }) => {
                 content.into_iter().map(Found::FileEntry).collect()
             }
             Found::FileEntry(FileEntryNode::Task(t)) => t
@@ -105,7 +102,7 @@ impl ExplorerTab<'_> {
     }
     pub(super) fn update_center_entries(&mut self) -> Result<()> {
         self.entries_center_view = match self.task_mgr.resolve_path(&self.current_path) {
-            Ok(res) => Self::vault_data_to_entry_list(&Self::get_children(res)),
+            Ok(res) => Self::get_children(res),
             Err(_e) => {
                 // If no entries are found, go to parent object
                 while self.task_mgr.resolve_path(&self.current_path).is_err()
@@ -115,8 +112,8 @@ impl ExplorerTab<'_> {
                 }
                 let data = self.task_mgr.resolve_path(&self.current_path);
                 match data {
-                    Ok(data) => Self::vault_data_to_entry_list(&Self::get_children(data)),
-                    Err(e) => vec![(WARNING_EMOJI.to_owned(), e.to_string())],
+                    Ok(data) => Self::get_children(data),
+                    Err(_e) => vec![],
                 }
             }
         };
@@ -178,7 +175,7 @@ impl ExplorerTab<'_> {
             self.current_path
                 .iter()
                 .map(|item| {
-                    let span = Span::from(item.to_string());
+                    let span = Span::from(item.clone());
                     if item.contains(".md") {
                         span.bold()
                     } else {
@@ -496,30 +493,24 @@ impl Component for ExplorerTab<'_> {
                 Action::Search => {
                     self.search_bar_widget.is_focused = !self.search_bar_widget.is_focused;
                 }
-                Action::IncreaseCompletion | Action::DecreaseCompletion => {
-                    if self.edit_selected_task_completion(&action).is_ok() {
-                        return Ok(Some(Action::ReloadVault));
-                    }
+                Action::IncreaseCompletion | Action::DecreaseCompletion
+                    if self.edit_selected_task_completion(&action).is_ok() =>
+                {
+                    return Ok(Some(Action::ReloadVault));
                 }
-                Action::MarkDone => {
-                    if self.edit_selected_task_state(State::Done).is_ok() {
-                        return Ok(Some(Action::ReloadVault));
-                    }
+                Action::MarkDone if self.edit_selected_task_state(State::Done).is_ok() => {
+                    return Ok(Some(Action::ReloadVault));
                 }
-                Action::MarkCancel => {
-                    if self.edit_selected_task_state(State::Canceled).is_ok() {
-                        return Ok(Some(Action::ReloadVault));
-                    }
+                Action::MarkCancel if self.edit_selected_task_state(State::Canceled).is_ok() => {
+                    return Ok(Some(Action::ReloadVault));
                 }
-                Action::MarkToDo => {
-                    if self.edit_selected_task_state(State::ToDo).is_ok() {
-                        return Ok(Some(Action::ReloadVault));
-                    }
+                Action::MarkToDo if self.edit_selected_task_state(State::ToDo).is_ok() => {
+                    return Ok(Some(Action::ReloadVault));
                 }
-                Action::MarkIncomplete => {
-                    if self.edit_selected_task_state(State::Incomplete).is_ok() {
-                        return Ok(Some(Action::ReloadVault));
-                    }
+                Action::MarkIncomplete
+                    if self.edit_selected_task_state(State::Incomplete).is_ok() =>
+                {
+                    return Ok(Some(Action::ReloadVault));
                 }
                 Action::Edit => {
                     if let Some(task) = self.get_selected_task() {
@@ -602,7 +593,7 @@ impl Component for ExplorerTab<'_> {
 
         // Center Block
         let lateral_entries_list = Self::build_list(
-            Self::apply_prefixes(&self.entries_center_view),
+            Self::apply_prefixes(&Self::vault_data_to_entry_list(&self.entries_center_view)),
             Block::default().borders(Borders::RIGHT),
             highlighted_style,
         );

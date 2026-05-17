@@ -197,14 +197,12 @@ impl ParserFileEntry<'_> {
     #[allow(clippy::too_many_lines)]
     fn insert_header_at(
         file_entry: &mut Vec<FileEntryNode>,
-        name: String,
-        heading_level: usize,
+        header: FileEntryNode,
         target_header_depth: usize,
     ) -> color_eyre::Result<()> {
         fn insert_at_aux(
             file_entry: &mut FileEntryNode,
-            name: String,
-            heading_level: usize,
+            header: FileEntryNode,
             current_header_depth: usize,
             target_header_depth: usize,
         ) -> color_eyre::Result<()> {
@@ -221,11 +219,7 @@ impl ParserFileEntry<'_> {
                         }
                         std::cmp::Ordering::Equal => {
                             // Found correct header level
-                            header_children.push(FileEntryNode::Header {
-                                name,
-                                heading_level,
-                                content: vec![],
-                            });
+                            header_children.push(header);
                             Ok(())
                         }
                         std::cmp::Ordering::Less => {
@@ -234,19 +228,14 @@ impl ParserFileEntry<'_> {
                                 if let FileEntryNode::Header { .. } = child {
                                     return insert_at_aux(
                                         child,
-                                        name,
-                                        heading_level,
+                                        header,
                                         current_header_depth + 1,
                                         target_header_depth,
                                     );
                                 }
                             }
                             // No child header found, append to current level
-                            header_children.push(FileEntryNode::Header {
-                                name,
-                                heading_level,
-                                content: vec![],
-                            });
+                            header_children.push(header);
                             Ok(())
                         }
                     }
@@ -259,13 +248,9 @@ impl ParserFileEntry<'_> {
         if let Some(file_entry) = file_entry.last_mut()
             && target_header_depth > 0
         {
-            insert_at_aux(file_entry, name, heading_level, 1, target_header_depth)
+            insert_at_aux(file_entry, header, 1, target_header_depth)
         } else {
-            file_entry.push(FileEntryNode::Header {
-                name,
-                heading_level,
-                content: vec![],
-            });
+            file_entry.push(header);
             Ok(())
         }
     }
@@ -501,10 +486,14 @@ impl ParserFileEntry<'_> {
                         false,
                     );
                 }
-                Ok(FileToken::Header((header, new_depth))) => {
-                    if Self::insert_header_at(file_entry, header.clone(), new_depth, new_depth - 1)
-                        .is_err()
-                    {
+                Ok(FileToken::Header((header_text, new_depth))) => {
+                    let header = FileEntryNode::Header {
+                        name: header_text,
+                        path: self.path.clone(),
+                        heading_level: new_depth,
+                        content: vec![],
+                    };
+                    if Self::insert_header_at(file_entry, header.clone(), new_depth - 1).is_err() {
                         error!("Failed to insert header {}", header);
                     }
                     self.parse_file_aux(
@@ -581,6 +570,7 @@ impl ParserFileEntry<'_> {
         match &file_entry {
             FileEntryNode::Header {
                 name,
+                path,
                 heading_level,
                 content,
             } => {
@@ -597,6 +587,7 @@ impl ParserFileEntry<'_> {
                 }
                 return Some(FileEntryNode::Header {
                     content: actual_content,
+                    path: path.to_path_buf(),
                     name: name.to_string(),
                     heading_level: *heading_level,
                 });
@@ -705,12 +696,15 @@ mod tests {
         let expected = vec![
             FileEntryNode::Header {
                 name: "1 useless".to_string(),
+                path: PathBuf::new(),
                 heading_level: 1,
                 content: vec![FileEntryNode::Header {
                     name: "2 useless".to_string(),
+                    path: PathBuf::new(),
                     heading_level: 2,
                     content: vec![FileEntryNode::Header {
                         name: "3 useless".to_string(),
+                        path: PathBuf::new(),
                         heading_level: 3,
                         content: vec![],
                     }],
@@ -718,15 +712,18 @@ mod tests {
             },
             FileEntryNode::Header {
                 name: "2 useful".to_string(),
+                path: PathBuf::new(),
                 heading_level: 1,
                 content: vec![
                     FileEntryNode::Header {
                         name: "3 useless".to_string(),
+                        path: PathBuf::new(),
                         heading_level: 3,
                         content: vec![],
                     },
                     FileEntryNode::Header {
                         name: "4 useful".to_string(),
+                        path: PathBuf::new(),
                         heading_level: 2,
                         content: vec![FileEntryNode::Task(Task {
                             name: "test".to_string(),
@@ -743,9 +740,11 @@ mod tests {
 
         let expected_after_cleaning = vec![FileEntryNode::Header {
             name: "2 useful".to_string(),
+            path: PathBuf::new(),
             heading_level: 1,
             content: vec![FileEntryNode::Header {
                 name: "4 useful".to_string(),
+                path: PathBuf::new(),
                 heading_level: 2,
                 content: vec![FileEntryNode::Task(Task {
                     name: "test".to_string(),
@@ -789,6 +788,7 @@ mod tests {
         };
         let expected = vec![FileEntryNode::Header {
             name: "1 Header".to_string(),
+            path: PathBuf::new(),
             heading_level: 1,
             content: vec![
                 FileEntryNode::Task(Task {
@@ -798,9 +798,11 @@ mod tests {
                 }),
                 FileEntryNode::Header {
                     name: "2 Header".to_string(),
+                    path: PathBuf::new(),
                     heading_level: 2,
                     content: vec![FileEntryNode::Header {
                         name: "3 Header".to_string(),
+                        path: PathBuf::new(),
                         heading_level: 3,
                         content: vec![
                             FileEntryNode::Task(Task {
@@ -818,6 +820,7 @@ mod tests {
                 },
                 FileEntryNode::Header {
                     name: "2 Header 2".to_string(),
+                    path: PathBuf::new(),
                     heading_level: 2,
                     content: vec![FileEntryNode::Task(Task {
                         name: "Task".to_string(),
@@ -886,6 +889,7 @@ mod tests {
         };
         let expected = vec![FileEntryNode::Header {
             name: "1 Header".to_string(),
+            path: PathBuf::new(),
             heading_level: 1,
             content: vec![
                 FileEntryNode::Task(Task {
@@ -895,6 +899,7 @@ mod tests {
                 }),
                 FileEntryNode::Header {
                     name: "2 Header".to_string(),
+                    path: PathBuf::new(),
                     heading_level: 2,
                     content: vec![],
                 },
@@ -925,9 +930,11 @@ mod tests {
         };
         let expected = vec![FileEntryNode::Header {
             name: "1 Header".to_string(),
+            path: PathBuf::new(),
             heading_level: 1,
             content: vec![FileEntryNode::Header {
                 name: "Test".to_string(),
+                path: PathBuf::new(),
                 heading_level: 2,
                 content: vec![FileEntryNode::Task(Task {
                     name: "Test a".to_string(),
