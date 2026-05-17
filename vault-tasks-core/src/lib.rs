@@ -48,6 +48,66 @@ pub enum Found {
     Node(VaultNode),
     FileEntry(FileEntryNode),
 }
+impl Found {
+    #[must_use]
+    pub fn get_path(&self) -> PathBuf {
+        match self {
+            Found::Root(_vaults) => PathBuf::new(),
+            Found::Node(vault_node) => match vault_node {
+                VaultNode::Vault {
+                    name: _,
+                    path,
+                    content: _,
+                }
+                | VaultNode::Directory {
+                    name: _,
+                    path,
+                    content: _,
+                }
+                | VaultNode::File {
+                    name: _,
+                    path,
+                    content: _,
+                } => path,
+            }
+            .clone(),
+            Found::FileEntry(_file_entry_node) => PathBuf::new(),
+        }
+    }
+
+    /// Returns the entry's name in path.
+    #[must_use]
+    pub fn get_name(&self) -> String {
+        match self {
+            Found::Root(_vaults) => String::new(),
+            Found::Node(vault_node) => match vault_node {
+                VaultNode::Vault {
+                    name,
+                    path: _,
+                    content: _,
+                }
+                | VaultNode::Directory {
+                    name,
+                    path: _,
+                    content: _,
+                }
+                | VaultNode::File {
+                    name,
+                    path: _,
+                    content: _,
+                } => name.clone(),
+            },
+            Found::FileEntry(file_entry_node) => match file_entry_node {
+                FileEntryNode::Header {
+                    name,
+                    heading_level: _,
+                    content: _,
+                } => name.clone(),
+                FileEntryNode::Task(task) => task.name.clone(),
+            },
+        }
+    }
+}
 impl TaskManager {
     /// Loads a vault from a `Config` and returns a `TaskManager`.
     ///

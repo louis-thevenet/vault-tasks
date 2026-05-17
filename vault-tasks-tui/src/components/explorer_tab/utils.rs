@@ -79,6 +79,7 @@ impl ExplorerTab<'_> {
         }
         res
     }
+
     pub(super) fn get_preview_path(&self) -> Result<Vec<String>> {
         let mut path_to_preview = self.current_path.clone();
         if self.entries_center_view.is_empty() {
@@ -88,7 +89,7 @@ impl ExplorerTab<'_> {
             .entries_center_view
             .get(self.state_center_view.selected.unwrap_or_default())
         {
-            Some(res) => path_to_preview.push(res.clone().1),
+            Some(res) => path_to_preview.push(res.get_name()),
             None => bail!(
                 "Index ({:?}) of selected entry out of range {:?}",
                 self.state_center_view.selected,
@@ -101,7 +102,7 @@ impl ExplorerTab<'_> {
         let Some(tui) = tui_opt else {
             bail!("Could not open current entry, Tui was None")
         };
-        let path = self.get_current_path_to_file();
+        let path = self.internal_path_to_real_path();
         info!("Opening {:?} in default editor.", path);
         if let Some(tx) = &self.command_tx {
             tui.exit()?;
@@ -116,21 +117,38 @@ impl ExplorerTab<'_> {
         }
         Ok(())
     }
-    pub(super) fn get_current_path_to_file(&self) -> PathBuf {
-        let mut path = PathBuf::new();
-        for e in &self
+    /// Get system path from internal path
+    /// Would be better if we got it from the entry directly instead of converting
+    pub(super) fn internal_path_to_real_path(&self) -> PathBuf {
+        // Get internal path
+        let mut path = self
             .get_preview_path()
-            .unwrap_or_else(|_| self.current_path.clone())
+            .unwrap_or_else(|_| self.current_path.clone());
+        debug!("Getting selected entry's internal path: {path:#?}");
+
+        // replace internal vault path with its real system path
+        if let Some(e) = path.get_mut(0)
+            && let Ok(found) = self.task_mgr.resolve_path(std::slice::from_ref(e))
         {
-            if path
+            *e = found.get_path().to_string_lossy().to_string();
+        }
+
+        // Stop path at Markdown file (strips headers and tasks)
+        let mut path_to_file = PathBuf::new();
+
+        for e in &path {
+            if path_to_file
                 .extension()
                 .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
             {
                 break;
             }
-            path.push(e);
+            path_to_file.push(e);
         }
-        path
+
+        debug!("True path to file: {path_to_file:#?}");
+
+        path_to_file
     }
     pub(super) fn get_selected_task(&self) -> Option<Task> {
         let path = match self.get_preview_path() {
