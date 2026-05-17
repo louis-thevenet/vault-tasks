@@ -46,6 +46,7 @@ impl ExplorerTab<'_> {
             Found::FileEntry(FileEntryNode::Header {
                 content: _content,
                 name,
+                path: _,
                 heading_level,
             }) => ("#".repeat(*heading_level).clone(), name.clone()),
             Found::FileEntry(FileEntryNode::Task(task)) => {
@@ -102,7 +103,7 @@ impl ExplorerTab<'_> {
         let Some(tui) = tui_opt else {
             bail!("Could not open current entry, Tui was None")
         };
-        let path = self.internal_path_to_real_path();
+        let path = self.get_real_path_of_selected_item()?;
         info!("Opening {:?} in default editor.", path);
         if let Some(tx) = &self.command_tx {
             tui.exit()?;
@@ -117,38 +118,15 @@ impl ExplorerTab<'_> {
         }
         Ok(())
     }
-    /// Get system path from internal path
-    /// Would be better if we got it from the entry directly instead of converting
-    pub(super) fn internal_path_to_real_path(&self) -> PathBuf {
+    pub(super) fn get_real_path_of_selected_item(&self) -> Result<PathBuf> {
         // Get internal path
-        let mut path = self
+        let path = self
             .get_preview_path()
             .unwrap_or_else(|_| self.current_path.clone());
-        debug!("Getting selected entry's internal path: {path:#?}");
 
-        // replace internal vault path with its real system path
-        if let Some(e) = path.get_mut(0)
-            && let Ok(found) = self.task_mgr.resolve_path(std::slice::from_ref(e))
-        {
-            *e = found.get_path().to_string_lossy().to_string();
-        }
-
-        // Stop path at Markdown file (strips headers and tasks)
-        let mut path_to_file = PathBuf::new();
-
-        for e in &path {
-            if path_to_file
-                .extension()
-                .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
-            {
-                break;
-            }
-            path_to_file.push(e);
-        }
-
-        debug!("True path to file: {path_to_file:#?}");
-
-        path_to_file
+        self.task_mgr
+            .resolve_path(&path)
+            .map(|entry| entry.get_path())
     }
     pub(super) fn get_selected_task(&self) -> Option<Task> {
         let path = match self.get_preview_path() {
