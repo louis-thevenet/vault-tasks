@@ -375,16 +375,16 @@ impl ParserFileEntry<'_> {
         }
     }
 
-    /// Recursively parses the input file passed as a string.
+    /// Iteratively parses the input file passed as a string.
     #[allow(clippy::too_many_lines)]
     fn parse_file_aux<'a, I>(
         &self,
         mut input: Peekable<I>,
         file_entry: &mut Vec<FileEntryNode>,
         file_tags: &mut Vec<String>,
-        header_depth: usize,
-        comment_depth: usize,
-        code_block: bool,
+        mut header_depth: usize,
+        mut comment_depth: usize,
+        mut code_block: bool,
     ) where
         I: Iterator<Item = (usize, &'a str)>,
     {
@@ -400,69 +400,32 @@ impl ParserFileEntry<'_> {
             Self::parse_description,
         ));
 
-        let line_opt = input.next();
-        if line_opt.is_none() {
-            return;
-        }
-
-        let (line_number, mut line) = line_opt.unwrap();
-
-        if code_block {
-            // We're in a code block
-            match parser.parse_next(&mut line) {
-                Ok(FileToken::EndOfCodeBlock | FileToken::StartOfCodeBlock) => self.parse_file_aux(
-                    input,
-                    file_entry,
-                    file_tags,
-                    header_depth,
-                    comment_depth,
-                    false,
-                ),
-
-                _ => {
-                    self.parse_file_aux(
-                        input,
-                        file_entry,
-                        file_tags,
-                        header_depth,
-                        comment_depth,
-                        code_block,
-                    );
+        while let Some((line_number, mut line)) = input.next() {
+            if code_block {
+                // We're in a code block.
+                if matches!(
+                    parser.parse_next(&mut line),
+                    Ok(FileToken::EndOfCodeBlock | FileToken::StartOfCodeBlock)
+                ) {
+                    code_block = false;
                 }
+                continue;
             }
-        } else if comment_depth > 0 {
-            // We're in a comment
-            match parser.parse_next(&mut line) {
-                Ok(FileToken::StartOfComment) => self.parse_file_aux(
-                    input,
-                    file_entry,
-                    file_tags,
-                    header_depth,
-                    comment_depth + 1,
-                    false,
-                ),
 
-                Ok(FileToken::EndOfComment) => self.parse_file_aux(
-                    input,
-                    file_entry,
-                    file_tags,
-                    header_depth,
-                    comment_depth.saturating_sub(1),
-                    false,
-                ),
-
-                _ => {
-                    self.parse_file_aux(
-                        input,
-                        file_entry,
-                        file_tags,
-                        header_depth,
-                        comment_depth,
-                        false,
-                    );
+            if comment_depth > 0 {
+                // We're in a comment.
+                match parser.parse_next(&mut line) {
+                    Ok(FileToken::StartOfComment) => {
+                        comment_depth += 1;
+                    }
+                    Ok(FileToken::EndOfComment) => {
+                        comment_depth = comment_depth.saturating_sub(1);
+                    }
+                    _ => {}
                 }
+                continue;
             }
-        } else {
+
             match parser.parse_next(&mut line) {
                 Ok(FileToken::Task(mut task, indent_length)) => {
                     task.line_number = Some(line_number + 1); // line 1 was element 0 of iterator
@@ -477,14 +440,6 @@ impl ParserFileEntry<'_> {
                     {
                         error!("Failed to insert task");
                     }
-                    self.parse_file_aux(
-                        input,
-                        file_entry,
-                        file_tags,
-                        header_depth,
-                        comment_depth,
-                        false,
-                    );
                 }
                 Ok(FileToken::Header((header_text, new_depth))) => {
                     let header = FileEntryNode::Header {
@@ -496,14 +451,7 @@ impl ParserFileEntry<'_> {
                     if Self::insert_header_at(file_entry, header.clone(), new_depth - 1).is_err() {
                         error!("Failed to insert header {}", header);
                     }
-                    self.parse_file_aux(
-                        input,
-                        file_entry,
-                        file_tags,
-                        new_depth,
-                        comment_depth,
-                        false,
-                    );
+                    header_depth = new_depth;
                 }
                 Ok(FileToken::Description(description, indent_length)) => {
                     if Self::append_description(
@@ -516,50 +464,25 @@ impl ParserFileEntry<'_> {
                     {
                         error!("Failed to insert description {description}");
                     }
-                    self.parse_file_aux(
-                        input,
-                        file_entry,
-                        file_tags,
-                        header_depth,
-                        comment_depth,
-                        false,
-                    );
                 }
                 Ok(FileToken::FileTag(tag)) => {
                     if !file_tags.contains(&tag) {
                         file_tags.push(tag);
                     }
-                    self.parse_file_aux(
-                        input,
-                        file_entry,
-                        file_tags,
-                        header_depth,
-                        comment_depth,
-                        false,
-                    );
                 }
                 Ok(FileToken::StartOfComment) => {
-                    self.parse_file_aux(input, file_entry, file_tags, header_depth, 1, false);
-                    // We started from 0 here
+                    comment_depth = 1;
+                    // We started from 0 here.
                 }
                 Ok(FileToken::EndOfComment) => {
                     debug!("A EndOfComment was parsed but no comment was open");
-                    self.parse_file_aux(input, file_entry, file_tags, header_depth, 0, false);
-                    // we're still at 0
+                    comment_depth = 0;
+                    // We're still at 0.
                 }
                 Ok(FileToken::StartOfCodeBlock | FileToken::EndOfCodeBlock) => {
-                    self.parse_file_aux(input, file_entry, file_tags, header_depth, 0, true);
+                    code_block = true;
                 }
-                Err(_) | Ok(FileToken::FullComment) => {
-                    self.parse_file_aux(
-                        input,
-                        file_entry,
-                        file_tags,
-                        header_depth,
-                        comment_depth,
-                        false,
-                    );
-                }
+                Err(_) | Ok(FileToken::FullComment) => {}
             }
         }
     }
