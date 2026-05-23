@@ -95,13 +95,13 @@ impl ExplorerTab<'_> {
                 self.leave_selected_entry()?;
                 return self.update_left_entries();
             };
-            self.entries_left_view = Self::get_children(parent_entry);
+            self.entries_left_view = Self::sort_entries(&Self::get_children(parent_entry));
         }
         Ok(())
     }
     pub(super) fn update_center_entries(&mut self) -> Result<()> {
         self.entries_center_view = match self.task_mgr.resolve_path(&self.current_path) {
-            Ok(res) => Self::get_children(res),
+            Ok(res) => Self::sort_entries(&Self::get_children(res)),
             Err(_e) => {
                 // If no entries are found, go to parent object
                 while self.task_mgr.resolve_path(&self.current_path).is_err()
@@ -146,7 +146,7 @@ impl ExplorerTab<'_> {
             Ok(Found::FileEntry(FileEntryNode::Task(t))) => {
                 vec![Found::FileEntry(FileEntryNode::Task(t))]
             }
-            Ok(res) => Self::get_children(res),
+            Ok(res) => Self::sort_entries(&Self::get_children(res)),
             Err(_e) => vec![],
         };
         self.task_list_widget_state.scroll_up();

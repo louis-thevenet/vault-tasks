@@ -54,31 +54,39 @@ impl ExplorerTab<'_> {
             }
         }
     }
+    pub(super) fn sort_entries(vd: &[Found]) -> Vec<Found> {
+        let mut vd = vd.to_vec();
+        vd.sort_by(|a, b| {
+            let a_is_folder = matches!(
+                a,
+                Found::Node(VaultNode::Vault { .. } | VaultNode::Directory { .. })
+            );
+            let b_is_folder = matches!(
+                b,
+                Found::Node(VaultNode::Vault { .. } | VaultNode::Directory { .. })
+            );
 
-    pub(super) fn vault_data_to_entry_list(vd: &[Found]) -> Vec<(String, String)> {
-        let mut res = vd
-            .iter()
-            .map(Self::vault_data_to_prefix_name)
-            .collect::<Vec<(String, String)>>();
+            let a_name = Self::vault_data_to_prefix_name(a).1;
+            let b_name = Self::vault_data_to_prefix_name(b).1;
 
-        if let Some(entry) = res.first()
-            && (entry.0 == DIRECTORY_EMOJI || entry.0 == FILE_EMOJI)
-        {
-            res.sort_by(|a, b| {
-                if a.0 == DIRECTORY_EMOJI {
-                    if b.0 == DIRECTORY_EMOJI {
-                        a.1.cmp(&b.1)
-                    } else {
-                        Ordering::Less
-                    }
-                } else if b.0 == DIRECTORY_EMOJI {
-                    Ordering::Greater
+            if a_is_folder {
+                if b_is_folder {
+                    a_name.cmp(&b_name)
                 } else {
-                    a.1.cmp(&b.1)
+                    Ordering::Less
                 }
-            });
-        }
-        res
+            } else if b_is_folder {
+                Ordering::Greater
+            } else {
+                a_name.cmp(&b_name)
+            }
+        });
+        vd
+    }
+    pub(super) fn vault_data_to_entry_list(vd: &[Found]) -> Vec<(String, String)> {
+        vd.iter()
+            .map(Self::vault_data_to_prefix_name)
+            .collect::<Vec<(String, String)>>()
     }
 
     pub(super) fn get_preview_path(&self) -> Result<Vec<String>> {
@@ -86,6 +94,13 @@ impl ExplorerTab<'_> {
         if self.entries_center_view.is_empty() {
             bail!("Center view is empty for {:?}", self.current_path)
         }
+        debug!(
+            "preview path {:#?}",
+            self.entries_center_view
+                .get(self.state_center_view.selected.unwrap_or_default())
+                .unwrap()
+                .get_name()
+        );
         match self
             .entries_center_view
             .get(self.state_center_view.selected.unwrap_or_default())
