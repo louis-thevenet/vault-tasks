@@ -20,6 +20,7 @@ toml = "0.9.12"
 tracing = "0.1.44"
 tracing-error = "0.2.1"
 tracing-subscriber = {version = "0.3.23", features = ["env-filter", "serde"]}
+rayon = "1.11.0"
 winnow = "0.7.15"
 
 # Build dependencies

@@ -12,6 +12,7 @@ toml.workspace = true
 tracing.workspace = true
 tracing-error.workspace = true
 tracing-subscriber.workspace = true
+rayon.workspace = true
 winnow.workspace = true
 
 [dev-dependencies]

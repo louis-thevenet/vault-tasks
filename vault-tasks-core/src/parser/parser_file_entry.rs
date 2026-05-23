@@ -291,7 +291,7 @@ impl ParserFileEntry<'_> {
                                                 d.push('\n');
                                                 d.push_str(&desc);
                                             }
-                                            None => task.description = Some(desc.clone()),
+                                            None => task.description = Some(desc),
                                         }
                                         return Ok(());
                                     }
@@ -338,7 +338,7 @@ impl ParserFileEntry<'_> {
                                 d.push_str(&description);
                                 Ok(())
                             } else {
-                                task.description = Some(description.clone());
+                                task.description = Some(description);
                                 Ok(())
                             }
                         } else if let Some(subtask) = task.subtasks.last_mut() {
@@ -489,40 +489,37 @@ impl ParserFileEntry<'_> {
 
     /// Removes any empty headers from a `FileEntry`
     /// Returns `true` if the `file_entry` is not empty after cleaning, `false` otherwise.
-    fn clean_file_entry(file_entry: &FileEntryNode) -> Option<FileEntryNode> {
-        match &file_entry {
+    fn clean_file_entry(file_entry: FileEntryNode) -> Option<FileEntryNode> {
+        match file_entry {
             FileEntryNode::Header {
                 name,
                 path,
                 heading_level,
                 content,
             } => {
-                let mut actual_content = vec![];
-                for child in content {
-                    let child_clone = child.clone();
-                    if Self::clean_file_entry(&child_clone).is_some() {
-                        actual_content.push(child_clone);
-                    }
-                }
-                // If header is empty, discard it, else replace children with new ones
+                let actual_content: Vec<FileEntryNode> = content
+                    .into_iter()
+                    .filter_map(Self::clean_file_entry)
+                    .collect();
                 if actual_content.is_empty() {
-                    return None;
+                    None
+                } else {
+                    Some(FileEntryNode::Header {
+                        content: actual_content,
+                        path,
+                        name,
+                        heading_level,
+                    })
                 }
-                return Some(FileEntryNode::Header {
-                    content: actual_content,
-                    path: path.to_path_buf(),
-                    name: name.to_string(),
-                    heading_level: *heading_level,
-                });
             }
-            FileEntryNode::Task(_task) => (),
+            FileEntryNode::Task(_task) => Some(FileEntryNode::Task(_task)),
         }
-        Some(file_entry.clone())
     }
 
     pub fn parse_file(&mut self, input: &&str) -> Vec<FileEntryNode> {
-        let replaced = input.replace('\r', "");
-        let lines = replaced.split('\n');
+        let lines = input
+            .split('\n')
+            .map(|line| line.strip_suffix('\r').unwrap_or(line));
 
         let mut res = vec![];
         let mut file_tags = vec![];
@@ -535,7 +532,7 @@ impl ParserFileEntry<'_> {
             false,
         );
         res = res
-            .iter()
+            .into_iter()
             .filter_map(ParserFileEntry::clean_file_entry)
             .collect();
 
@@ -562,12 +559,9 @@ fn add_global_tag(file_entry: &mut FileEntryNode, tag: &String) {
             }
             FileEntryNode::Task(task) => {
                 fn insert_tag_task(task: &mut Task, tag: &String) {
-                    match task.tags.clone() {
-                        Some(mut tags) if !tags.contains(tag) => {
-                            tags.push(tag.to_string());
-                            task.tags = Some(tags);
-                        }
-                        None => task.tags = Some(vec![tag.to_string()]),
+                    match &mut task.tags {
+                        Some(tags) if !tags.contains(tag) => tags.push(tag.clone()),
+                        None => task.tags = Some(vec![tag.clone()]),
                         _ => (),
                     }
 
@@ -678,7 +672,7 @@ mod tests {
             }],
         }];
         res = res
-            .iter()
+            .into_iter()
             .filter_map(ParserFileEntry::clean_file_entry)
             .collect();
         pretty_assertions::assert_eq!(res, expected_after_cleaning);
