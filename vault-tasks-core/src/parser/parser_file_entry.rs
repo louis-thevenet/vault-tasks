@@ -379,7 +379,7 @@ impl ParserFileEntry<'_> {
     #[allow(clippy::too_many_lines)]
     fn parse_file_aux<'a, I>(
         &self,
-        mut input: Peekable<I>,
+        input: Peekable<I>,
         file_entry: &mut Vec<FileEntryNode>,
         file_tags: &mut Vec<String>,
         mut header_depth: usize,
@@ -400,7 +400,7 @@ impl ParserFileEntry<'_> {
             Self::parse_description,
         ));
 
-        while let Some((line_number, mut line)) = input.next() {
+        for (line_number, mut line) in input {
             if code_block {
                 // We're in a code block.
                 if matches!(
