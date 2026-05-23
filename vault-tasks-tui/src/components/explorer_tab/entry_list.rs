@@ -52,15 +52,13 @@ impl ExplorerTab<'_> {
 
     pub(super) fn select_previous_left_entry(&mut self) {
         if let Some(new_previous_entry) = self.current_path.last() {
-            self.state_left_view.select(Some(
+            self.state_left_view.select(
                 self.entries_left_view
-                    .clone()
-                    .into_iter()
+                    .iter()
                     .enumerate()
-                    .find(|(_, entry)| &entry.1 == new_previous_entry)
-                    .unwrap_or_default()
-                    .0,
-            ));
+                    .find(|(_, entry)| &entry.get_name() == new_previous_entry)
+                    .map(|e| e.0),
+            );
         }
     }
 }

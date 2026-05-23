@@ -49,8 +49,8 @@ pub struct ExplorerTab<'a> {
     task_mgr: TaskManager,
     current_path: Vec<String>,
     state_left_view: ListState,
-    entries_left_view: Vec<(String, String)>,
     state_center_view: ListState,
+    entries_left_view: Vec<Found>,
     entries_center_view: Vec<Found>,
     entries_right_view: Vec<Found>,
     search_bar_widget: InputBar<'a>,
@@ -95,8 +95,7 @@ impl ExplorerTab<'_> {
                 self.leave_selected_entry()?;
                 return self.update_left_entries();
             };
-            self.entries_left_view =
-                Self::vault_data_to_entry_list(&Self::get_children(parent_entry));
+            self.entries_left_view = Self::get_children(parent_entry);
         }
         Ok(())
     }
@@ -584,7 +583,7 @@ impl Component for ExplorerTab<'_> {
 
         // Left Block
         let left_entries_list = Self::build_list(
-            Self::apply_prefixes(&self.entries_left_view),
+            Self::apply_prefixes(&Self::vault_data_to_entry_list(&self.entries_left_view)),
             Block::default().borders(Borders::RIGHT),
             highlighted_style,
         );
