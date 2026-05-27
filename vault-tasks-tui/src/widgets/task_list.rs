@@ -123,8 +123,9 @@ impl StatefulWidget for TaskList {
         // Scrollbar
         if show_scrollbar {
             let scrollbar_area = area_with_scrollbar[1];
-            let mut scrollbar_state =
-                ScrollbarState::new(self.height as usize).position(state.offset() as usize);
+            let mut scrollbar_state = ScrollbarState::new(self.height as usize)
+                .viewport_content_length(items_area.height as usize)
+                .position(state.offset() as usize);
             Scrollbar::new(ratatui::widgets::ScrollbarOrientation::VerticalRight).render(
                 scrollbar_area,
                 buf,
