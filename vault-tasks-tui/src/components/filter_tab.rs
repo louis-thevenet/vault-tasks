@@ -1,22 +1,19 @@
-use std::collections::HashSet;
-
-use color_eyre::Result;
-use crossterm::event::Event;
-use ratatui::widgets::{List, Tabs};
-use ratatui::{prelude::*, widgets::Block};
-use strum::IntoEnumIterator;
-use tokio::sync::mpsc::UnboundedSender;
-use tracing::debug;
-use tui_scrollview::ScrollViewState;
-
 use super::Component;
-
 use crate::app::Mode;
 use crate::tui::Tui;
 use crate::widgets::help_menu::HelpMenu;
 use crate::widgets::input_bar::InputBar;
 use crate::widgets::task_list::TaskList;
+use crate::widgets::task_list_state::TaskListState;
 use crate::{action::Action, config::Config};
+use color_eyre::Result;
+use crossterm::event::Event;
+use ratatui::widgets::{List, Tabs};
+use ratatui::{prelude::*, widgets::Block};
+use std::collections::HashSet;
+use strum::IntoEnumIterator;
+use tokio::sync::mpsc::UnboundedSender;
+use tracing::debug;
 use tui_input::backend::crossterm::EventHandler;
 use vault_tasks_core::TaskManager;
 use vault_tasks_core::filter::{self, filter_tasks_to_vec, parse_search_input};
@@ -45,7 +42,7 @@ pub struct FilterTab<'a> {
     /// Input bar used to apply a filter
     input_bar_widget: InputBar<'a>,
     task_mgr: TaskManager,
-    task_list_widget_state: ScrollViewState,
+    task_list_widget_state: TaskListState,
     /// Whether the help panel is open or not
     show_help: bool,
     help_menu_widget: HelpMenu<'a>,

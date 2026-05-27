@@ -1,5 +1,13 @@
-use std::collections::hash_map::Entry;
-
+use super::Component;
+use crate::{
+    action::Action,
+    app::Mode,
+    config::Config,
+    widgets::{
+        help_menu::HelpMenu, styled_calendar::StyledCalendar, task_list::TaskList,
+        task_list_state::TaskListState,
+    },
+};
 use chrono::{Datelike, NaiveDate, NaiveTime, TimeDelta};
 use ratatui::{
     Frame,
@@ -8,17 +16,9 @@ use ratatui::{
     text::{Line, Span, ToSpan},
     widgets::{StatefulWidget, Widget, calendar::CalendarEventStore},
 };
-use time::OffsetDateTime;
-use time::{Weekday, util::days_in_year};
+use std::collections::hash_map::Entry;
+use time::{OffsetDateTime, Weekday, util::days_in_year};
 use tracing::error;
-use tui_scrollview::ScrollViewState;
-
-use crate::{
-    action::Action,
-    app::Mode,
-    config::Config,
-    widgets::{help_menu::HelpMenu, styled_calendar::StyledCalendar, task_list::TaskList},
-};
 use vault_tasks_core::{
     TaskManager,
     date::Date,
@@ -27,8 +27,6 @@ use vault_tasks_core::{
     task::{State, Task},
     vault_data::FileEntryNode,
 };
-
-use super::Component;
 
 /// Struct that helps with drawing the component
 struct CalendarTabArea {
@@ -50,7 +48,7 @@ pub struct CalendarTab<'a> {
     events: CalendarEventStore,
     selected_date: time::Date,
     previewed_date: Option<time::Date>,
-    task_list_widget_state: ScrollViewState,
+    task_list_widget_state: TaskListState,
     // Whether the help panel is open or not
     show_help: bool,
     help_menu_widget: HelpMenu<'a>,
@@ -66,7 +64,7 @@ impl Default for CalendarTab<'_> {
             help_menu_widget: HelpMenu::default(),
             tasks: vec![],
             task_mgr: TaskManager::default(),
-            task_list_widget_state: ScrollViewState::new(),
+            task_list_widget_state: TaskListState::new(),
             entries_list: TaskList::default(),
             events: CalendarEventStore::default(),
         }
