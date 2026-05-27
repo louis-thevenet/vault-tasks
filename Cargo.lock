@@ -4174,7 +4174,7 @@ checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 
 [[package]]
 name = "vault-tasks-core"
-version = "2.0.2"
+version = "2.0.3"
 dependencies = [
  "chrono",
  "color-eyre",
@@ -4197,7 +4197,7 @@ dependencies = [
 
 [[package]]
 name = "vault-tasks-tui"
-version = "2.0.2"
+version = "2.0.3"
 dependencies = [
  "anyhow",
  "better-panic",
