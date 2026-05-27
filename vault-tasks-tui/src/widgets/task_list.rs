@@ -1,4 +1,7 @@
-use ratatui::{prelude::*, widgets::Clear};
+use ratatui::{
+    prelude::*,
+    widgets::{Clear, Scrollbar, ScrollbarState},
+};
 use vault_tasks_core::vault_data::FileEntryNode;
 
 use crate::{config::Config, widgets::task_list_state::TaskListState};
@@ -86,16 +89,26 @@ impl StatefulWidget for TaskList {
         if area.is_empty() {
             return;
         }
-
-        state.update_bounds(self.height, area.height);
         Clear.render(area, buf);
 
-        if self.content.is_empty() || area.height == 0 {
+        let show_scrollbar = self.height > area.height;
+        let layout_with_scrollbar = Layout::horizontal([Constraint::Min(1), Constraint::Length(3)]);
+        let area_with_scrollbar: [Rect; 2] = layout_with_scrollbar.areas(area);
+
+        let items_area = if show_scrollbar {
+            area_with_scrollbar[0]
+        } else {
+            area
+        };
+
+        state.update_bounds(self.height, items_area.height);
+
+        if self.content.is_empty() || items_area.height == 0 {
             return;
         }
 
         let visible_start = state.offset();
-        let visible_end = visible_start.saturating_add(area.height);
+        let visible_end = visible_start.saturating_add(items_area.height);
         let start_index = self
             .item_tops
             .partition_point(|top| *top <= visible_start)
@@ -107,6 +120,17 @@ impl StatefulWidget for TaskList {
             height: _,
         } = self;
 
+        // Scrollbar
+        if show_scrollbar {
+            let scrollbar_area = area_with_scrollbar[1];
+            let mut scrollbar_state =
+                ScrollbarState::new(self.height as usize).position(state.offset() as usize);
+            Scrollbar::new(ratatui::widgets::ScrollbarOrientation::VerticalRight).render(
+                scrollbar_area,
+                buf,
+                &mut scrollbar_state,
+            );
+        } // Tasklist
         for (index, item) in content.into_iter().enumerate().skip(start_index) {
             let item_top = item_tops[index];
             let item_height = item.height;
@@ -118,18 +142,21 @@ impl StatefulWidget for TaskList {
             let visible_row_start = visible_start.saturating_sub(item_top);
             let visible_row_end = item_bottom.min(visible_end).saturating_sub(item_top);
             let visible_rows = visible_row_end.saturating_sub(visible_row_start);
-            let target_y = area.y + item_top.saturating_sub(visible_start);
+            let target_y = items_area.y + item_top.saturating_sub(visible_start);
 
             if visible_row_start == 0 && visible_rows == item_height {
-                item.render(Rect::new(area.x, target_y, area.width, item_height), buf);
+                item.render(
+                    Rect::new(items_area.x, target_y, items_area.width, item_height),
+                    buf,
+                );
             } else {
-                let item_area = Rect::new(0, 0, area.width, item_height);
+                let item_area = Rect::new(0, 0, items_area.width, item_height);
                 let mut item_buffer = Buffer::empty(item_area);
                 item.render(item_area, &mut item_buffer);
                 Self::render_visible_slice(
                     &item_buffer,
                     buf,
-                    area,
+                    items_area,
                     visible_row_start,
                     visible_rows,
                     target_y,
