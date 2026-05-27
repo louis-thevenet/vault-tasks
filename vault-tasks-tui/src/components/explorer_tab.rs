@@ -9,7 +9,6 @@ use tracing::{debug, error, info};
 
 use tui_input::Input;
 use tui_input::backend::crossterm::EventHandler;
-use tui_scrollview::ScrollViewState;
 use tui_widget_list::{ListBuilder, ListState, ListView};
 use vault_tasks_core::parser::task::parse_task;
 use vault_tasks_core::task::State;
@@ -21,6 +20,7 @@ use crate::tui::Tui;
 use crate::widgets::help_menu::HelpMenu;
 use crate::widgets::input_bar::InputBar;
 use crate::widgets::task_list::TaskList;
+use crate::widgets::task_list_state::TaskListState;
 use crate::{action::Action, config::Config};
 use vault_tasks_core::filter::parse_search_input;
 use vault_tasks_core::vault_data::{FileEntryNode, VaultNode};
@@ -54,7 +54,7 @@ pub struct ExplorerTab<'a> {
     entries_center_view: Vec<Found>,
     entries_right_view: Vec<Found>,
     search_bar_widget: InputBar<'a>,
-    task_list_widget_state: ScrollViewState,
+    task_list_widget_state: TaskListState,
     show_help: bool,
     help_menu_widget: HelpMenu<'a>,
     edit_task_bar: InputBar<'a>,

@@ -291,7 +291,7 @@ impl ParserFileEntry<'_> {
                                                 d.push('\n');
                                                 d.push_str(&desc);
                                             }
-                                            None => task.description = Some(desc.clone()),
+                                            None => task.description = Some(desc),
                                         }
                                         return Ok(());
                                     }
@@ -338,7 +338,7 @@ impl ParserFileEntry<'_> {
                                 d.push_str(&description);
                                 Ok(())
                             } else {
-                                task.description = Some(description.clone());
+                                task.description = Some(description);
                                 Ok(())
                             }
                         } else if let Some(subtask) = task.subtasks.last_mut() {
@@ -375,16 +375,16 @@ impl ParserFileEntry<'_> {
         }
     }
 
-    /// Recursively parses the input file passed as a string.
+    /// Iteratively parses the input file passed as a string.
     #[allow(clippy::too_many_lines)]
     fn parse_file_aux<'a, I>(
         &self,
-        mut input: Peekable<I>,
+        input: Peekable<I>,
         file_entry: &mut Vec<FileEntryNode>,
         file_tags: &mut Vec<String>,
-        header_depth: usize,
-        comment_depth: usize,
-        code_block: bool,
+        mut header_depth: usize,
+        mut comment_depth: usize,
+        mut code_block: bool,
     ) where
         I: Iterator<Item = (usize, &'a str)>,
     {
@@ -400,69 +400,32 @@ impl ParserFileEntry<'_> {
             Self::parse_description,
         ));
 
-        let line_opt = input.next();
-        if line_opt.is_none() {
-            return;
-        }
-
-        let (line_number, mut line) = line_opt.unwrap();
-
-        if code_block {
-            // We're in a code block
-            match parser.parse_next(&mut line) {
-                Ok(FileToken::EndOfCodeBlock | FileToken::StartOfCodeBlock) => self.parse_file_aux(
-                    input,
-                    file_entry,
-                    file_tags,
-                    header_depth,
-                    comment_depth,
-                    false,
-                ),
-
-                _ => {
-                    self.parse_file_aux(
-                        input,
-                        file_entry,
-                        file_tags,
-                        header_depth,
-                        comment_depth,
-                        code_block,
-                    );
+        for (line_number, mut line) in input {
+            if code_block {
+                // We're in a code block.
+                if matches!(
+                    parser.parse_next(&mut line),
+                    Ok(FileToken::EndOfCodeBlock | FileToken::StartOfCodeBlock)
+                ) {
+                    code_block = false;
                 }
+                continue;
             }
-        } else if comment_depth > 0 {
-            // We're in a comment
-            match parser.parse_next(&mut line) {
-                Ok(FileToken::StartOfComment) => self.parse_file_aux(
-                    input,
-                    file_entry,
-                    file_tags,
-                    header_depth,
-                    comment_depth + 1,
-                    false,
-                ),
 
-                Ok(FileToken::EndOfComment) => self.parse_file_aux(
-                    input,
-                    file_entry,
-                    file_tags,
-                    header_depth,
-                    comment_depth.saturating_sub(1),
-                    false,
-                ),
-
-                _ => {
-                    self.parse_file_aux(
-                        input,
-                        file_entry,
-                        file_tags,
-                        header_depth,
-                        comment_depth,
-                        false,
-                    );
+            if comment_depth > 0 {
+                // We're in a comment.
+                match parser.parse_next(&mut line) {
+                    Ok(FileToken::StartOfComment) => {
+                        comment_depth += 1;
+                    }
+                    Ok(FileToken::EndOfComment) => {
+                        comment_depth = comment_depth.saturating_sub(1);
+                    }
+                    _ => {}
                 }
+                continue;
             }
-        } else {
+
             match parser.parse_next(&mut line) {
                 Ok(FileToken::Task(mut task, indent_length)) => {
                     task.line_number = Some(line_number + 1); // line 1 was element 0 of iterator
@@ -477,14 +440,6 @@ impl ParserFileEntry<'_> {
                     {
                         error!("Failed to insert task");
                     }
-                    self.parse_file_aux(
-                        input,
-                        file_entry,
-                        file_tags,
-                        header_depth,
-                        comment_depth,
-                        false,
-                    );
                 }
                 Ok(FileToken::Header((header_text, new_depth))) => {
                     let header = FileEntryNode::Header {
@@ -496,14 +451,7 @@ impl ParserFileEntry<'_> {
                     if Self::insert_header_at(file_entry, header.clone(), new_depth - 1).is_err() {
                         error!("Failed to insert header {}", header);
                     }
-                    self.parse_file_aux(
-                        input,
-                        file_entry,
-                        file_tags,
-                        new_depth,
-                        comment_depth,
-                        false,
-                    );
+                    header_depth = new_depth;
                 }
                 Ok(FileToken::Description(description, indent_length)) => {
                     if Self::append_description(
@@ -516,90 +464,62 @@ impl ParserFileEntry<'_> {
                     {
                         error!("Failed to insert description {description}");
                     }
-                    self.parse_file_aux(
-                        input,
-                        file_entry,
-                        file_tags,
-                        header_depth,
-                        comment_depth,
-                        false,
-                    );
                 }
                 Ok(FileToken::FileTag(tag)) => {
                     if !file_tags.contains(&tag) {
                         file_tags.push(tag);
                     }
-                    self.parse_file_aux(
-                        input,
-                        file_entry,
-                        file_tags,
-                        header_depth,
-                        comment_depth,
-                        false,
-                    );
                 }
                 Ok(FileToken::StartOfComment) => {
-                    self.parse_file_aux(input, file_entry, file_tags, header_depth, 1, false);
-                    // We started from 0 here
+                    comment_depth = 1;
+                    // We started from 0 here.
                 }
                 Ok(FileToken::EndOfComment) => {
                     debug!("A EndOfComment was parsed but no comment was open");
-                    self.parse_file_aux(input, file_entry, file_tags, header_depth, 0, false);
-                    // we're still at 0
+                    comment_depth = 0;
+                    // We're still at 0.
                 }
                 Ok(FileToken::StartOfCodeBlock | FileToken::EndOfCodeBlock) => {
-                    self.parse_file_aux(input, file_entry, file_tags, header_depth, 0, true);
+                    code_block = true;
                 }
-                Err(_) | Ok(FileToken::FullComment) => {
-                    self.parse_file_aux(
-                        input,
-                        file_entry,
-                        file_tags,
-                        header_depth,
-                        comment_depth,
-                        false,
-                    );
-                }
+                Err(_) | Ok(FileToken::FullComment) => {}
             }
         }
     }
 
     /// Removes any empty headers from a `FileEntry`
     /// Returns `true` if the `file_entry` is not empty after cleaning, `false` otherwise.
-    fn clean_file_entry(file_entry: &FileEntryNode) -> Option<FileEntryNode> {
-        match &file_entry {
+    fn clean_file_entry(file_entry: FileEntryNode) -> Option<FileEntryNode> {
+        match file_entry {
             FileEntryNode::Header {
                 name,
                 path,
                 heading_level,
                 content,
             } => {
-                let mut actual_content = vec![];
-                for child in content {
-                    let child_clone = child.clone();
-                    if Self::clean_file_entry(&child_clone).is_some() {
-                        actual_content.push(child_clone);
-                    }
-                }
-                // If header is empty, discard it, else replace children with new ones
+                let actual_content: Vec<FileEntryNode> = content
+                    .into_iter()
+                    .filter_map(Self::clean_file_entry)
+                    .collect();
                 if actual_content.is_empty() {
-                    return None;
+                    None
+                } else {
+                    Some(FileEntryNode::Header {
+                        content: actual_content,
+                        path,
+                        name,
+                        heading_level,
+                    })
                 }
-                return Some(FileEntryNode::Header {
-                    content: actual_content,
-                    path: path.to_path_buf(),
-                    name: name.to_string(),
-                    heading_level: *heading_level,
-                });
             }
-            FileEntryNode::Task(_task) => (),
+            FileEntryNode::Task(_task) => Some(FileEntryNode::Task(_task)),
         }
-        Some(file_entry.clone())
     }
 
     pub fn parse_file(&mut self, input: &&str) -> Vec<FileEntryNode> {
-        let replaced = input.replace('\r', "");
-        let lines = replaced.split('\n');
+        let lines = input
+            .split('\n')
+            .map(|line| line.strip_suffix('\r').unwrap_or(line));
 
         let mut res = vec![];
         let mut file_tags = vec![];
@@ -612,7 +532,7 @@ impl ParserFileEntry<'_> {
             false,
         );
         res = res
-            .iter()
+            .into_iter()
             .filter_map(ParserFileEntry::clean_file_entry)
             .collect();
 
@@ -639,12 +559,9 @@ fn add_global_tag(file_entry: &mut FileEntryNode, tag: &String) {
             }
             FileEntryNode::Task(task) => {
                 fn insert_tag_task(task: &mut Task, tag: &String) {
-                    match task.tags.clone() {
-                        Some(mut tags) if !tags.contains(tag) => {
-                            tags.push(tag.to_string());
-                            task.tags = Some(tags);
-                        }
-                        None => task.tags = Some(vec![tag.to_string()]),
+                    match &mut task.tags {
+                        Some(tags) if !tags.contains(tag) => tags.push(tag.clone()),
+                        None => task.tags = Some(vec![tag.clone()]),
                         _ => (),
                     }
 
@@ -755,7 +672,7 @@ mod tests {
             }],
         }];
         res = res
-            .iter()
+            .into_iter()
             .filter_map(ParserFileEntry::clean_file_entry)
             .collect();
         pretty_assertions::assert_eq!(res, expected_after_cleaning);

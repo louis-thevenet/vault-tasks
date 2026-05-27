@@ -1,15 +1,17 @@
-use ratatui::prelude::*;
-use tui_scrollview::{ScrollView, ScrollViewState};
+use ratatui::{
+    prelude::*,
+    widgets::{Clear, Scrollbar, ScrollbarState},
+};
 use vault_tasks_core::vault_data::FileEntryNode;
 
-use crate::config::Config;
+use crate::{config::Config, widgets::task_list_state::TaskListState};
 
 use super::task_list_item::TaskListItem;
 
 #[derive(Default, Clone)]
 pub struct TaskList {
     content: Vec<TaskListItem>,
-    constraints: Vec<Constraint>,
+    item_tops: Vec<u16>,
     height: u16,
 }
 
@@ -42,23 +44,40 @@ impl TaskList {
             })
             .collect::<Vec<TaskListItem>>();
         let mut height = 0;
-        let mut constraints = vec![];
+        let mut item_tops = Vec::with_capacity(content.len());
         for item in &content {
+            item_tops.push(height);
             height += item.height;
-            constraints.push(Constraint::Length(item.height));
         }
         Self {
             content,
-            constraints,
+            item_tops,
             height,
         }
     }
-    // pub fn height_of(&mut self, i: usize) -> u16 {
-    //     (0..i).map(|i| self.content[i].height).sum()
-    // }
+
+    fn render_visible_slice(
+        item_buffer: &Buffer,
+        target_buffer: &mut Buffer,
+        target_area: Rect,
+        source_row_start: u16,
+        row_count: u16,
+        target_y: u16,
+    ) {
+        for row in 0..row_count {
+            for col in 0..target_area.width {
+                if let Some(source_cell) = item_buffer.cell((col, source_row_start + row))
+                    && let Some(target_cell) =
+                        target_buffer.cell_mut((target_area.x + col, target_y + row))
+                {
+                    *target_cell = source_cell.clone();
+                }
+            }
+        }
+    }
 }
 impl StatefulWidget for TaskList {
-    type State = ScrollViewState;
+    type State = TaskListState;
     fn render(
         self,
         area: ratatui::prelude::Rect,
@@ -67,27 +86,84 @@ impl StatefulWidget for TaskList {
     ) where
         Self: Sized,
     {
-        // If we need the vertical scrollbar
-        // Then take into account that we need to draw it
-        //
-        // If we don't do this, the horizontal scrollbar
-        // appears for only one character
-        // It basically disables the horizontal scrollbar
-        let width = if self.height > area.height {
-            area.width - 1
+        if area.is_empty() {
+            return;
+        }
+        Clear.render(area, buf);
+
+        let show_scrollbar = self.height > area.height;
+        let layout_with_scrollbar = Layout::horizontal([Constraint::Min(1), Constraint::Length(3)]);
+        let area_with_scrollbar: [Rect; 2] = layout_with_scrollbar.areas(area);
+
+        let items_area = if show_scrollbar {
+            area_with_scrollbar[0]
         } else {
-            area.width
+            area
         };
 
-        let size = Size::new(width, self.height);
-        let mut scroll_view = ScrollView::new(size);
+        state.update_bounds(self.height, items_area.height);
 
-        let layout = Layout::vertical(self.constraints).split(scroll_view.area());
-
-        for (i, item) in self.content.into_iter().enumerate() {
-            scroll_view.render_widget(item, layout[i]);
+        if self.content.is_empty() || items_area.height == 0 {
+            return;
         }
-        scroll_view.render(area, buf, state);
+
+        let visible_start = state.offset();
+        let visible_end = visible_start.saturating_add(items_area.height);
+        let start_index = self
+            .item_tops
+            .partition_point(|top| *top <= visible_start)
+            .saturating_sub(1);
+
+        let TaskList {
+            content,
+            item_tops,
+            height: _,
+        } = self;
+
+        // Scrollbar
+        if show_scrollbar {
+            let scrollbar_area = area_with_scrollbar[1];
+            let mut scrollbar_state = ScrollbarState::new(self.height as usize)
+                .viewport_content_length(items_area.height as usize)
+                .position(state.offset() as usize);
+            Scrollbar::new(ratatui::widgets::ScrollbarOrientation::VerticalRight).render(
+                scrollbar_area,
+                buf,
+                &mut scrollbar_state,
+            );
+        } // Tasklist
+        for (index, item) in content.into_iter().enumerate().skip(start_index) {
+            let item_top = item_tops[index];
+            let item_height = item.height;
+            if item_top >= visible_end {
+                break;
+            }
+
+            let item_bottom = item_top.saturating_add(item_height);
+            let visible_row_start = visible_start.saturating_sub(item_top);
+            let visible_row_end = item_bottom.min(visible_end).saturating_sub(item_top);
+            let visible_rows = visible_row_end.saturating_sub(visible_row_start);
+            let target_y = items_area.y + item_top.saturating_sub(visible_start);
+
+            if visible_row_start == 0 && visible_rows == item_height {
+                item.render(
+                    Rect::new(items_area.x, target_y, items_area.width, item_height),
+                    buf,
+                );
+            } else {
+                let item_area = Rect::new(0, 0, items_area.width, item_height);
+                let mut item_buffer = Buffer::empty(item_area);
+                item.render(item_area, &mut item_buffer);
+                Self::render_visible_slice(
+                    &item_buffer,
+                    buf,
+                    items_area,
+                    visible_row_start,
+                    visible_rows,
+                    target_y,
+                );
+            }
+        }
     }
 }
 
@@ -96,14 +172,16 @@ mod tests {
     use chrono::NaiveDate;
     use insta::assert_snapshot;
     use ratatui::{Terminal, backend::TestBackend};
-    use tui_scrollview::ScrollViewState;
     use vault_tasks_core::{
         date::Date,
         task::{State, Task},
         vault_data::FileEntryNode,
     };
 
-    use crate::{config::Config, widgets::task_list::TaskList};
+    use crate::{
+        config::Config,
+        widgets::task_list::{TaskList, TaskListState},
+    };
 
     #[test]
     fn test_task_list() {
@@ -207,7 +285,7 @@ mod tests {
         let mut terminal = Terminal::new(TestBackend::new(max_width, 40)).unwrap();
         terminal
             .draw(|frame| {
-                frame.render_stateful_widget(task_list, frame.area(), &mut ScrollViewState::new());
+                frame.render_stateful_widget(task_list, frame.area(), &mut TaskListState::new());
             })
             .unwrap();
         assert_snapshot!(terminal.backend());
