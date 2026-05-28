@@ -16,7 +16,7 @@ pub struct Filter {
     pub task: Task,
     inverted: bool,
     /// Separate state in case we're not filtering by state
-    /// Since tasks reuire a state to be valid, we'll add a default one but use this one
+    /// Since tasks require a state to be valid, we'll add a default one but use this one
     state: Option<State>,
 }
 
@@ -184,6 +184,7 @@ pub fn filter(vault_data: &Vaults, task_filter: &Option<Filter>) -> Option<Vault
                 path,
                 heading_level,
                 name,
+                line_number,
             } => {
                 let mut actual_content = vec![];
                 for child in content {
@@ -200,6 +201,7 @@ pub fn filter(vault_data: &Vaults, task_filter: &Option<Filter>) -> Option<Vault
                         name: name.clone(),
                         path: path.clone(),
                         content: actual_content,
+                        line_number: *line_number,
                     })
                 }
             }

@@ -185,6 +185,7 @@ impl TaskListItem {
                 heading_level: _,
                 path: _,
                 content,
+                line_number: _,
             } => {
                 content
                     .iter()
@@ -234,6 +235,7 @@ impl Widget for TaskListItem {
                 heading_level: _,
                 path: _,
                 content: children,
+                line_number: _,
             } => {
                 let header_line = Self::parse_markdown_lines(name, area.width)
                     .first()

@@ -77,6 +77,7 @@ impl Found {
                     path,
                     heading_level: _,
                     content: _,
+                    line_number: _,
                 } => path.to_path_buf(),
                 FileEntryNode::Task(task) => task.path.clone(),
             },
@@ -111,8 +112,42 @@ impl Found {
                     path: _,
                     heading_level: _,
                     content: _,
+                    line_number: _,
                 } => name.clone(),
                 FileEntryNode::Task(task) => task.name.clone(),
+            },
+        }
+    }
+    #[must_use]
+    pub fn get_position_in_file(&self) -> Option<usize> {
+        match self {
+            Found::Root(_vaults) => None,
+            Found::Node(vault_node) => match vault_node {
+                VaultNode::Vault {
+                    name: _,
+                    path: _,
+                    content: _,
+                }
+                | VaultNode::Directory {
+                    name: _,
+                    path: _,
+                    content: _,
+                }
+                | VaultNode::File {
+                    name: _,
+                    path: _,
+                    content: _,
+                } => None,
+            },
+            Found::FileEntry(file_entry_node) => match file_entry_node {
+                FileEntryNode::Header {
+                    name: _,
+                    path: _,
+                    heading_level: _,
+                    content: _,
+                    line_number,
+                } => Some(*line_number),
+                FileEntryNode::Task(task) => task.line_number,
             },
         }
     }

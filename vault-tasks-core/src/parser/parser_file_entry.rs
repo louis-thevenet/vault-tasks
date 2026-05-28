@@ -445,6 +445,7 @@ impl ParserFileEntry<'_> {
                     let header = FileEntryNode::Header {
                         name: header_text,
                         path: self.path.clone(),
+                        line_number,
                         heading_level: new_depth,
                         content: vec![],
                     };
@@ -496,6 +497,7 @@ impl ParserFileEntry<'_> {
                 path,
                 heading_level,
                 content,
+                line_number,
             } => {
                 let actual_content: Vec<FileEntryNode> = content
                     .into_iter()
@@ -509,6 +511,7 @@ impl ParserFileEntry<'_> {
                         path,
                         name,
                         heading_level,
+                        line_number,
                     })
                 }
             }

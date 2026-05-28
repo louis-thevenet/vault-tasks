@@ -23,7 +23,6 @@ config.workspace = true
 crossterm = {version = "0.28.1", features = ["serde", "event-stream"]}
 derive_deref = "1.1.1"
 directories.workspace = true
-edit = "0.1.5"
 futures = "0.3.32"
 human-panic = "2.0.8"
 lazy_static.workspace = true
@@ -49,6 +48,7 @@ ratskin = "0.2.0"
 coolor = "=1.0.0"
 crokey = "=1.1.1"
 crokey-proc_macros = "=1.1.1"
+open-editor = "1.2.0"
 
 [dev-dependencies]
 insta.workspace = true

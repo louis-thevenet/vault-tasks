@@ -60,6 +60,8 @@ pub enum FileEntryNode {
         name: String,
         /// Path to the file it belongs to
         path: PathBuf,
+        /// Line number
+        line_number: usize,
         /// Heading levels (###)
         heading_level: usize,
         /// Children
@@ -80,6 +82,7 @@ impl FileEntryNode {
                 heading_level: _,
                 path: _,
                 content,
+                line_number: _,
             } => {
                 write_underline_with_indent(name, depth, f)?;
                 for entry in content {
