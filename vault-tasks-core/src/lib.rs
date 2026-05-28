@@ -583,10 +583,12 @@ mod tests {
             FileEntryNode::Header {
                 name: "1".to_string(),
                 path: Path::new("test/Test.md").into(),
+                line_number: 1,
                 heading_level: 1,
                 content: vec![FileEntryNode::Header {
                     name: "2".to_string(),
                     path: Path::new("test/Test.md").into(),
+                    line_number: 2,
                     heading_level: 2,
                     content: vec![],
                 }],
@@ -594,17 +596,20 @@ mod tests {
             FileEntryNode::Header {
                 name: "1.2".to_string(),
                 path: Path::new("test/Test.md").into(),
+                line_number: 3,
                 heading_level: 1,
                 content: vec![
                     FileEntryNode::Header {
                         name: "3".to_string(),
                         path: Path::new("test/Test.md").into(),
+                        line_number: 4,
                         heading_level: 3,
                         content: vec![],
                     },
                     FileEntryNode::Header {
                         name: "4".to_string(),
                         path: Path::new("test/Test.md").into(),
+                        line_number: 5,
                         heading_level: 2,
                         content: vec![
                             FileEntryNode::Task(task1.clone()),
@@ -649,6 +654,7 @@ mod tests {
         let expected_header = FileEntryNode::Header {
             name: "2".to_string(),
             path: Path::new("test/Test.md").into(),
+            line_number: 2,
             heading_level: 2,
             content: vec![],
         };
@@ -668,6 +674,7 @@ mod tests {
         let expected_header_with_tasks = FileEntryNode::Header {
             name: "4".to_string(),
             path: Path::new("test/Test.md").into(),
+            line_number: 5,
             heading_level: 2,
             content: vec![
                 FileEntryNode::Task(task1),
