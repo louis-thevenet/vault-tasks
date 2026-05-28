@@ -445,7 +445,7 @@ impl ParserFileEntry<'_> {
                     let header = FileEntryNode::Header {
                         name: header_text,
                         path: self.path.clone(),
-                        line_number,
+                        line_number: line_number + 1, // line_number is index of iterator element, 0-based
                         heading_level: new_depth,
                         content: vec![],
                     };
