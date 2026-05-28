@@ -1,5 +1,6 @@
 use crate::action::Action;
 use crate::tui::Tui;
+use open_editor::EditorCallBuilder;
 use vault_tasks_core::{
     Found,
     task::Task,
@@ -10,7 +11,6 @@ use super::{DIRECTORY_EMOJI, ExplorerTab, FILE_EMOJI};
 use color_eyre::Result;
 use color_eyre::eyre::bail;
 use std::cmp::Ordering;
-use std::path::PathBuf;
 use tracing::{debug, error, info};
 
 impl ExplorerTab<'_> {
@@ -48,6 +48,7 @@ impl ExplorerTab<'_> {
                 name,
                 path: _,
                 heading_level,
+                line_number: _,
             }) => ("#".repeat(*heading_level).clone(), name.clone()),
             Found::FileEntry(FileEntryNode::Task(task)) => {
                 (task.state.to_string(), task.name.clone())
@@ -118,11 +119,20 @@ impl ExplorerTab<'_> {
         let Some(tui) = tui_opt else {
             bail!("Could not open current entry, Tui was None")
         };
-        let path = self.get_real_path_of_selected_item()?;
-        info!("Opening {:?} in default editor.", path);
+        let preview_path = self
+            .get_preview_path()
+            .unwrap_or_else(|_| self.current_path.clone());
+
+        let entry = self.task_mgr.resolve_path(&preview_path)?;
+        let line = entry.get_position_in_file().unwrap_or_default();
+
+        let path = entry.get_path();
         if let Some(tx) = &self.command_tx {
             tui.exit()?;
-            edit::edit_file(path)?;
+            EditorCallBuilder::new()
+                .at_line(line)
+                .wait_for_editor(true)
+                .open_file(&path)?;
             tui.enter()?;
             tx.send(Action::ClearScreen)?;
         } else {
@@ -133,16 +143,7 @@ impl ExplorerTab<'_> {
         }
         Ok(())
     }
-    pub(super) fn get_real_path_of_selected_item(&self) -> Result<PathBuf> {
-        // Get internal path
-        let path = self
-            .get_preview_path()
-            .unwrap_or_else(|_| self.current_path.clone());
 
-        self.task_mgr
-            .resolve_path(&path)
-            .map(|entry| entry.get_path())
-    }
     pub(super) fn get_selected_task(&self) -> Option<Task> {
         let path = match self.get_preview_path() {
             Ok(path) => path,

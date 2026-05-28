@@ -77,6 +77,7 @@ impl Found {
                     path,
                     heading_level: _,
                     content: _,
+                    line_number: _,
                 } => path.to_path_buf(),
                 FileEntryNode::Task(task) => task.path.clone(),
             },
@@ -111,8 +112,42 @@ impl Found {
                     path: _,
                     heading_level: _,
                     content: _,
+                    line_number: _,
                 } => name.clone(),
                 FileEntryNode::Task(task) => task.name.clone(),
+            },
+        }
+    }
+    #[must_use]
+    pub fn get_position_in_file(&self) -> Option<usize> {
+        match self {
+            Found::Root(_vaults) => None,
+            Found::Node(vault_node) => match vault_node {
+                VaultNode::Vault {
+                    name: _,
+                    path: _,
+                    content: _,
+                }
+                | VaultNode::Directory {
+                    name: _,
+                    path: _,
+                    content: _,
+                }
+                | VaultNode::File {
+                    name: _,
+                    path: _,
+                    content: _,
+                } => None,
+            },
+            Found::FileEntry(file_entry_node) => match file_entry_node {
+                FileEntryNode::Header {
+                    name: _,
+                    path: _,
+                    heading_level: _,
+                    content: _,
+                    line_number,
+                } => Some(*line_number),
+                FileEntryNode::Task(task) => task.line_number,
             },
         }
     }
@@ -548,10 +583,12 @@ mod tests {
             FileEntryNode::Header {
                 name: "1".to_string(),
                 path: Path::new("test/Test.md").into(),
+                line_number: 1,
                 heading_level: 1,
                 content: vec![FileEntryNode::Header {
                     name: "2".to_string(),
                     path: Path::new("test/Test.md").into(),
+                    line_number: 2,
                     heading_level: 2,
                     content: vec![],
                 }],
@@ -559,17 +596,20 @@ mod tests {
             FileEntryNode::Header {
                 name: "1.2".to_string(),
                 path: Path::new("test/Test.md").into(),
+                line_number: 3,
                 heading_level: 1,
                 content: vec![
                     FileEntryNode::Header {
                         name: "3".to_string(),
                         path: Path::new("test/Test.md").into(),
+                        line_number: 4,
                         heading_level: 3,
                         content: vec![],
                     },
                     FileEntryNode::Header {
                         name: "4".to_string(),
                         path: Path::new("test/Test.md").into(),
+                        line_number: 5,
                         heading_level: 2,
                         content: vec![
                             FileEntryNode::Task(task1.clone()),
@@ -614,6 +654,7 @@ mod tests {
         let expected_header = FileEntryNode::Header {
             name: "2".to_string(),
             path: Path::new("test/Test.md").into(),
+            line_number: 2,
             heading_level: 2,
             content: vec![],
         };
@@ -633,6 +674,7 @@ mod tests {
         let expected_header_with_tasks = FileEntryNode::Header {
             name: "4".to_string(),
             path: Path::new("test/Test.md").into(),
+            line_number: 5,
             heading_level: 2,
             content: vec![
                 FileEntryNode::Task(task1),
