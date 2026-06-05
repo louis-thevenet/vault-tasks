@@ -65,6 +65,8 @@ impl ExplorerTab<'_> {
                 b,
                 Found::Node(VaultNode::Vault { .. } | VaultNode::Directory { .. })
             );
+            let a_is_file = matches!(a, Found::Node(VaultNode::File { .. }));
+            let b_is_file = matches!(b, Found::Node(VaultNode::File { .. }));
 
             let a_name = Self::vault_data_to_prefix_name(a).1;
             let b_name = Self::vault_data_to_prefix_name(b).1;
@@ -77,8 +79,10 @@ impl ExplorerTab<'_> {
                 }
             } else if b_is_folder {
                 Ordering::Greater
-            } else {
+            } else if a_is_file && b_is_file {
                 a_name.cmp(&b_name)
+            } else {
+                Ordering::Equal // sort is stable so thee entries will keep their place, i.e. the order they were parsed in
             }
         });
         vd
