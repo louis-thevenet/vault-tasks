@@ -190,6 +190,7 @@ mod tests {
             FileEntryNode::Header {
                 name: "1".to_string(),
                 path: std::path::PathBuf::new(),
+                line_number: 1,
                 heading_level: 1,
                 content: vec![
                     FileEntryNode::Task(Task {
@@ -224,10 +225,12 @@ mod tests {
                     FileEntryNode::Header {
                         name: "1.1".to_string(),
                         path: std::path::PathBuf::new(),
+                        line_number: 2,
                         heading_level: 2,
                         content: vec![FileEntryNode::Header {
                             name: "1.1.1".to_string(),
                             path: std::path::PathBuf::new(),
+                            line_number: 3,
                             heading_level: 3,
                             content: vec![FileEntryNode::Task(Task {
                                 name: "test 1.1.1".to_string(),
@@ -241,17 +244,20 @@ mod tests {
             FileEntryNode::Header {
                 name: "2".to_string(),
                 path: std::path::PathBuf::new(),
+                line_number: 4,
                 heading_level: 1,
                 content: vec![
                     FileEntryNode::Header {
                         name: "2.1".to_string(),
                         path: std::path::PathBuf::new(),
+                        line_number: 5,
                         heading_level: 3,
                         content: vec![],
                     },
                     FileEntryNode::Header {
                         name: "2.2".to_string(),
                         path: std::path::PathBuf::new(),
+                        line_number: 6,
                         heading_level: 2,
                         content: vec![FileEntryNode::Task(Task {
                             name: "test 2.2".to_string(),
